@@ -179,7 +179,7 @@ default
             else if (cmd == "HAVEWATER")
             {
                 llWhisper(0,"Auto-water completed");
-                water += 20;
+                water += 40;
                 if (water > 100) water = 100;
                 //llSleep(2.);
                 psys(NULL_KEY);
@@ -188,7 +188,7 @@ default
             else if (cmd == "HAVE"  && llList2Key(tk,2)==FOODITEM)
             {
                 llWhisper(0,"Auto-food completed");
-                food += 20;
+                food += 40;
                 if (food>100) food =100;
                 llSleep(2.);
                 psys(NULL_KEY);
@@ -196,14 +196,14 @@ default
             }
             else if (cmd == "WATER") // Add water
             {
-                water += 20;
+                water += 40;
                 if (water > 100) water = 100;
                 llSleep(2.);
                 psys(NULL_KEY);
             }
             else if (cmd == llToUpper(FOODITEM))
             {
-                food += 20;
+                food += 40;
                 if (food>100) food =100;
                 llSleep(2.);
                 psys(NULL_KEY);
