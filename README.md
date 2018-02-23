@@ -1,4 +1,4 @@
-For the latest  SatyrFarm package,  visit OpenSimWorld:  hypergrid.org:8002:OpenSimWorld
+For the latest  SatyrFarm package, visit OpenSimWorld:  hypergrid.org:8002:OpenSimWorld 
 
 For the latest farm demo visit Priape: hypergrid.org:8002:Priape
 
@@ -7,30 +7,24 @@ Some notes for the farm:
 
 - You  must be in the same group as the farm objects to use them. Everyone in the same group can use your farm.
 
-- To get a bucket of water, click the Well. The well will rez a bucket in front of you
+- To get a bucket of water, click the Well. A bucket will be rezzed in front of the well.
 
 - You can touch a bucket and it will follow you. Touch it again to put it down.
 
-- All other objects  work similarly, except you have to wait until they are ready for harvest (ripe).
+** DO NOT TAKE ITEMS IN INVENTORY, THEY WILL BECOME UNUSABLE. Only the animals can be taken to inventory and they will not starve while they are in inventory although they will keep growing, ** 
 
-
-** DO NOT TAKE ITEMS IN INVENTORY, they will become unusable. Only the animals can be taken to inventory and they will not starve while they are in inventory although they will keep growing, ** (In other words, this is not G&S)
-
-- To make a new animal , duplicate an existing one, or rez a copy and reset scrpts . The gender of the animal is assigned randomly every time your reset the script
-
-
-- From version 2017-11-02 and on, the sprinklers are no more needed. Use Autowater and Autofood instead.
+- From version 2017-11-02 and on, the sprinklers are not needed anymore. Use Autowater and Autofood instead.
 
 - The SF Windpump automatically fills up the nearest water tower. the Water Tower will automatically water everything if you have autoWater enabled
 
-- The SF Rack and Fridge are for storing harvested items for longer term. Animal feeder can automatically take items from them if you have AutoFood enabled.
+- The SF Rack and Fridge are for storing harvested items for longer term. Animal feeders can automatically take items from them if you have AutoFood enabled.
 
-- Autowatering requires the presence of a SF Water Tower in a distance less than 96m.  Similarly Autofood requires an SF Storage rack or SF Fridge with enough food within 96m radius. 
+- Autowatering requires the presence of a SF Water Tower in a distance less than 96m.  Similarly AutoFood requires an SF Storage rack or SF Fridge with enough food within 96m radius. 
 
 
 For the Animals: 
 
-- To make a new animal, duplicate an existing one, or rez one from your inventory and reset its scripts. 
+- From 2017-11-03 and on: Please rez the SF Animal Rezzer to rez new animals. They become randomly female or male  on rez. Allow a few seconds each animals to initialize properly.
 
 - Every time you reset the script of an animal, it becomes randomly female or male. 
 
@@ -38,7 +32,7 @@ For the Animals:
 
 - You have to click "Mate" after they become adult, otherwise they won't mate on their own. 
 
-
+- If your animal keeps spinning, press "Stop" 
 
 SF Kitchen: 
 
@@ -61,16 +55,20 @@ Apple Juice=SF Apple Juice=SF Apple Juice (wear)
 
 This means that menu item for Apple Juice you need to add 1 SF Apple Juice object to fill up the bar to 100% , and that when you select to consume the object it gives you the "Apple Juice (wear)" object. This object must be copy and must be   inside the SF Bar contents. IMPORTANT : After you edit the BARMENU notecard, you must reset scripts in the bar. 
 
-
 - You can sell your excess harvested items to the Farm Seller truck to win game points if you connect it to your opensimworld.com account. Your current score (points) will be shown in your opensimworld profile. 
 
 
+- For sims with  real or fake money systems, you can use the SF Farm Market Seller. There is a notecard inside where you set the prices. The first number between the '=' is  the price at which the object sells the items, and the second number is the price at which it buys them.
+
+NOTE : if you redistribute copies of the farm, please make sure the *contents* inside every item of the  farm are copy-able. I try my best to ensure that everything is copy, but i have noticed that sometimes permissions do not survive through hypergrid. 
+
 To my knowledge all the farm objects and meshes are Freebies and I thank the makers for their work.
 
-LICENSE
+LICENSE:
+The farm scripts are licensed under the Creative Commons Attribution-NonCommercial (CC-BY-NC) 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA. You are free to modify / create 
+your own items for non-commercial reasons.
 
-The farm scripts are free for reuse and remix for NON COMMERCIAL use under the CC-BY-NC-SA Creative Commons license. You are free to modify / create your own items, but please share.
-
+THANKS to Carlwash Constantine and Ron Winterwolf for contributing to the project and testing.
 
 
 - Satyr
