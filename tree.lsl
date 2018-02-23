@@ -1,16 +1,15 @@
-integer FARM_CHANNEL = -911201;
-string PASSWORD="*";
+string PRODUCT_NAME = "SF Lemons";
 
-integer ANIMATE =0;
-string PRODUCT_NAME = "SF Olives";
+float LIFETIME = 86400*4.;
+float WATER_TIMES = 4.; // How many times to water during lifetime
+float WOOD_TIMES = 4.;
+integer ANIMATE = 0;
 
 
 ///////////////////////////////////////
-float LIFETIME = 86400*4.;
 
-float WATER_TIMES = 4.; // How many times to water during lifetime
-
-float WOOD_TIMES = 4.;
+integer FARM_CHANNEL = -911201;
+string PASSWORD="*";
 
 integer createdTs =0;
 
@@ -146,7 +145,9 @@ refresh(integer ts)
             }
             else if (status == "Ripe") 
             {
-                status = "Dead";
+                status = "New";
+                statusLeft   = statusDur =  (integer) 86400;
+
             }
             
        }
@@ -229,13 +230,14 @@ default
         
            if (water < 90) opts += "Water";
            
-
-           
            if (autoWater) opts += "AutoWater Off";
            else opts += "AutoWater On";
 
-          if (wood>=100.) opts += "Get Wood";
-                      
+           if (wood>=100.) opts += "Get Wood";
+           
+           if (status == "Growing")
+               opts += "Add Manure";
+          
            opts += "CLOSE";
            startListen();
            llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
@@ -247,6 +249,10 @@ default
         if (m == "Water")
         {
             llSensor("SF Water", "", SCRIPTED, 5, PI);
+        }
+        else if (m == "Add Manure")
+        {
+            llSensor("SF Manure", "", SCRIPTED, 5, PI);
         }
         else if (m == "Cleanup")
         {
@@ -313,6 +319,12 @@ default
                 water=100.;
                 refresh(llGetUnixTime());
             }
+            else if (llList2String(cmd,0) == "MANURE" && llList2String(cmd,1) == PASSWORD )
+            {
+                statusLeft -= 86400;
+                if (statusLeft<0) statusLeft=0;
+                refresh(llGetUnixTime());
+            }
             else if (llList2String(cmd,0) == "HAVEWATER" && llList2String(cmd,1) == PASSWORD )
             {
                  // found water
@@ -350,7 +362,7 @@ default
         }
         else
         {
-            llSay(0, "Found water bucket...");
+            llSay(0, "Emptying...");
             key id = llDetectedKey(0);
             osMessageObject(id,  "DIE|"+(string)llGetKey());
         }
@@ -361,7 +373,7 @@ default
         if (sense == "AutoWater")
            llSay(0, "Error! Water tower not found within 96m. Auto-watering NOT working!");
         else
-           llSay(0, "Error! Water bucket not found! You must bring a water bucket near me!");
+           llSay(0, "Error! Not found! You must bring it near me!");
         sense = "";
     }
     
