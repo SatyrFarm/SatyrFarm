@@ -1,9 +1,14 @@
+/* Part of the  SatyrFarm scripts
+   This code is provided under the CC-BY-NC license
+   */
+
 string AN_NAME = "Animal";
 string AN_FEEDER = "SF Animal Feeder";
 string AN_BAAH = "Ah";
 integer AN_HASGENES = 0;
 integer AN_HASMILK = 0;
 integer AN_HASWOOL = 0;
+integer AN_HASMANURE = 0;
 string name;
 
 list ADULT_MALE_PRIMS = [];
@@ -61,6 +66,7 @@ float WATERTIME = 5000. ;
 float FEEDTIME  = 5900. ;
 
 integer MILKTIME = 86400 ;
+integer MANURETIME = 86400*2  ;
 integer WOOLTIME = 86400*4  ;
 
 integer PREGNANT_TIME = 86400*5;
@@ -76,6 +82,8 @@ float WATERAMOUNT=1.;
 
 integer TOTAL_ADULTSOUNDS = 4;
 integer TOTAL_BABYSOUNDS = 2;
+integer IMMOBILE=0;
+
 list rest;
 list walkl;
 list walkr;
@@ -92,6 +100,8 @@ integer lastWater;
 integer createdTs;
 integer milkTs;
 integer woolTs;
+integer manureTs;
+integer labelType = 0; // 1== short
 
 
 float food=4.;
@@ -108,7 +118,6 @@ integer givenBirth =0;
 string fatherName;
 integer days;
 integer age;
-
 
 
 
@@ -132,12 +141,15 @@ loadConfig()
                 else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
                 else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
                 else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
+                else if (cmd == "LIFEDAYS") LIFETIME= ((integer)val)*86400;
+                else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
                 else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
                 else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);                
                 else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
                 else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
                 else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
                 else if (cmd == "MILKTIME") MILKTIME= (integer)val;
+                else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
                 else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
                 else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
                 else if (cmd == "WATERMOUNT") WATERAMOUNT= (float)val;
@@ -269,7 +281,7 @@ move()
         if (rnd==0)    setpose(rest); 
         else if (rnd==1)    setpose(down); 
         else if (rnd==2)    setpose(eat); 
-        else
+        else if (IMMOBILE<=0)
         {        
             float rz = .3-llFrand(.6);
             for (i=0; i < 6; i++)
@@ -291,7 +303,7 @@ move()
                     llSetPrimitiveParams([PRIM_POSITION, cp, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,PI/2>) ]);
                 }
             }
-            setpose(rest);        
+            setpose(rest);     
         }
         if (llFrand(1.)< 0.5) baah();
 }
@@ -311,7 +323,7 @@ refresh(integer ts)
             age = (ts-createdTs);
             
             float days = (age/86400.);
-            string str =""+name+" ( "+sex+")\n";
+            string str =""+name+" ("+sex+")\n";
                         
             if (isBaby && days  > (lifeTime*0.15/86400.))
             {
@@ -395,8 +407,10 @@ refresh(integer ts)
                     color = <1,0,0>;
                 }
         
-                llSetText(str , color, 1.0);
-               
+                if (labelType == 1)
+                    llSetText(name , color, 1.0);
+                else
+                    llSetText(str , color, 1.0);
             }           
 }
 
@@ -587,6 +601,19 @@ default
                 llStopSound();
             }
         }
+        else if (m =="Options")
+        {
+            list opts = ["CLOSE"];
+            opts += "Set Name";
+    
+            if (IMMOBILE>0)  opts += "Walking On";
+            else opts += "Walking Off";
+
+            if (labelType==1) opts += "Long Label";
+            else opts += "Short Label";
+            
+           llDialog(id, "Select", opts, chan(llGetKey()) );
+        }
         else if (m == "Set Name")
         {
             llTextBox(id, "Set name to: ", chan(llGetKey()));
@@ -608,6 +635,17 @@ default
             death(0);
             return;
         }
+        else if (m == "Walking On" || m == "Walking Off")    
+        {
+            IMMOBILE = (m == "Walking Off");
+            llSay(0, "Allow walking="+(string)(!IMMOBILE));
+        }
+        else if (m == "Short Label" || m == "Long Label")
+        {
+            labelType = (m == "Short Label");
+           // llSay(0, "Short label="+(string)labelType);
+            refresh(llGetUnixTime());
+        }
         else if (m == "Milk" && AN_HASMILK)
         {
             if (sex == "Female")
@@ -615,6 +653,16 @@ default
                 say(0, "From my tits and right into your bucket!");
                 llRezObject("SF Milk", llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
                 milkTs = llGetUnixTime();
+            }
+        }
+
+        else if (m == "Get Manure")
+        {
+            if (llGetUnixTime() - manureTs > MANURETIME)
+            {
+                say(0, "Here is my bag of shit!");
+                llRezObject("SF Manure", llGetPos() +<0,1,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
+                manureTs = llGetUnixTime();
             }
         }
         else if (m == "Wool" &&AN_HASWOOL)
@@ -644,11 +692,16 @@ default
             if (llList2String(tk,1) != PASSWORD)  { llOwnerSay("Password mismatch '"+llList2String(tk,1)+"'!='"+PASSWORD+"'"); return;  } 
             
             string cmd = llList2String(tk,0);
-            if (cmd == "MATEME" && sex == "Male")
+            if (cmd == "MATEME" )
             {
                 if (isBaby)
                 {
-                    say(0,  "I am a child, you perv...");
+                    say(0,  "I am a child, you pervert...");
+                    return;
+                }
+                else if (sex != "Male")
+                {
+                    say(0, "Sorry honey, I'm not a lesbian");
                     return;
                 }
                 
@@ -811,7 +864,8 @@ default
            opts += "Follow Me";
            opts += "Stop";
            opts += "CLOSE";
-           opts +=  "Set Name";
+           opts +=  "Options";
+           
            if (sex == "Female" && !isBaby && pregnantTs ==0 )
                opts +=  "Mate";
            if (!isBaby)
@@ -821,6 +875,7 @@ default
                     if (givenBirth>0 &&  ts - milkTs > MILKTIME) opts += "Milk";
                 }
                 if (ts - woolTs > WOOLTIME && AN_HASWOOL >0) opts += "Wool";
+                if (ts - manureTs > MANURETIME && AN_HASMANURE >0) opts += "Get Manure";
                 opts += "Butcher";
            }
            startListen();
