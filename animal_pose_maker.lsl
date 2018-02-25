@@ -5,7 +5,7 @@ This script builds animation notecards for SF animals.
 INSTRUCTIONS
 
 
-1.  Rotate the sculpty dog facing the positive X axis (looking towards the east
+1.  Rotate the sculpty dog facing the positive X axis (looking towards the east)
 rez a root prim on the ground (height ~ 0.1m)  and move it right under the dog's feet at ground level. 
 this will be the center of its movement when moving. DONT ROTATE IT. keep it in the default orientation.
 
