@@ -11,9 +11,10 @@ this will be the center of its movement when moving. DONT ROTATE IT. keep it in 
 
 2. Link the dog with the root prim
 
-4. Set BUILDING=2 in this script below. Touch the dog. the notecard "scales" will be created with the sizes of all the sculptys in the linkset.
+4. Set BUILDING=2 in this script below. Touch the dog. the notecard "scales" will be created with the sizes of all the 
+sculptys in the linkset.
 
-3. Set BUILDING=1 in this script below. this means you will be saving notecards
+3. Set BUILDING=1 in this script below. this means you will now be saving pose notecards
 
 5. You must create 5 notecards with poses. the notecard names are :  rest, eat, down, walkl, walkr
 walkl and walkr are used for the dog's walk when the dog is moving. the other poses are static and can be 
