@@ -5,20 +5,26 @@ This script builds animation notecards for SF animals.
 INSTRUCTIONS
 
 
-1. Set BUILDING=1 in this script below.
-
-2.  Rotate the dog facing the positive X axis (looking towards the east
+1.  Rotate the sculpty dog facing the positive X axis (looking towards the east
 rez a root prim on the ground (height ~ 0.1m)  and move it right under the dog's feet at ground level. 
 this will be the center of its movement when moving. DONT ROTATE IT. keep it in the default orientation.
 
-3. Link the dog with the root prim
+2. Link the dog with the root prim
 
-4. You must create 5 notecards with poses. the notecard names are :  rest, eat, down, walkl, walkr
-walkl and walkr are used for the dog's walk when the dog is moving. the other poses are static and can be anything. For each pose , click the dog and its current pose will be written in the notecard "pose".  rename the notecard "pose" to "walkl"  and repeat for all the other poses. When you are done you should have 5 notecards with the poses in the dog's contents: rest, eat, down,  walkr, walkl
+4. Set BUILDING=2 in this script below. Touch the dog. the notecard "scales" will be created with the sizes of all the sculptys in the linkset.
 
-5. Set BUILDING=2 in this script below. Touch the dog. the notecard "scales" will be created with the sizes of all the linkset.
+3. Set BUILDING=1 in this script below. this means you will be saving notecards
 
-That's all. You can test the dog by setting BUILDING=0 in this script and touching it. It should start walking and turning normally. 
+5. You must create 5 notecards with poses. the notecard names are :  rest, eat, down, walkl, walkr
+walkl and walkr are used for the dog's walk when the dog is moving. the other poses are static and can be 
+anything and they will appear randomly. 
+
+6. For each pose, arrange the pose by rotating and moving the linkset (do not change sizes!), 
+then click the dog and its current pose will be written in a notecard named  "pose".  
+Rename the notecard "pose" to "walkl" . Then repeat the same for all the other poses. 
+When you are done you should have 5 notecards with the poses in the dog's contents: rest, eat, down,  walkr, walkl
+
+7. You can now test the dog by setting BUILDING=0 in the script and touching it. It should start walking and turning normally. 
 
 Then you can delete this script and add the rest of the animal contents inside.
 
