@@ -9,7 +9,9 @@ INSTRUCTIONS
 rez a root prim on the ground (height ~ 0.1m)  and move it right under the dog's feet at ground level. 
 this will be the center of its movement when moving. DONT ROTATE IT. keep it in the default orientation.
 
+
 2. Link the dog with the root prim
+
 
 4. Set BUILDING=2 in this script below. Touch the dog. the notecard "scales" will be created with the sizes of all the 
 sculptys in the linkset.
@@ -27,7 +29,8 @@ When you are done you should have 5 notecards with the poses in the dog's conten
 
 7. You can now test the dog by setting BUILDING=0 in the script and touching it. It should start walking and turning normally. 
 
-Then you can delete this script and add the rest of the animal contents inside.
+Then you can delete this script, add the rest of the animal contents (SF Meat/Milk/Wool/Skin/Manure) inside and edit an_config
+to customize your animal properties. 
 
 */
 
