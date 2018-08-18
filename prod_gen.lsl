@@ -9,7 +9,7 @@ integer isEnabled =0;
 string PASSWORD="";
 integer EXPIRES = -1;
 integer DRINKABLE = -1;
-integer PARTS = 10;
+integer PARTS = 1;
 vector FLOWCOLOR=<1.000, 0.805, 0.609>;
 key POURSND = "e12bc097-609b-4912-8ba0-3569b9a8d5a9";
 
