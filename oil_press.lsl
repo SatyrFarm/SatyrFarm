@@ -1,4 +1,7 @@
 //### oil_press.lsl
+// This script is JUST used in the oil press (formerly just olive oil press)
+// It is not generic enough to be used in other items without changes.
+// 
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 

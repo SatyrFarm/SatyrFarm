@@ -163,7 +163,7 @@ default
         else if (m == ">>")
         {
             startOffset += 10;
-            if (startOffset >llGetListLength(products)) startOffset=0;
+            if (startOffset >= llGetListLength(products)) startOffset=0;
             dlgSell(id);
         }
         else if (m == "Add Product")
