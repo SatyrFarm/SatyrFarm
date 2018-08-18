@@ -1,1 +1,28 @@
-8/17/2018 Version Released
+Version 5 July 2018:
+
+- Added the SF Buffet, which works similarly to the bar
+
+- Updated the kitchen (just the recipes) to match the food needed for SF Buffet
+
+
+Version June 2018:
+
+- The Infinite Metaverse Alliance (IMA) and Shellenn Ayres@hypergrid.org have now gone through the hard work of fixing all the permissions in the farm, so hopefuilly  we no longer have permission issues through the hypergrid.  Thank you IMA & Shellenn!
+
+- They also updated all the products to use the NPC-compatible prod_gen script (Thanks to Nara Malone for that!). So your NPCs can now touch the product items!
+
+- The Cheese  Factory is a new object, contributed by Ron Winterwolf. Thanks Ron.
+
+- The Storage Rack, Fridge and SF Fields  understand what is in their contents and automatically add it to the menus without needing to change the script . For example, to add a new product in the Storage Rack,  just add the new "SF Product" item in the rack's contents and reset the script to make the product it appear in the menus. Similarly, if you want to add a new type of crop to the SF Field, add the "SF Crop" object inside it, as well as the 3 required textures (Crop-New, Crop-Growing and Crop-Ripe). When you reset the script "Crop" will be added as an option in the menu. 
+These changes were contributed by Bob Wellman@www.pmgrid.org:8002  for this , thanks Bob!
+
+- The small, big field , rice, the grapes and all the trees use the same unified script now. Special configuration has been moved to the "config" notecard in each of them
+
+- You can now create custom plugin scripts that interact with the plants script. Check the link_message function in the script to see the possibilities. As an example I have adde 2 plugin scripts in the Rice Field. The first plugin adjusts the water level automatically. The second plugin adds  a new option to the field menu,  AutoHarvest  which automatically harvest the field automatically  as soon as it gets ripe. It also replants the field when it is empty. (Thanks to Bob Wellman for these ideas too!)
+
+
+- The fishing rod has been replaced by the SF Fish Barrel. Click it to get a fishing rod. While you are fishing, fish are being added to the nearest SF Fish Barrel. This way, your guests no longer need rezzing rights to fish in your land!
+
+
+- The Opensimworld Truck is now retired
+
