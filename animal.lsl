@@ -3,7 +3,7 @@
    */
 
 string AN_NAME = "Animal";
-string AN_FEEDER = "SF Animal Feeder"; 
+string AN_FEEDER = "SF Animal Feeder";
 string AN_BAAH = "Ah";
 integer AN_HASGENES = 0;
 integer AN_HASMILK = 0;
@@ -121,15 +121,6 @@ integer age;
 
 
 
-/* Load the animal configuration from the  an_config notecard 
-The notecard has a format like this:
-FEEDER=SF Pig Feeder
-HASWOOL=1
-ADULT_MALE_PRIMS=1,2,3,4
-
-See comments below for the settings
-*/
-
 loadConfig()
 {
     
@@ -145,25 +136,24 @@ loadConfig()
                 string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
                 //llOwnerSay(cmd+"="+val);
                 if (cmd =="NAME") AN_NAME = val;
-                else if (cmd == "FEEDER") AN_FEEDER = val;   // Name of the feeder to request food from
-                else if (cmd == "CRY") AN_BAAH = val;        // What to say when cryign, e.g. "baah" 
-                else if (cmd == "HASGENES") AN_HASGENES = (integer)val;   // Goats set this to 1 because they have genes (skins) - all other animals set this to 0
-                else if (cmd == "HASMILK") AN_HASMILK= (integer)val;      // Gives milk ? (0 or 1)
-                else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;      // Gives wool ? (0 or 1)
-                else if (cmd == "LIFEDAYS") LIFETIME= ((integer)val)*86400;   // How many days does it typically last? (15% of this time will be spent as child)
-                else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;     // Gives shit ? (0 or 1)
-                else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);       // Link numbers that which only show up on adult males
-                else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);   // Link numbers that which only show up on adult females             
-                else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                 // Link numbers that which only show up on children (both sexes)
-                else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);                // For animals that have genes (skins) , list of prims where the skin goes
-                else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;                                               // How much time before giving new wool (in seconds)
+                else if (cmd == "FEEDER") AN_FEEDER = val;
+                else if (cmd == "CRY") AN_BAAH = val;
+                else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
+                else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
+                else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
+                else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
+                else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
+                else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);                
+                else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
+                else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
+                else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
                 else if (cmd == "MILKTIME") MILKTIME= (integer)val;
-                else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;                                              // By default animal does not walk around (0 or 1)
-                else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;                                     // How much time to spent in pregnancy (in seconds)
-                else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;                                             // Amount of food to eat for child (adults eat twice as much)
-                else if (cmd == "WATERMOUNT") WATERAMOUNT= (float)val;                                         
-                else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;                              // How many baby sounds are there in the animal contents (the sounds must be named baby1, baby2, baby3 ...)
-                else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;                            // How many adult sounds are there in the animal contents (the sounds must be named adult1, adult2, adult3 ...)
+                else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
+                else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
+                else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
+                else if (cmd == "WATERMOUNT") WATERAMOUNT= (float)val;
+                else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
+                else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
         }
     }
 }
