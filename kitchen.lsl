@@ -1,3 +1,4 @@
+//### kitchen.lsl
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer chan(key u)
@@ -26,15 +27,18 @@ checkListen()
         listener = -1;
     }
 }
-integer lastTs;
+
 string status;
 integer steppedOn;
 
+list recipeNames;
 string recipeName;
 list ingredients; 
 list haveIngredients;
+vector rezzPosition = <1,0,0>; // Position of the product to rezz
 integer timeToCook; // in seconds
 string objectToGive; // Name of the object to give after done cooking
+string productAge; // How many days the final product can last
 string lookingFor;
 
 integer waitForSensed=0;
@@ -83,6 +87,7 @@ psys(key k)
                 
 }
 
+
 refresh()
 {
     integer i;
@@ -120,15 +125,18 @@ refresh()
     else if (status == "Cooking")
     {
         float prog = (integer)((float)(llGetUnixTime()-steppedOn)*100./timeToCook);
-        str = "Selected: "+recipeName+"\nProgress: "+ (integer)prog+ " %";
+        str = "Selected: "+recipeName+"\nProgress: "+ (string)((integer)prog)+ " %";
         if (prog >=100.)
         {
             llMessageLinked(LINK_SET,1, "ENDCOOKING", "");
             llStopSound();
             status = "Empty";
             llSay(0, "Congratulations, your "+recipeName+" is ready!");
-            llRezObject(objectToGive, llGetPos() + <1,0,0>*llGetRot(), ZERO_VECTOR, ZERO_ROTATION, 1);
+            llRezObject(objectToGive, llGetPos() + rezzPosition*llGetRot(), ZERO_VECTOR, ZERO_ROTATION, 1);
             recipeName = "";
+            objectToGive = "";
+            ingredients = [];
+            haveIngredients = [];
             llSetTimerEvent(1);
         }
         psys(NULL_KEY);
@@ -139,21 +147,29 @@ refresh()
 }
 
 
-list getRecipeNames()
+getRecipeNames()
 {
     list names;
     list ltok = llParseString2List(osGetNotecard("RECIPES"), ["\n"], []);
     integer l;
     for (l=0; l < llGetListLength(ltok); l++)
     {
-        list tok = llParseString2List(llList2String(ltok, l), ["="], []);
-        string name=llList2String(tok,0);
-        if ( name != "")
+        string line = llList2String(ltok, l);
+        if (llGetSubString(line, 0, 0) != "#")
         {
-            names += name;
+            list tok = llParseString2List(line, ["="], []);
+            string name=llList2String(tok,0);
+            if ( name != "")
+            {
+                names += name;
+            }
+        }
+        else if (llSubStringIndex(line, "#POS=") == 0)
+        {
+            rezzPosition = (vector)llGetSubString(line, 5, -1);
         }
     }
-    return names;
+    recipeNames = names;
 }
 
 setRecipe(string nm)
@@ -163,29 +179,33 @@ setRecipe(string nm)
     recipeName = "";
     for (l=0; l < llGetListLength(ltok); l++)
     {
-        list tok = llParseString2List(llList2String(ltok, l), ["="], []);
-        string name=llList2String(tok,0);
-        if ( name == nm && nm != "")
+        string line = llList2String(ltok, l);
+        if (llGetSubString(line, 0, 0) != "#")
         {
-            ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
-            timeToCook   = llList2Integer(tok, 2);
-            objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
-            haveIngredients = [];
-            integer kk = llGetListLength(ingredients);
-            while (kk-->0)
-                haveIngredients += [0]; //Fill the list with zeros
-                            
-            recipeName = name;
-            status = "Adding";
-            llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
-            return;
+            list tok = llParseString2List(line, ["="], []);
+            string name=llList2String(tok,0);
+            if ( name == nm && nm != "")
+            {
+                ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
+                timeToCook   = llList2Integer(tok, 2);
+                objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
+                productAge = llList2String(tok, 4);
+                llMessageLinked(LINK_SET, 1, "SELECTEDRECIPE|" + llDumpList2String(tok, "|"), "");
+                haveIngredients = [];
+                integer kk = llGetListLength(ingredients);
+                while (kk-->0)
+                    haveIngredients += [0]; //Fill the list with zeros
+                                
+                recipeName = name;
+                status = "Adding";
+                llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
+                return;
+            }
         }
     }
     status = "";
     llSay(0, "Error! Recipe not found " +nm);
 }
-
-
 
 dlgIngredients(key u)
 {
@@ -214,7 +234,7 @@ default
     object_rez(key id)
     {
         llSleep(.5);
-        osMessageObject(id,  "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
+        osMessageObject(id,  "INIT|"+PASSWORD+"|"+productAge+"|-1|<1.000, 0.965, 0.773>|");
     }
     
     
@@ -226,11 +246,12 @@ default
             recipeName = "";
             status = "";
             refresh();
+            llMessageLinked(LINK_SET,1, "ENDCOOKING", "");
             llStopSound();
         }
         else if (m == "Recipes" )
         {
-            llDialog(id, "Menu", getRecipeNames() + ["CLOSE"], chan(llGetKey()));
+            llDialog(id, "Menu", recipeNames + ["CLOSE"], chan(llGetKey()));
             dialogTs = llGetUnixTime();
             status = m;
         }
@@ -341,7 +362,7 @@ default
         waitForSensed =1;
         llSay(0, "Found "+llDetectedName(0)+", emptying...");
         key id = llDetectedKey(0);
-        osMessageObject( id,  "DIE|"+llGetKey());
+        osMessageObject( id,  "DIE|"+(string)llGetKey());
         llSleep(2);
     }
     
@@ -354,13 +375,21 @@ default
     {
         refresh();
         llSetTimerEvent(300);
-                PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-    }   
+        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        getRecipeNames();
+    } 
+
+    changed(integer change)
+    {
+        if (change & CHANGED_INVENTORY)
+        {
+            getRecipeNames();
+        }
+    }
     
     on_rez(integer n)
     {
         llResetScript();
     }
 }
-
 
