@@ -1,14 +1,20 @@
+/* 
+    This script is common for plant fields , grapes and trees
+    For custom values use the 'config' notecard
+    For custom plugin scripting, see the link_message event 
+ */
 
 float LIFETIME = 86400*2.;
-
 float WATER_TIMES = 2.;
-
-list PLANTS = ["Tomatoes", "Potatoes", "Eggplants", "Peppers", "Onions", "Strawberries", "Carrots", "Pot"];
-
-
+list PLANTS = []; 
+float WOOD_TIMES = 4.;
+integer IS_TREE = 0;
 
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
+string PRODUCT_NAME;
+
+list customOptions = [];
 
 integer createdTs =0;
 integer lastTs=0;
@@ -18,6 +24,7 @@ integer statusDur;
 string status="Empty";
 string plant = "";
 float water=10.;
+float wood=0;
 string mode = "";
 integer autoWater =0;
 string sense= "";
@@ -51,6 +58,29 @@ checkListen()
 
 
 
+loadConfig()
+{
+    
+    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+    integer i;
+    for (i=0; i < llGetListLength(lines); i++)
+    {
+        list tok = llParseString2List(llList2String(lines,i), ["="], []);
+        if (llList2String(tok,1) != "")
+        {
+                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                //llOwnerSay(cmd+"="+val);
+                if (cmd =="PRODUCT") PRODUCT_NAME = val;
+                else if (cmd == "IS_TREE")     IS_TREE= (integer)val;  // Trees dont need replanting after harvest
+                else if (cmd == "LIFETIME")    LIFETIME= (integer)val;
+                else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
+                else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;                
+        }
+    }
+}
+
+
 psys(key k)
 {
  
@@ -77,7 +107,7 @@ psys(key k)
                     PSYS_SRC_TEXTURE,"",
                     PSYS_SRC_MAX_AGE,2,
                     PSYS_PART_MAX_AGE,5,
-                    PSYS_SRC_BURST_RATE, 10,
+                    PSYS_SRC_BURST_RATE, 100,
                     PSYS_SRC_BURST_PART_COUNT, 10,
                     PSYS_SRC_ACCEL,<0.000000,0.000000,0.000000>,
                     PSYS_SRC_OMEGA,<0.000000,0.000000,0.000000>,
@@ -97,15 +127,19 @@ psys(key k)
 
 refresh(integer ts)
 {
+
  
     water -=  (float)(llGetUnixTime() - lastTs)/(LIFETIME/WATER_TIMES)*100.;
+    wood += (float)(llGetUnixTime() - lastTs)/(LIFETIME/WOOD_TIMES)*100.;
+    if (wood >100.) wood = 100.;
+    
     integer isWilted;
    
     string progress = plant+"\n";
     
     if (status == "Dead" || status == "Empty")
     {
-        
+                
     }
     else if (water < - 50. ) 
     {
@@ -115,7 +149,8 @@ refresh(integer ts)
     {
         progress += "NEEDS WATER!\n";
         isWilted=1;
-          if (autoWater)
+        
+        if (autoWater)
         {
             sense = "AutoWater";
             llSensor("SF Water Tower", "", SCRIPTED, 96, PI);
@@ -139,13 +174,20 @@ refresh(integer ts)
             }
             else if (status == "Ripe") 
             {
-                status = "Dead";
+                if (IS_TREE)
+                {
+                    status = "New";
+                    statusLeft   = statusDur =  (integer) LIFETIME/3;
+                }
+                else
+                {
+                    status = "Dead";
+                }
             }
-            
+
        }
       
     }
-    
 
     if (status == "Dead" || status == "Empty")
         progress += "Status: "+status+"\n";
@@ -157,9 +199,12 @@ refresh(integer ts)
         
     float sw = water;
     if (sw< 0) sw=0;
-    llSetText("Water: " + (integer)(sw)+ "%\n"+progress, <1,.9,.6>, 1.0);
-    
-    
+
+    if (IS_TREE)
+        llSetText("Water: " + (integer)(sw)+ "%\nWood: "+(string)(llFloor(wood))+"%\n"+progress, <1,.9,.6>, 1.0);
+    else
+        llSetText("Water: " + (integer)(sw)+ "%\n"+progress, <1,.9,.6>, 1.0);
+
     if (status == "Empty")
     {
         llSetLinkTexture(2, TEXTURE_TRANSPARENT, ALL_SIDES);
@@ -167,7 +212,10 @@ refresh(integer ts)
     else
     {
         llSetLinkColor(2, <1,1,1>, ALL_SIDES);
-        llSetLinkTexture(2, plant+"-"+status, ALL_SIDES);
+        if (IS_TREE)
+            llSetLinkTexture(2, status, ALL_SIDES);
+        else
+            llSetLinkTexture(2, plant+"-"+status, ALL_SIDES);
     }
     
     if (isWilted)
@@ -176,6 +224,28 @@ refresh(integer ts)
         llSetLinkColor(2, <0.1,0,0>, ALL_SIDES);
         
     psys(NULL_KEY);
+
+    llMessageLinked(LINK_SET, 99, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water, NULL_KEY);
+}
+
+doHarvest()
+{
+    if (status == "Ripe")
+    {
+         llRezObject(PRODUCT_NAME , llGetPos() + <0,0,2>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1);
+         //llRegionSay(FARM_CHANNEL, "REZ|SF Rice|"+(string)(llGetPos() + <0,0,2>*llGetRot()) + "|" );
+         llSay(0, "Congratulations! Your harvest is ready!");
+         if (IS_TREE)
+         {
+            statusDur = statusLeft = (integer)(LIFETIME/3.);
+            status = "New";
+         }
+         else
+            status = "Empty";
+             
+         refresh(llGetUnixTime());
+         llTriggerSound("lap", 1.0);
+    }
 }
 
 default
@@ -193,14 +263,29 @@ default
     
     state_entry()
     {
-        llSetLinkTextureAnim(2, 0 | PING_PONG|ROTATE| SMOOTH |LOOP, ALL_SIDES, 0, 0, 0, .05, .011);
+        loadConfig();
 
         lastTs = llGetUnixTime();
         createdTs = lastTs;
         status = "Empty";
         refresh(lastTs);
-        llSetTimerEvent(1);
+        
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+
+        if (!IS_TREE)
+        {
+            //BW Load products and levels dynamically
+            integer i;
+            for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
+            {
+                if (llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),0 ,2) == "SF ")
+                    PLANTS += llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),3,-1);
+            }
+            llOwnerSay(llList2CSV(PLANTS));
+        }
+        
+        llSetTimerEvent(1);
+        llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
     }
 
 
@@ -218,9 +303,13 @@ default
     
            if (autoWater) opts += "AutoWater Off";
            else opts += "AutoWater On";
+           
+           if (IS_TREE && wood>=100.) opts += "Get Wood";
+           
            if (status == "Growing")
                opts += "Add Manure";
-                                           
+                         
+           opts += customOptions;              
            opts += "CLOSE";
            startListen();
            llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
@@ -234,7 +323,7 @@ default
         {
             llSensor("SF Water", "", SCRIPTED, 5, PI);
         }
-                else if (m == "Add Manure")
+        else if (m == "Add Manure")
         {
             llSensor("SF Manure", "", SCRIPTED, 5, PI);
         }
@@ -245,33 +334,49 @@ default
         }
         else if (m == "Harvest")
         {
-            if (status == "Ripe")
-            {
-                 llRezObject("SF "+plant, llGetPos() + <0,0,2>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1);
-                 //llRegionSay(FARM_CHANNEL, "REZ|SF Rice|"+(string)(llGetPos() + <0,0,2>*llGetRot()) + "|" );
-                 llSay(0, "Congratulations! Your harvest is ready!");
-                 status = "Empty";
-                 refresh(llGetUnixTime());
-                 llTriggerSound("lap", 1.0);
-            }
+            doHarvest();
         }
         else if (m == "Plant")
         {
-            mode = "SelectPlant";
-            llDialog(id, "Select Plant", PLANTS+["CLOSE"], chan(llGetKey()));
+            if (IS_TREE)
+            {
+                statusDur = 60;
+                if (water <0) water =0;
+                lastTs = llGetUnixTime();     
+                status="New";       
+                statusLeft = statusDur = (integer)(LIFETIME/3.);
+                llSay(0, "Planted!");
+                llTriggerSound("lap", 1.0);
+                refresh(llGetUnixTime());
+            }
+            else
+            {
+                mode = "SelectPlant";
+                llDialog(id, "Select Plant", PLANTS+["CLOSE"], chan(llGetKey()));
+            }
         }
-         else if (m == "AutoWater On" || m == "AutoWater Off")
+        else if (m == "AutoWater On" || m == "AutoWater Off")
         {
             autoWater =  (m == "AutoWater On");
             llSay(0, "Auto watering="+(string)autoWater);
             llSetTimerEvent(1);
         }
+        else if (m == "Get Wood")
+        {
+            if (wood >=100.)
+            {
+                llRezObject("SF Wood", llGetPos() + <2,0,0>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1);
+                wood =0;
+                refresh(llGetUnixTime());
+                llTriggerSound("lap", 1.0);
+                llSay(0, "Your pile of wood is ready");
+            }
+        }
         else if (mode == "SelectPlant")
         {
-
-            plant = m;            
-           // llSetObjectName("SF "+plant+" Field");
-            statusLeft = statusDur = 3600;
+            plant = m;
+            PRODUCT_NAME = "SF "+plant;     
+            statusLeft = statusDur = (integer)(LIFETIME/3.);
             status="New";
             if (water <0) water =0;
             lastTs = llGetUnixTime();
@@ -280,7 +385,8 @@ default
             refresh(llGetUnixTime());
             mode = "";
         }
-
+        else
+            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, NULL_KEY);
     }
     
     dataserver(key k, string m)
@@ -291,7 +397,7 @@ default
                 water=100.;
                 refresh(llGetUnixTime());
             }
-            else if (llList2String(cmd,0) == "MANURE" && llList2String(cmd,1) == PASSWORD )
+             else if (llList2String(cmd,0) == "MANURE" && llList2String(cmd,1) == PASSWORD )
             {
                 statusLeft -= 86400;
                 if (statusLeft<0) statusLeft=0;
@@ -313,7 +419,7 @@ default
 
     
     timer()
-    {   
+    {
         integer ts = llGetUnixTime();
         if (ts - lastTs> 0)
         {
@@ -334,7 +440,7 @@ default
         }
         else
         {
-             llSay(0, "Emptying...");
+            llSay(0, "Emptying...");
             key id = llDetectedKey(0);
             osMessageObject(id,  "DIE|"+(string)llGetKey());
         }
@@ -342,13 +448,33 @@ default
     
     no_sensor()
     {
-       if (sense == "AutoWater")
+        if (sense == "AutoWater")
            llSay(0, "Error! Water tower not found within 96m. Auto-watering NOT working!");
         else
-             llSay(0, "Error! Not found! You must bring it near me!");
-          sense = "";
+           llSay(0, "Error! Not found! You must bring it near me!");
+        sense = "";
     }
 
-    
+    link_message(integer sender, integer val, string m, key id)
+    {
+        if (val ==99) return; // Dont listen to self
+
+        list tok = llParseString2List(m, ["|"], []);
+        string cmd = llList2String(tok,0);
+        if (cmd == "SET_MENU_OPTIONS")  // Add custom dialog menu options. 
+        {
+            customOptions = llList2List(tok, 1, -1);
+        }
+        else if (cmd == "SETSTATUS")    // Change the status of this plant
+        {
+            status = llList2String(tok, 1);
+            statusLeft = statusDur = llList2Integer(tok, 2);
+            refresh(llGetUnixTime());
+        }
+        else if (cmd == "HARVEST")    // Change the status of this plant
+        {
+                doHarvest();  // Status must be "Ripe"
+        }
+    }
 }
 
