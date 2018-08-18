@@ -38,7 +38,7 @@ list haveIngredients;
 vector rezzPosition = <1,0,0>; // Position of the product to rezz
 integer timeToCook; // in seconds
 string objectToGive; // Name of the object to give after done cooking
-string productAge; // How many days the final product can last
+string productAge = "10"; // How many days the final product can last
 string lookingFor;
 
 integer waitForSensed=0;
@@ -189,7 +189,8 @@ setRecipe(string nm)
                 ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
                 timeToCook   = llList2Integer(tok, 2);
                 objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
-                productAge = llList2String(tok, 4);
+                if (llList2String(tok,4) != "")
+                    productAge = llList2String(tok, 4);
                 llMessageLinked(LINK_SET, 1, "SELECTEDRECIPE|" + llDumpList2String(tok, "|"), "");
                 haveIngredients = [];
                 integer kk = llGetListLength(ingredients);
