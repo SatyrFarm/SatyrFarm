@@ -5,8 +5,8 @@ integer chan(key u)
     return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
 }
 
-list products = ["Apples", "Oranges","Cherries", "Lemons" , "Grapes" , "Tomatoes"  , "Eggplants" , "Potatoes"  , "Peppers" , "Rice" , "Grain" , "Corn" , "Flour", "Olive Oil", "Honey", "Strawberries", "Onions"];
-list levels = [5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5];
+list products = [];
+list levels = [];
 
 integer listener=-1;
 integer listenTs;
@@ -290,6 +290,7 @@ default
         }
     }
     
+
     no_sensor()
     {
 
@@ -301,6 +302,19 @@ default
     {
         lastTs = llGetUnixTime();
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        
+        //BW Load products and levels dynamically
+        integer i;
+        for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
+        {
+            if (llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),0 ,2) == "SF ")
+            {
+                products += llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),3,-1);
+                levels += 10;
+            }
+        }
+        llOwnerSay(llList2CSV(products));
+        
         llSetTimerEvent(1);
     }   
     
