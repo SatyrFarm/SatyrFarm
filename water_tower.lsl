@@ -34,7 +34,7 @@ checkListen()
 
 
 float food=0.;
-float water=50.;
+float water=100.;
 integer lastFood=0;
 integer lastWater=0;
 integer lastTs;
@@ -154,9 +154,7 @@ default
             else if (llList2String(cmd,0) == "GIVEWATER")
             {
                    ////if (llSameGroup(llList2Key(cmd, 2)))
-                   ///llSameGroup() does not work in opensim 082
-                   
-                   
+                   ///llSameGroup() does not work in opensim 082               
                 if (llList2Key(llGetObjectDetails(llGetKey(), [OBJECT_GROUP]), 0) == llList2Key(llGetObjectDetails(llList2Key(cmd, 2), [OBJECT_GROUP]), 0))
              
                 {
