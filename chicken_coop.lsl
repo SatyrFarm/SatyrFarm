@@ -55,8 +55,8 @@ integer autoFood = 0;
 string lookFor;
 
 
-float water=10.;
-float food = 0.;
+float water=20.;
+float food = 20.;
 
 float eggs;
 float meat=0;
