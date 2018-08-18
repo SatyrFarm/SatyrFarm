@@ -9,14 +9,9 @@ integer isEnabled =0;
 string PASSWORD="";
 integer EXPIRES = -1;
 integer DRINKABLE = -1;
+integer PARTS = 1;
 vector FLOWCOLOR=<1.000, 0.805, 0.609>;
 key POURSND = "e12bc097-609b-4912-8ba0-3569b9a8d5a9";
-
-integer chan(key u)
-{
-    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
-}
-
 
 
 string myName()
@@ -31,7 +26,14 @@ refresh()
     string str = myName() + "\nExpires in "+(string)(EXPIRES-days)+ " days\n";
     
     if (DRINKABLE>0) 
-        str += "Not ready yet ... " +(DRINKABLE-days)+" days left";
+    {
+        str += "Not ready yet ... " +(DRINKABLE-days)+" days left\n";
+    }
+
+    if (PARTS>1)
+    {
+       str += (string)PARTS + "  Uses";
+    }
         
     llSetText( str, <1,1,1>, 1.0);
 
@@ -40,6 +42,7 @@ refresh()
         llSay(0, "I have expired! Removing...");
         llDie();
     }
+
 }
 
 
@@ -96,11 +99,6 @@ default
         llResetScript();
     }
     
-    state_entry()
-    {
-       // llListen(chan(llGetKey()), "", "", "");
-    }
-    
     timer()
     {
 
@@ -140,7 +138,7 @@ default
            return;
         }
         
-        //refresh();
+        refresh();
         llSetTimerEvent(900);
     }
     
@@ -148,20 +146,21 @@ default
     {
 
         llParticleSystem([]);
-        if (!llSameGroup(llDetectedKey(0))) return;
-        
-        if (followUser == NULL_KEY)
-        {            
-            followUser = llDetectedKey(0);            
-            ///llSay(0,"Following you. Touch again to stop.");
-            llSetTimerEvent(1.);
-        }
-        else
+        if (llSameGroup(llDetectedKey(0))|| osIsNpc(llDetectedKey(0)))
         {
-            llSetKeyframedMotion( [], []);
-            followUser = NULL_KEY;
-            llSleep(.2);
-            llSetPos( llGetPos()- <0,0, uHeight-.2> );
+            if (followUser == NULL_KEY)
+            {            
+                followUser = llDetectedKey(0);            
+                ///llSay(0,"Following you. Touch again to stop.");
+                llSetTimerEvent(1.);
+            }
+            else
+            {
+                llSetKeyframedMotion( [], []);
+                followUser = NULL_KEY;
+                llSleep(.2);
+                llSetPos( llGetPos()- <0,0, uHeight-.2> );
+            }
         }
     }
 
@@ -174,7 +173,6 @@ default
 
         if (llList2String(tk,0)== "DIE")
         {
-        
             refresh();
             integer days = llFloor((llGetUnixTime()- lastTs)/86400);
             if (DRINKABLE>0 && days < DRINKABLE)
@@ -188,7 +186,13 @@ default
             water(u);
             llSleep(2);
             osMessageObject(u, llToUpper(myName())+"|"+PASSWORD);
-            llDie();
+            --PARTS;
+            if (PARTS <= 0)
+            {
+                llDie();
+            }
+            llSetRot(llEuler2Rot(<0,0,0>));
+            refresh();
         }
         else if (llList2String(tk,0)== "INIT")
         {
