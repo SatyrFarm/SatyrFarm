@@ -1,0 +1,10 @@
+#POS=<0,0,2>
+# 1. Name of Recipe
+# 2. Needed Items
+# 3. Time to cook
+# 4. Final Product to rezz
+# 5. maximum ge of the final Product
+Bread=Flour,Water,Olive Oil,Wood=300=SF Bread=10
+Pizza=Flour,Water,Wood,Tomatoes,Cheese,Peppers=300=SF Pizza=10
+Strawberry Cake=Flour,Eggs,Strawberries,Wood=300=SF Strawberry Cake=10
+Cherry Cake=Flour,Eggs,Cherries,Wood=300=SF Cherry Cake=10
