@@ -1,4 +1,4 @@
-/** #prod_gen.lsl
+/** #prod_gen_multi.lsl
 
 This goes inside all the 'product' items, i.e. products rezzed by wells, plants and by processing machines. 
 Configuration  of the product goes in the 'config' notecard. 
