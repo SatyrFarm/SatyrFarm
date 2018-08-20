@@ -27,7 +27,6 @@ EXTRAPARAM=Nutrition:1,10,1,2
 
 **/ 
 
-
 key followUser=NULL_KEY;
 float uHeight=0;
 integer lastTs;
@@ -37,11 +36,6 @@ integer DRINKABLE = -1;
 integer PARTS = 1;
 vector FLOWCOLOR=<1.000, 0.805, 0.609>;
 string extraParam; // Params to be passed from config notecard to the target object
-
-integer chan(key u)
-{
-    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
-}
 
 
 
@@ -53,12 +47,21 @@ string myName()
 refresh()
 {
     integer days = llFloor((llGetUnixTime()- lastTs)/86400);
+    string str = myName() + "\n";
     
-    string str = myName() + "\nExpires in "+(string)(EXPIRES-days)+ " days\n";
-    
-    if (DRINKABLE>0) 
+    if (EXPIRES>0)
     {
-        str += "Not ready yet ... " +(DRINKABLE-days)+" days left\n";
+        str += "Expires in "+(string)(EXPIRES-days)+ " days\n";
+        if (days > EXPIRES)
+        {
+            llSay(0, "I have expired! Removing...");
+            llDie();
+        }
+    }
+    
+    if ((DRINKABLE-days)>0) 
+    {
+        str += "Not ready yet ... " +(string)(DRINKABLE-days)+" days left\n";
     }
 
     if (PARTS>1)
@@ -67,13 +70,6 @@ refresh()
     }
         
     llSetText( str, <1,1,1>, 1.0);
-
-    if (EXPIRES>0 && days > EXPIRES)
-    {
-        llSay(0, "I have expired! Removing...");
-        llDie();
-    }
-
 }
 
 
@@ -142,6 +138,7 @@ loadConfig()
                     else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
                     else if (cmd == "EXTRAPARAM")     extraParam = val;
             }
+
         }
     }
 }
@@ -186,7 +183,7 @@ default
                     if (t > 5) t = 5;    
                     vector vn = llVecNorm(v  - mypos );
                     vn.z=0;
-                    rotation r2 = llRotBetween(<1,0,0>,vn);
+                    //rotation r2 = llRotBetween(<1,0,0>,vn);
 
                     kf += v- mypos;
                     kf += ZERO_ROTATION;
@@ -225,14 +222,12 @@ default
         }
     }
 
-   // listen(integer c, string n, key id, string msg)
     dataserver(key id, string msg)
     {
-       
-        
         list tk = llParseStringKeepNulls(msg, ["|"], []);
 
-        if (llList2String(tk,0)== "DIE")
+        string cmd = llList2String(tk, 0);
+        if (cmd == "DIE")
         {
             refresh();
             integer days = llFloor((llGetUnixTime()- lastTs)/86400);
@@ -255,15 +250,24 @@ default
             llSetRot(llEuler2Rot(<0,0,0>));
             refresh();
         }
-        else if (llList2String(tk,0)== "INIT")
+        else if (cmd == "INIT")
         {        
-            // rez | SF WATER| pos
             PASSWORD = llList2String(tk,1);
-            //if (EXPIRES   <0)                EXPIRES =  llList2Integer(tk,2);
-            //if (DRINKABLE <0)                 DRINKABLE =  llList2Integer(tk,3);
-            //FLOWCOLOR = llList2Vector(tk,4);
-            //if (llList2Integer(tk,5)>0 )                PARTS = llList2Integer(tk,5);
             reset();
+        }
+        else if (cmd == "SET")
+        {
+            if(llList2String(tk, 1) != PASSWORD)
+            {
+                return;
+            }
+            integer days = llFloor((llGetUnixTime()- lastTs)/86400);
+            integer found_expire = llListFindList(tk, ["EXPIRE"]) + 1;
+            integer found_drinkable = llListFindList(tk, ["MATURATION"]) + 1;
+            integer found_parts = llListFindList(tk, ["USES"]) + 1;
+            if (found_expire) EXPIRES = days + llList2Integer(tk, found_expire);
+            else if (found_drinkable) DRINKABLE = days + llList2Integer(tk, found_drinkable);
+            else if (found_parts) PARTS = llList2Integer(tk, found_parts);
         }
     }
 }
