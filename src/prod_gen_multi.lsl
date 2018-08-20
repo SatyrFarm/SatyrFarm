@@ -246,19 +246,25 @@ default
             PASSWORD = llList2String(tk,1);
             reset();
         }
-        else if (cmd == "SET")
+        //following commands require correct password
+        if(llList2String(tk, 1) != PASSWORD)
         {
-            if(llList2String(tk, 1) != PASSWORD)
-            {
-                return;
-            }
-            integer days = llFloor((llGetUnixTime()- lastTs)/86400);
+            return;
+        }
+        integer days = llFloor((llGetUnixTime()- lastTs)/86400);
+        if (cmd == "SET")
+        {
             integer found_expire = llListFindList(tk, ["EXPIRE"]) + 1;
             integer found_drinkable = llListFindList(tk, ["MATURATION"]) + 1;
             integer found_parts = llListFindList(tk, ["USES"]) + 1;
             if (found_expire) EXPIRES = days + llList2Integer(tk, found_expire);
             else if (found_drinkable) DRINKABLE = days + llList2Integer(tk, found_drinkable);
             else if (found_parts) PARTS = llList2Integer(tk, found_parts);
+        }
+        else if (cmd == "GETSTATUS")
+        {
+            key idr = llList2Key(tk, 2);
+            osMessageObject(idr, "PRODSTATUS|USES|" + (string)PARTS + "|EXPIRE|" + (string)(EXPIRES-days) + "|READY|" + (string)(DRINKABLE-days));
         }
     }
 }
