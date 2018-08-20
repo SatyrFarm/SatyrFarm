@@ -1,3 +1,10 @@
+/** 
+Storage rack - stores multiple products. The script scans its inventory to generate the list of products automatically. 
+It uses the linked prims with the same name to set text   with the status of each product. E.g. for SF Olives the linked prim named 
+"Olives" is used to show the text about  the  current level  of SF Olives.
+
+**/
+
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer chan(key u)
@@ -163,7 +170,7 @@ default
         else if (m == ">>")
         {
             startOffset += 10;
-            if (startOffset >= llGetListLength(products)) startOffset=0;
+            if (startOffset >llGetListLength(products)) startOffset=0;
             dlgSell(id);
         }
         else if (m == "Add Product")
