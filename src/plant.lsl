@@ -1,14 +1,42 @@
-/* 
-    This script is common for plant fields , grapes and trees
-    For custom values use the 'config' notecard
-    For custom plugin scripting, see the link_message event 
- */
+/** #plant.lsl
+
+This script is common for trees, plant fields, grapes etc.  It supports multiple plants. 
+To add a new plant, e.g. Mango:
+1. Create 3 textures, 'Mango-New' for the new plant, 'Mango-Growing' for the growing phase, 'Mango-Ripe' for the ripe phase. 
+2. Create an SF Mango object by copying another product, changing its Object name to "SF Mango", or by creating one from scratch (See the prod_gen_multi script)
+3. Add the textures and the SF Mango object inside the plant's contents. 
+4. Add the product in the 'config' notecard (see below)
+
+Configuration for the plant goes in the 'config' notecard. Example of config notecard:
+
+#Names of supported plants, separated with comma (No SF prefix)
+PLANTLIST=Orange Tree,Apple Tree,Cherry Tree,Lemon Tree
+#
+#Names of products each plant rezzes (With SF prefix)
+PRODUCTLIST=SF Oranges,SF Apples,SF Cherries,SF Lemons
+#
+#Days in the growing period. The plant will spend LIFEDAYS/3 time in the New phase, so total days to become ripe is LIFEDAYS*1.3
+LIFEDAYS=3
+#
+#Whether this plant gives wood. If yes, the SF Wood object must be in the contents
+HAS_WOOD=1
+#
+#How many times to water the plant during the growing phase
+WATER_TIMES=4
+#
+#How many times to give wood during the  growing phase
+WOOD_TIMES=1
+
+For scripting plugins, check the code below for the emitted link_messages
+**/
 
 float LIFETIME = 86400*2.;
 float WATER_TIMES = 2.;
 list PLANTS = []; 
+list PRODUCTS = [];
 float WOOD_TIMES = 4.;
-integer IS_TREE = 0;
+integer HAS_WOOD=0;
+integer AUTOREPLANT=0;
 
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
@@ -71,11 +99,19 @@ loadConfig()
                 string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
                 string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
                 //llOwnerSay(cmd+"="+val);
-                if (cmd =="PRODUCT") PRODUCT_NAME = val;
-                else if (cmd == "IS_TREE")     IS_TREE= (integer)val;  // Trees dont need replanting after harvest
-                else if (cmd == "LIFETIME")    LIFETIME= (integer)val;
+                
+                if (cmd == "HAS_WOOD")     HAS_WOOD= (integer)val;  // Trees dont need replanting after harvest
+                else if (cmd == "LIFEDAYS")    LIFETIME= 86400*(float)val;
                 else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
-                else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;                
+                else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;
+                else if (cmd == "PLANTLIST")
+                {
+                    PLANTS = llParseString2List(val, [","], []);
+                }
+                else if (cmd == "PRODUCTLIST")
+                {
+                    PRODUCTS = llParseString2List(val, [","], []);
+                }
         }
     }
 }
@@ -145,7 +181,7 @@ refresh(integer ts)
     {
         status = "Dead";
     }
-    else if (water <= 5. && status != "Ripe")
+    else if (water <= 5.)
     {
         progress += "NEEDS WATER!\n";
         isWilted=1;
@@ -174,7 +210,7 @@ refresh(integer ts)
             }
             else if (status == "Ripe") 
             {
-                if (IS_TREE)
+                if (AUTOREPLANT)
                 {
                     status = "New";
                     statusLeft   = statusDur =  (integer) LIFETIME/3;
@@ -200,7 +236,7 @@ refresh(integer ts)
     float sw = water;
     if (sw< 0) sw=0;
 
-    if (IS_TREE)
+    if (HAS_WOOD)
         llSetText("Water: " + (integer)(sw)+ "%\nWood: "+(string)(llFloor(wood))+"%\n"+progress, <1,.9,.6>, 1.0);
     else
         llSetText("Water: " + (integer)(sw)+ "%\n"+progress, <1,.9,.6>, 1.0);
@@ -212,10 +248,7 @@ refresh(integer ts)
     else
     {
         llSetLinkColor(2, <1,1,1>, ALL_SIDES);
-        if (IS_TREE)
-            llSetLinkTexture(2, status, ALL_SIDES);
-        else
-            llSetLinkTexture(2, plant+"-"+status, ALL_SIDES);
+        llSetLinkTexture(2, plant+"-"+status, ALL_SIDES);
     }
     
     if (isWilted)
@@ -225,7 +258,7 @@ refresh(integer ts)
         
     psys(NULL_KEY);
 
-    llMessageLinked(LINK_SET, 99, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water, NULL_KEY);
+    llMessageLinked(LINK_SET, 99, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|"+plant, NULL_KEY);
 }
 
 doHarvest()
@@ -233,9 +266,9 @@ doHarvest()
     if (status == "Ripe")
     {
          llRezObject(PRODUCT_NAME , llGetPos() + <0,0,2>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1);
-         //llRegionSay(FARM_CHANNEL, "REZ|SF Rice|"+(string)(llGetPos() + <0,0,2>*llGetRot()) + "|" );
          llSay(0, "Congratulations! Your harvest is ready!");
-         if (IS_TREE)
+         
+         if (AUTOREPLANT)
          {
             statusDur = statusLeft = (integer)(LIFETIME/3.);
             status = "New";
@@ -263,6 +296,8 @@ default
     
     state_entry()
     {
+
+
         loadConfig();
 
         lastTs = llGetUnixTime();
@@ -271,21 +306,9 @@ default
         refresh(lastTs);
         
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-
-        if (!IS_TREE)
-        {
-            //BW Load products and levels dynamically
-            integer i;
-            for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
-            {
-                if (llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),0 ,2) == "SF ")
-                    PLANTS += llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),3,-1);
-            }
-            llOwnerSay(llList2CSV(PLANTS));
-        }
         
-        llSetTimerEvent(1);
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
+        llSetTimerEvent(1);
     }
 
 
@@ -304,7 +327,7 @@ default
            if (autoWater) opts += "AutoWater Off";
            else opts += "AutoWater On";
            
-           if (IS_TREE && wood>=100.) opts += "Get Wood";
+           if (HAS_WOOD && wood>=100.) opts += "Get Wood";
            
            if (status == "Growing")
                opts += "Add Manure";
@@ -338,22 +361,10 @@ default
         }
         else if (m == "Plant")
         {
-            if (IS_TREE)
-            {
-                statusDur = 60;
-                if (water <0) water =0;
-                lastTs = llGetUnixTime();     
-                status="New";       
-                statusLeft = statusDur = (integer)(LIFETIME/3.);
-                llSay(0, "Planted!");
-                llTriggerSound("lap", 1.0);
-                refresh(llGetUnixTime());
-            }
-            else
-            {
-                mode = "SelectPlant";
-                llDialog(id, "Select Plant", PLANTS+["CLOSE"], chan(llGetKey()));
-            }
+
+            mode = "SelectPlant";
+            llDialog(id, "Select Plant", PLANTS+["CLOSE"], chan(llGetKey()));
+
         }
         else if (m == "AutoWater On" || m == "AutoWater Off")
         {
@@ -374,15 +385,19 @@ default
         }
         else if (mode == "SelectPlant")
         {
-            plant = m;
-            PRODUCT_NAME = "SF "+plant;     
-            statusLeft = statusDur = (integer)(LIFETIME/3.);
-            status="New";
-            if (water <0) water =0;
-            lastTs = llGetUnixTime();
-            llSay(0, m+" Planted!");
-            llTriggerSound("lap", 1.0);
-            refresh(llGetUnixTime());
+            integer idx = llListFindList(PLANTS, m);
+            if (idx>=0)
+            {
+                plant = llStringTrim(llList2String(PLANTS, idx), STRING_TRIM);
+                PRODUCT_NAME = llStringTrim( llList2String(PRODUCTS, idx) , STRING_TRIM);
+                statusLeft = statusDur = (integer)(LIFETIME/3.);
+                status="New";
+                if (water <0) water =0;
+                lastTs = llGetUnixTime();
+                llSay(0, m+" Planted!");
+                llTriggerSound("lap", 1.0);
+                refresh(llGetUnixTime());
+            }
             mode = "";
         }
         else
