@@ -1,10 +1,19 @@
-//### kitchen.lsl
+/**
+### kitchen.lsl
+
+config parameters:
+
+REZ_POS=<1,1,1>     # Default rez position relative to root. Can be overridden in the RECIPES notecard with the RezPos:<x,y,z> optional parameter
+SENSOR_DISTANCE=10  # How far to search (radius) when searching for ingredients to add
+
+**/
+
+
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer listener=-1;
 integer listenTs;
 integer startOffset =0;
-
 
 
 string status;
