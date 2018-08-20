@@ -1,15 +1,32 @@
 //### kitchen.lsl
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
+integer listener=-1;
+integer listenTs;
+integer startOffset =0;
+
+
+
+string status;
+integer steppedOn;
+
+list recipeNames;
+string recipeName;
+list ingredients; 
+list haveIngredients;
+vector rezzPosition = <1,0,0>; // Position of the product to rezz
+integer timeToCook; // in seconds
+string objectToGive; // Name of the object to give after done cooking
+integer SENSOR_DISTANCE = 5;
+
+string lookingFor;
+
+
 integer chan(key u)
 {
     return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
 }
 
-
-integer listener=-1;
-integer listenTs;
-integer startOffset = 0;
 
 startListen()
 {
@@ -29,6 +46,31 @@ checkListen()
     }
 }
 
+
+
+
+loadConfig()
+{
+    if (llGetInventoryType("config") != INVENTORY_NOTECARD) return;
+    
+    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+    integer i;
+    for (i=0; i < llGetListLength(lines); i++)
+    {
+        list tok = llParseString2List(llList2String(lines,i), ["="], []);
+        if (llList2String(tok,1) != "")
+        {
+                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                
+                if (cmd == "SENSOR_DISTANCE")     SENSOR_DISTANCE = (integer)val;   // How far to look for items
+                else if (cmd == "REZ_POS")     rezzPosition = (vector)val;          // Default rez position 
+        }
+    }
+}
+
+
+
 multiPageMenu(key id, string message, list buttons)
 {
     integer l = llGetListLength(buttons);
@@ -44,20 +86,6 @@ multiPageMenu(key id, string message, list buttons)
     llDialog(id, message, ["CLOSE"]+its+[">>"], ch);
 }
 
-string status;
-integer steppedOn;
-
-list recipeNames;
-string recipeName;
-list ingredients; 
-list haveIngredients;
-vector rezzPosition = <1,0,0>; // Position of the product to rezz
-integer timeToCook; // in seconds
-string objectToGive; // Name of the object to give after done cooking
-string productAge = "10"; // How many days the final product can last
-string lookingFor;
-
-integer waitForSensed=0;
 
 
 psys(key k)
@@ -86,7 +114,7 @@ psys(key k)
                     PSYS_SRC_MAX_AGE,2,
                     PSYS_PART_MAX_AGE,5,
                     PSYS_SRC_BURST_RATE, 10,
-                    PSYS_SRC_BURST_PART_COUNT, 30,
+                    PSYS_SRC_BURST_PART_COUNT, 10,
                     PSYS_SRC_ACCEL,<0.000000,0.000000,0.000000>,
                     PSYS_SRC_OMEGA,<0.000000,0.000000,0.000000>,
                     PSYS_SRC_BURST_SPEED_MIN, 0.1,
@@ -156,12 +184,7 @@ refresh()
         psys(NULL_KEY);
     }
     else 
-    {
-        if (listener<0)
-            llSetTimerEvent(0.0);
-        else
-            llSetTimerEvent(300); 
-    }
+        llSetTimerEvent(900);    
     llSetText(str , <1,1,1>, 1.0);
 }
 
@@ -182,10 +205,6 @@ getRecipeNames()
             {
                 names += name;
             }
-        }
-        else if (llSubStringIndex(line, "#POS=") == 0)
-        {
-            rezzPosition = (vector)llGetSubString(line, 5, -1);
         }
     }
     recipeNames = names;
@@ -208,17 +227,24 @@ setRecipe(string nm)
                 ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
                 timeToCook   = llList2Integer(tok, 2);
                 objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
-                if (llList2String(tok,4) != "")
-                    productAge = llList2String(tok, 4);
+
                 llMessageLinked(LINK_SET, 1, "SELECTEDRECIPE|" + llDumpList2String(tok, "|"), "");
                 haveIngredients = [];
                 integer kk = llGetListLength(ingredients);
                 while (kk-->0)
                     haveIngredients += [0]; //Fill the list with zeros
-                                
                 recipeName = name;
                 status = "Adding";
                 llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
+                
+
+                rezzPosition = <1,0,0>;
+                // Set/override optional parameters
+                for (kk=4; kk <llGetListLength(tok); kk++)
+                {
+                    list otok = llParseString2List(llList2String(tok, kk), [":"], []);
+                    if (llList2String(otok,0) == "RezPos") rezzPosition = llList2Vector(otok, 1);
+                }
                 return;
             }
         }
@@ -229,7 +255,9 @@ setRecipe(string nm)
 
 dlgIngredients(key u)
 {
-    list opts = ["ABORT"];
+    list opts = [];
+    opts += "ABORT";
+    
     string t = "Add an ingredient";
     integer i;
     for (i=0; i < llGetListLength(haveIngredients); i++)
@@ -242,6 +270,7 @@ dlgIngredients(key u)
                 opts +=  llStringTrim(llList2String(possible, j), STRING_TRIM);
         }
     }
+    
     multiPageMenu(u, t, opts);
 }
 
@@ -250,17 +279,14 @@ default
 
     object_rez(key id)
     {
-        llSleep(.5);
-        osMessageObject(id,  "INIT|"+PASSWORD+"|"+productAge+"|-1|<1.000, 0.965, 0.773>|");
+        llSleep(.4);
+        osMessageObject(id,  "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
     }
     
     
     listen(integer c, string nm, key id, string m)
     {
-        if (m == "CLOSE")
-        {
-            refresh();
-        }
+        if (m == "CLOSE") return;
         else if (m == "ABORT" )
         {
             recipeName = "";
@@ -273,7 +299,6 @@ default
         {
             multiPageMenu(id, "Menu", recipeNames);
             status = m;
-            return;
         }
         else if (status == "Recipes")
         {
@@ -283,24 +308,29 @@ default
                 multiPageMenu(id, "Menu", recipeNames);
                 return;
             }
+            
             setRecipe(m);
             refresh();
         }
         else if (status == "Adding")
         {
-            if (m == ">>")
+            
             {
-                startOffset += 10;
-                dlgIngredients(id);
-                return;
+                //string what = m;
+                //integer idx = llListFindList(ingredients, m);
+                //if (idx>=0)
+                {
+                    lookingFor = "SF "+m; //llList2String(ingredients,idx);
+                    llSay(0, "Looking for: " + lookingFor);
+                    llSensor(lookingFor , "",SCRIPTED,  SENSOR_DISTANCE, PI);
+                }
+                refresh();
             }
-            lookingFor = "SF "+m; //llList2String(ingredients,idx);
-            llSay(0, "Looking for: " + lookingFor);
-            llSensor(lookingFor , "",SCRIPTED,  5, PI);
-            refresh();
+            
         }
-        llListenRemove(listener);
-        listener = -1;
+        else
+        { 
+        }
     }
     
     dataserver(key k, string m)
@@ -336,8 +366,10 @@ default
     
     timer()
     {
-        checkListen();
         refresh();
+       
+        checkListen();
+
     }
 
     touch_start(integer n)
@@ -348,13 +380,11 @@ default
             return;
         }
         
-        startListen();
-        refresh();
+        
         list opts = [];       
         string t = "Select";
         if (status == "Adding")
         {
-            startOffset = 0; 
             dlgIngredients(llDetectedKey(0));
             return;
         }
@@ -365,16 +395,22 @@ default
         }
         else
         {
+            
+
             opts += "Recipes";
             opts += "CLOSE";
 
         }
+        
+        
+        startListen();
+
         llDialog(llDetectedKey(0), t, opts, chan(llGetKey()));
+
     }
     
     sensor(integer n)
     {   
-        waitForSensed =1;
         llSay(0, "Found "+llDetectedName(0)+", emptying...");
         key id = llDetectedKey(0);
         osMessageObject( id,  "DIE|"+(string)llGetKey());
@@ -391,6 +427,7 @@ default
         refresh();
         llSetTimerEvent(300);
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        loadConfig();
         getRecipeNames();
     } 
 
@@ -406,5 +443,7 @@ default
     {
         llResetScript();
     }
+    
+
 }
 
