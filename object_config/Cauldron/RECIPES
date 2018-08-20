@@ -1,11 +1,33 @@
-#1. Name of Recipe
-#2. Needed items
-#3. Time for cooking
-#4. Name of final Product to rezz
-#5. Age that final product can last
-#6. Name of texture for liquid
-#7. Water effect (yes/no)
-Sea Salt=Sea Water=900=SF Sea Salt=100=salt=yes
-Curd=Milk,Milk,Sea Salt,Rennet=900=SF Curd=10=cheese=no
-Sugar=Sugar Extract=600=SF Sugar=100=sugar=yes
-Slop=Corn or Grain or Rice or Apples or Meat or Tomatoes or Potatoes or Grapes or Fish or Chicken,Water=60=SF Slop=10=slop=no
+# Mandatery Options:
+# INGREDIENTS, PRODUCT
+# Possible Options:
+# DURATION, REZZ_POSITION, RADIUS
+# (default values can be set in the "config" notecard)
+# Options for AddOn:
+# FLUID_TEXTURE, IN_WATER
+# Last line has to be [END]
+[Sea Salt]
+    INGREDIENTS=Sea Water
+    DURATION=900
+    PRODUCT=SF Sea Salt
+    FLUID_TEXTURE=salt
+    IN_WATER=yes
+[Curd]
+    INGREDIENTS=Milk,Milk,Sea Salt,Rennet
+    DURATION=900
+    PRODUCT=SF Curd
+    FLUID_TEXTURE=cheese
+    IN_WATER=no
+[Sugar]
+    INGREDIENTS=Sugar Extract
+    DURATION=600
+    PRODUCT=SF Sugar
+    FLUID_TEXTURE=sugar
+    IN_WATER=yes
+[Slop]
+    INGREDIENTS=Corn or Grain or Rice or Apples or Meat or Tomatoes or Potatoes or Grapes or Fish or Chicken,Water
+    DURATION=60
+    PRODUCT=SF Slop
+    FLUID_TEXTURE=slop
+    IN_WATER=no
+[END]
