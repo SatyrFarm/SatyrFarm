@@ -30,6 +30,7 @@ WOOD_TIMES=1
 For scripting plugins, check the code below for the emitted link_messages
 **/
 
+
 float LIFETIME = 86400*2.;
 float WATER_TIMES = 2.;
 list PLANTS = []; 
