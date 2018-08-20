@@ -1,13 +1,23 @@
 /**
 ### kitchen.lsl
 
-config parameters:
+Common script used by all food processing machines, e.g. juice maker, oven etc.
+
+Supported options in notecard 'config':
 
 REZ_POS=<1,1,1>     # Default rez position relative to root. Can be overridden in the RECIPES notecard with the RezPos:<x,y,z> optional parameter
 SENSOR_DISTANCE=10  # How far to search (radius) when searching for ingredients to add
 
-**/
 
+format of RECIPES notecard:
+
+# Recipe Name = Ingredients (Without SF part)  =  Time to cook = Output object (With SF part) = Optional parameters between '=' specified as ParamName:ParamValue pairs
+# Example:
+Barbeque=Chicken or Meat,Wood,Salt=200=SF Barbeque=RezPos:<2,0,1>=OptionalParam2:Value2=OptionalParam3:Value3
+
+# Optional param: RezPos:<x,y,z>   # Overrides the default Rez position for cooked products.
+
+**/
 
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
