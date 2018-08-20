@@ -246,6 +246,7 @@ getRecipeNames()
     if (llGetSubString(llList2String(ltok,0),0,0) != "#")
     {
         getRecipeNamesOld();
+        return;
     }
     //-- end cpmpatibility section
     integer l;
@@ -310,6 +311,7 @@ setRecipe(string nm)
     if (llGetSubString(llList2String(ltok,0),0,0) != "#")
     {
         setRecipeOld(nm);
+        return;
     }
     //-- end cpmpatibility section
     integer rel = FALSE;
