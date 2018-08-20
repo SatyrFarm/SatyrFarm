@@ -1,17 +1,45 @@
+/** #prod_gen.lsl
+
+This goes inside all the 'product' items, i.e. products rezzed by wells, plants and by processing machines. 
+Configuration  of the product goes in the 'config' notecard. 
+Example of 'config' notecard:
+# start config
+#How many days until the product expires (dies)
+EXPIRES=15
+#
+#A product may be used more than 1 times before it is empty. How many times?
+PARTS=5
+#
+#(Optional) When emptying the product, what color are the  particles rezzed?
+FLOWCOLOR=<1.000, 0.805, 0.609>
+#
+#(Optional)Some products require some days to mature before they  are ready to  be used (e.g. wine) . How many days to spend in maturation?
+MATURATION=10
+# end config
+
+
+(optional) Drop a sound inside the product object that will be played when using the object
+(optional) Drop a texture inside the product for the particles rezzed when used
+
+**/ 
+
 integer FARM_CHANNEL = -911201;
 
 key followUser=NULL_KEY;
 float uHeight=0;
-float OFFSET=1.;
-integer moving=0;
 integer lastTs;
-integer isEnabled =0;
 string PASSWORD="";
 integer EXPIRES = -1;
 integer DRINKABLE = -1;
 integer PARTS = 1;
 vector FLOWCOLOR=<1.000, 0.805, 0.609>;
-key POURSND = "e12bc097-609b-4912-8ba0-3569b9a8d5a9";
+
+
+integer chan(key u)
+{
+    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
+}
+
 
 
 string myName()
@@ -32,7 +60,7 @@ refresh()
 
     if (PARTS>1)
     {
-       str += (string)PARTS + "  Uses";
+       str += (string)PARTS + " Uses left\n";
     }
         
     llSetText( str, <1,1,1>, 1.0);
@@ -91,12 +119,38 @@ reset()
     refresh();
 }
 
+
+loadConfig()
+{   
+    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+    integer i;
+    for (i=0; i < llGetListLength(lines); i++)
+    {
+        list tok = llParseString2List(llList2String(lines,i), ["="], []);
+        if (llList2String(tok,1) != "")
+        {
+                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                if (cmd =="EXPIRES") EXPIRES = (integer)val;
+                else if (cmd == "PARTS")     PARTS = (integer)val;
+                else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
+                else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
+        }
+    }
+}
+
 default
 {
 
     on_rez(integer n)
     {
         llResetScript();
+    }
+    
+    state_entry()
+    {
+        loadConfig();
+        llSetText("", <1,1,1>, 1.0);
     }
     
     timer()
@@ -195,20 +249,13 @@ default
             refresh();
         }
         else if (llList2String(tk,0)== "INIT")
-        {
-        
+        {        
             // rez | SF WATER| pos
             PASSWORD = llList2String(tk,1);
-           
-            if (EXPIRES   <0)
-                EXPIRES =  llList2Integer(tk,2);
-
-            if (DRINKABLE <0) 
-                DRINKABLE =  llList2Integer(tk,3);
-
-            FLOWCOLOR = llList2Vector(tk,4);        
-            if (llList2String(tk,5) != "")
-                POURSND = llList2Key(tk,5);
+            //if (EXPIRES   <0)                EXPIRES =  llList2Integer(tk,2);
+            //if (DRINKABLE <0)                 DRINKABLE =  llList2Integer(tk,3);
+            //FLOWCOLOR = llList2Vector(tk,4);
+            //if (llList2Integer(tk,5)>0 )                PARTS = llList2Integer(tk,5);
             reset();
         }
     }
