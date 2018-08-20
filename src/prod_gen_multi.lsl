@@ -15,6 +15,10 @@ FLOWCOLOR=<1.000, 0.805, 0.609>
 #
 #(Optional)Some products require some days to mature before they  are ready to  be used (e.g. wine) . How many days to spend in maturation?
 MATURATION=10
+#
+#(Optional)Extra parameter that will be passed to the consumer of this
+EXTRAPARAM=Nutrition:1,10,1,2
+
 # end config
 
 
@@ -23,7 +27,6 @@ MATURATION=10
 
 **/ 
 
-integer FARM_CHANNEL = -911201;
 
 key followUser=NULL_KEY;
 float uHeight=0;
@@ -33,7 +36,7 @@ integer EXPIRES = -1;
 integer DRINKABLE = -1;
 integer PARTS = 1;
 vector FLOWCOLOR=<1.000, 0.805, 0.609>;
-
+string extraParam; // Params to be passed from config notecard to the target object
 
 integer chan(key u)
 {
@@ -126,15 +129,19 @@ loadConfig()
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
     {
-        list tok = llParseString2List(llList2String(lines,i), ["="], []);
-        if (llList2String(tok,1) != "")
+        if (llGetSubString(llList2String(lines,i), 0, 0) != "#")
         {
-                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
-                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
-                if (cmd =="EXPIRES") EXPIRES = (integer)val;
-                else if (cmd == "PARTS")     PARTS = (integer)val;
-                else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
-                else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
+            list tok = llParseString2List(llList2String(lines,i), ["="], []);
+            if (llList2String(tok,1) != "")
+            {
+                    string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                    string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                    if (cmd =="EXPIRES") EXPIRES = (integer)val;
+                    else if (cmd == "PARTS")     PARTS = (integer)val;
+                    else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
+                    else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
+                    else if (cmd == "EXTRAPARAM")     extraParam = val;
+            }
         }
     }
 }
@@ -239,7 +246,7 @@ default
             llSetRot(llEuler2Rot(<0,PI/1.4, 0>));
             water(u);
             llSleep(2);
-            osMessageObject(u, llToUpper(myName())+"|"+PASSWORD);
+            osMessageObject(u, llToUpper(myName())+"|"+PASSWORD +"|"+(string)PARTS+"|"+extraParam);
             --PARTS;
             if (PARTS <= 0)
             {
