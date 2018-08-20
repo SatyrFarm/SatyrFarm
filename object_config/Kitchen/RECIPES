@@ -1,0 +1,14 @@
+# 1. Name of Recipe
+# 2. Needed Items
+# 3. Time to cook
+# 4. Final Product to rezz
+# 5. Age of product
+Slop=Corn or Grain or Rice or Apples or Meat or Tomatoes or Potatoes or Grapes or Fish or Chicken,Water=60=SF Slop=10
+Cheese=Milk,Water=3600=SF Cheese=10
+Pasta=Water,Eggs,Milk,Flour=300=Pasta Plate=10
+Apple Pie=Apples,Water,Flour,Eggs=300=Apple Pie=10
+Breadsticks=Water,Flour=300=Bread Loaves=10
+Salad=Tomatoes or Peppers,Onions or Eggplants,Water or Olive Oil,Potatoes or Carrots=120=SF Salad=10
+Fries=Potatoes,Olive Oil=120=SF Fries=10
+Maple Syrup=Maple Sap,Water,Wood=120=SF Maple Syrup=10
+Cookies=Flour,Eggs,Honey,Milk=300=SF Cookies=10

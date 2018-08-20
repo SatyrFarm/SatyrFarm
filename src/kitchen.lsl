@@ -9,14 +9,15 @@ integer chan(key u)
 
 integer listener=-1;
 integer listenTs;
+integer startOffset = 0;
 
 startListen()
 {
     if (listener<0) 
     {
         listener = llListen(chan(llGetKey()), "", "", "");
-        listenTs = llGetUnixTime();
     }
+    listenTs = llGetUnixTime();
 }
 
 checkListen()
@@ -26,6 +27,21 @@ checkListen()
         llListenRemove(listener);
         listener = -1;
     }
+}
+
+multiPageMenu(key id, string message, list buttons)
+{
+    integer l = llGetListLength(buttons);
+    integer ch = chan(llGetKey());
+    if (l < 12)
+    {
+        llDialog(id, message, ["CLOSE"]+buttons, ch);
+        return;
+    }
+    if (startOffset >= l) startOffset = 0;
+    list its = llList2List(buttons, startOffset, startOffset + 9);
+    startListen();
+    llDialog(id, message, ["CLOSE"]+its+[">>"], ch);
 }
 
 string status;
@@ -42,8 +58,6 @@ string productAge = "10"; // How many days the final product can last
 string lookingFor;
 
 integer waitForSensed=0;
-
-integer dialogTs;
 
 
 psys(key k)
@@ -142,7 +156,12 @@ refresh()
         psys(NULL_KEY);
     }
     else 
-        llSetTimerEvent(0);    
+    {
+        if (listener<0)
+            llSetTimerEvent(0.0);
+        else
+            llSetTimerEvent(300); 
+    }
     llSetText(str , <1,1,1>, 1.0);
 }
 
@@ -210,7 +229,7 @@ setRecipe(string nm)
 
 dlgIngredients(key u)
 {
-    list opts = [];
+    list opts = ["ABORT"];
     string t = "Add an ingredient";
     integer i;
     for (i=0; i < llGetListLength(haveIngredients); i++)
@@ -223,10 +242,7 @@ dlgIngredients(key u)
                 opts +=  llStringTrim(llList2String(possible, j), STRING_TRIM);
         }
     }
-    opts += "ABORT";
-    
-    llDialog(u, t, opts, chan(llGetKey()));
-    dialogTs = llGetUnixTime();
+    multiPageMenu(u, t, opts);
 }
 
 default 
@@ -241,7 +257,10 @@ default
     
     listen(integer c, string nm, key id, string m)
     {
-        if (m == "CLOSE") return;
+        if (m == "CLOSE")
+        {
+            refresh();
+        }
         else if (m == "ABORT" )
         {
             recipeName = "";
@@ -252,34 +271,36 @@ default
         }
         else if (m == "Recipes" )
         {
-            llDialog(id, "Menu", recipeNames + ["CLOSE"], chan(llGetKey()));
-            dialogTs = llGetUnixTime();
+            multiPageMenu(id, "Menu", recipeNames);
             status = m;
+            return;
         }
         else if (status == "Recipes")
         {
+            if (m == ">>")
+            {
+                startOffset += 10;
+                multiPageMenu(id, "Menu", recipeNames);
+                return;
+            }
             setRecipe(m);
             refresh();
         }
         else if (status == "Adding")
         {
-            
+            if (m == ">>")
             {
-                //string what = m;
-                //integer idx = llListFindList(ingredients, m);
-                //if (idx>=0)
-                {
-                    lookingFor = "SF "+m; //llList2String(ingredients,idx);
-                    llSay(0, "Looking for: " + lookingFor);
-                    llSensor(lookingFor , "",SCRIPTED,  5, PI);
-                }
-                refresh();
+                startOffset += 10;
+                dlgIngredients(id);
+                return;
             }
-            
+            lookingFor = "SF "+m; //llList2String(ingredients,idx);
+            llSay(0, "Looking for: " + lookingFor);
+            llSensor(lookingFor , "",SCRIPTED,  5, PI);
+            refresh();
         }
-        else
-        { 
-        }
+        llListenRemove(listener);
+        listener = -1;
     }
     
     dataserver(key k, string m)
@@ -315,10 +336,8 @@ default
     
     timer()
     {
-        refresh();
-       
         checkListen();
-
+        refresh();
     }
 
     touch_start(integer n)
@@ -329,11 +348,13 @@ default
             return;
         }
         
-        
+        startListen();
+        refresh();
         list opts = [];       
         string t = "Select";
         if (status == "Adding")
         {
+            startOffset = 0; 
             dlgIngredients(llDetectedKey(0));
             return;
         }
@@ -344,18 +365,11 @@ default
         }
         else
         {
-            
-
             opts += "Recipes";
             opts += "CLOSE";
 
         }
-        
-        
-        startListen();
-
         llDialog(llDetectedKey(0), t, opts, chan(llGetKey()));
-        dialogTs = llGetUnixTime();
     }
     
     sensor(integer n)
