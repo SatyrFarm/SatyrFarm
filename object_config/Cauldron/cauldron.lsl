@@ -1,4 +1,7 @@
 //### cauldron.lsl
+//Updated to match the OptionalKey:Value format of the new kitchen recipes
+
+
 string inWater;
 string fluidTexture;
 
@@ -38,7 +41,7 @@ startCookingEffects()
             PSYS_SRC_OMEGA,<1,1,1>,
             PSYS_SRC_TEXTURE, (key)"f52273ac-0894-4b60-a663-b13a410f9f86",
             PSYS_SRC_TARGET_KEY, (key)"00000000-0000-0000-0000-000000000000"
-    ]); //Coals in Fire Right
+    ]);
     llLinkParticleSystem(14, [
             PSYS_PART_FLAGS,( 0 
                 |PSYS_PART_INTERP_COLOR_MASK
@@ -64,7 +67,7 @@ startCookingEffects()
             PSYS_SRC_OMEGA,<1,1,1>,
             PSYS_SRC_TEXTURE, (key)"f52273ac-0894-4b60-a663-b13a410f9f86",
             PSYS_SRC_TARGET_KEY, (key)"00000000-0000-0000-0000-000000000000"
-    ]); //Coals in Fire Left
+    ]);
 }
 
 stopCookingEffects()
@@ -82,12 +85,21 @@ default
 {
     link_message(integer l, integer n, string m, key id)
     {
-        list tok = llParseString2List(m, ["|"], []);
+        
+        list tok = llParseString2List(m, ["|", ":"], []);  // Uses  ":"  as a delimiter too!
         string o = llList2String(tok, 0);
         if (o == "SELECTEDRECIPE")
         {
-            fluidTexture = llList2String(tok, 6);
-            inWater = llList2String(tok, 7);
+            //fluidTexture = llList2String(tok, 6);
+            //inWater = llList2String(tok, 7);
+
+            integer nn;
+            for (nn=4; nn <llGetListLength(tok); nn++)
+            {
+                if (llList2String(tok, nn) == "Texture")  fluidTexture = llList2String(tok, nn+1);
+                if (llList2String(tok, nn) == "WaterEffect")  inWater = llList2String(tok, nn+1);
+            }
+            //llOwnerSay("Texture=" +fluidTexture+" effect="+inWater);
         }
         else if (o == "STARTCOOKING")
         {
