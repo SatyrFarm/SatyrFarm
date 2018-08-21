@@ -1,10 +1,10 @@
+//### storage_rack.lsl
 /** 
 Storage rack - stores multiple products. The script scans its inventory to generate the list of products automatically. 
 It uses the linked prims with the same name to set text   with the status of each product. E.g. for SF Olives the linked prim named 
 "Olives" is used to show the text about  the  current level  of SF Olives.
 
 **/
-
 integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer chan(key u)
@@ -14,13 +14,26 @@ integer chan(key u)
 
 list products = [];
 list levels = [];
+list customOptions = [];
 
 integer listener=-1;
 integer listenTs;
 integer startOffset=0;
-key dlgUser;
-
 integer lastTs;
+
+//config options for rezzing
+string productAge = "10";
+string drinkable = "-1";
+string flowcolor = "<1.000, 0.965, 0.773>";
+string productUses = "1";
+string poursound = "";
+vector rezzPosition = <0,1.5,2>;
+//config options for storage
+integer initialLevel = 5;
+integer dropTime = 86400;
+integer singleLevel = 10;
+integer doReset = 1;
+
 string lookingFor;
 string status;
 
@@ -30,8 +43,8 @@ startListen()
     if (listener<0) 
     {
         listener = llListen(chan(llGetKey()), "", "", "");
-        listenTs = llGetUnixTime();
     }
+    listenTs = llGetUnixTime();
 }
 
 checkListen()
@@ -43,30 +56,61 @@ checkListen()
     }
 }
 
-
-
-
-dlgSell(key id)
+multiPageMenu(key id, string message, list buttons)
 {
-    list its = llList2List(products, startOffset, startOffset+9);
+    integer l = llGetListLength(buttons);
+    integer ch = chan(llGetKey());
+    if (l < 12)
+    {
+        llDialog(id, message, ["CLOSE"]+buttons, ch);
+        return;
+    }
+    if (startOffset >= l) startOffset = 0;
+    list its = llList2List(buttons, startOffset, startOffset + 9);
     startListen();
-    llDialog(id, "Select product", ["CLOSE"]+its+ [">>"], chan(llGetKey()));
-
+    llDialog(id, message, ["CLOSE"]+its+[">>"], ch);
 }
 
+loadConfig()
+{ 
+    integer i;
+    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+    for (i=0; i < llGetListLength(lines); i++)
+    {
+        string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
+        if (llGetSubString(line, 0, 0) != "#")
+        {
+            list tok = llParseStringKeepNulls(line, ["="], []);
+            string tkey = llList2String(tok, 0);
+            string tval = llList2String(tok, 1);
+            if (tkey == "EXPIRETIME") productAge = tval;
+            if (tkey == "READYTIME") drinkable = tval;
+            if (tkey == "FLOWCOLOR") flowcolor = tval;
+            if (tkey == "USES") productUses = tval;
+            if (tkey == "POURSOUND") poursound = tval;
+            if (tkey == "REZZ_POSITION") rezzPosition = (vector)tval;
+            if (tkey == "INITIAL_LEVEL") initialLevel = (integer)tval;
+            if (tkey == "DROP_TIME") dropTime = (integer)tval * 86400;
+            if (tkey == "ONE_PART") singleLevel = (integer)tval;
+            if (tkey == "RESET_ON_REZ") doReset = (integer)tval;
+        }
+    }
 
-
-
-dlgGet(key id)
-{
-    list its = llList2List(products, startOffset, startOffset+9);
-    startListen();
-    llDialog(id, "Get menu", ["CLOSE"]+its+ [">>"], chan(llGetKey()));
-    status = "Get";
+    for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
+    {
+        string name = llGetInventoryName(INVENTORY_OBJECT, i);
+        if (llGetSubString(name,0,2) == "SF ")
+        {
+            string product = llGetSubString(name,3,-1);
+            if (llListFindList(products, [product]) == -1)
+            {
+                products += product;
+                levels += initialLevel;
+            }
+        }
+    }
+    llOwnerSay(llList2CSV(products));
 }
-
-
-
 
 
 psys(key k)
@@ -115,7 +159,7 @@ refresh()
     integer ts = llGetUnixTime();   
     float l;
     integer i;
-    if (ts- lastTs > 86400)
+    if (ts - lastTs > dropTime)
     {
 
             for (i=0; i < llGetListLength(products); i++)
@@ -144,13 +188,28 @@ refresh()
                     c = <1,0,0>;
                 else  if (lev<50)
                     c = <1,1,0>;
+                //TODO this thing
                 //llSetLinkPrimitiveParamsFast(lnk, [PRIM_POS_LOCAL, p, PRIM_TEXT,  llList2String(products,i)+": "+llRound(lev)+"%\n" ,c, 1.0]);
-                llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXT,  llList2String(products,i)+": "+llRound(lev)+"%\n" ,c, 1.0]);
+                llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXT,  llList2String(products,i)+": "+(string)llRound(lev)+"%\n" ,c, 1.0]);
             }
         }
     }
-    
+    llMessageLinked(LINK_SET, 99, "STATUS|"+(string)singleLevel+"|"+llDumpList2String(products, ",")+"|"+llDumpList2String(levels, ","), NULL_KEY);
+}
 
+rezzItem(string m)
+{
+    integer idx = llListFindList(products, [m]);
+    if (idx >=0 && llList2Integer(levels,idx) >=singleLevel)
+    {
+        integer l = llList2Integer(levels,idx);
+        l-= singleLevel; 
+        if (l <0) l =0;
+        levels = [] + llListReplaceList(levels, [l], idx, idx);;
+        llRezObject("SF "+m, llGetPos() + rezzPosition*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1);
+        refresh();
+    }
+    else llSay(0, "Sorry, there is not enough "+m);
 }
 
 
@@ -165,60 +224,55 @@ default
         if (m == "CLOSE") 
         {
             refresh();
-            return;
-        }
-        else if (m == ">>")
-        {
-            startOffset += 10;
-            if (startOffset >llGetListLength(products)) startOffset=0;
-            dlgSell(id);
         }
         else if (m == "Add Product")
         {
-            dlgUser = id;
             status = "Sell";
-            dlgSell(id);
+            multiPageMenu(id, "Select product to store", products);
+            return;
         }
         else if (m == "Get Product")
         {
-            dlgUser = id;
             status = "Get";
-            dlgSell(id);
+            multiPageMenu(id, "Select product to get", products);
+            return;
         }
         else if (status  == "Sell")
         {
-            
+            if (m == ">>")
+            {
+                startOffset += 10;
+                multiPageMenu(id, "Select product to store", products);
+                return;
+            }
             integer idx = llListFindList(products, [m]);
             if (idx >=0 && llList2Integer(levels,idx) >=100)
             {
                 llSay(0, "I am full of "+m);
-                status = "";
-                return;
             }
-
-            dlgUser = id;
-            status = "WaitProduct";
-            lookingFor = "SF " +m;
-            llSensor(lookingFor, "",SCRIPTED,  10, PI);
+            else
+            {
+                status = "WaitProduct";
+                lookingFor = "SF " +m;
+                llSensor(lookingFor, "",SCRIPTED,  10, PI);
+            }
         }
         else if (status  == "Get")
         {
-            integer idx = llListFindList(products, [m]);
-            if (idx >=0 && llList2Integer(levels,idx) >=10)
+            if (m == ">>")
             {
-                integer l = llList2Integer(levels,idx);
-                l-= 10; 
-                if (l <0) l =0;
-                levels = [] + llListReplaceList(levels, [l], idx, idx);;
-                llRezObject("SF "+m, llGetPos() + <0,1.5,2>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1);
-                refresh();
+                startOffset += 10;
+                multiPageMenu(id, "Select product to get", products);
+                return;
             }
-            else llSay(0, "Sorry, there is not enough "+m);
+            rezzItem(m);
         }
         else
         {
-
+            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, NULL_KEY);
         }
+        llListenRemove(listener);
+        listener = -1;
     }
     
     dataserver(key k, string m)
@@ -235,13 +289,13 @@ default
               //  if (!llSameGroup((u))) return;
                 
                 integer idx = llListFindList(products, [productName]);
-                if (idx>=0 && llList2Float(levels, idx) > 10. )
+                if (idx>=0 && llList2Float(levels, idx) > singleLevel )
                 {
                     integer l = llList2Integer(levels,idx);
-                    l-= 10; 
+                    l-= singleLevel; 
                     if (l <0) l =0;
                     levels = [] + llListReplaceList(levels, [l], idx, idx);;
-                    osMessageObject(u, "HAVE|"+PASSWORD+"|"+productName+"|"+llGetKey());
+                    osMessageObject(u, "HAVE|"+PASSWORD+"|"+productName+"|"+(string)llGetKey());
                     refresh();
                 }
                 else llSay(0, "Not enough "+productName);
@@ -256,9 +310,9 @@ default
                     {
                         // Fill up
                         integer l = llList2Integer(levels, i);
-                        l += 10; if (l>100) l = 100;
+                        l += singleLevel; if (l>100) l = 100;
                         levels = llListReplaceList(levels, [l], i,i);
-                        llSay(0, "Added "+llToLower(item)+", level is now "+llRound(l)+"%");
+                        llSay(0, "Added "+llToLower(item)+", level is now "+(string)llRound(l)+"%");
                         refresh();
                         return;
                     }
@@ -266,8 +320,14 @@ default
             }        
     }
 
+    on_rez(integer n)
+    {
+        if (doReset)
+        {
+            llResetScript();
+        }
+    } 
 
-    
     timer()
     {
         refresh();
@@ -277,10 +337,11 @@ default
 
     touch_start(integer n)
     {
-
+        status = "";
         list opts = [];
         opts += "Add Product";
         opts += "Get Product";
+        opts += customOptions;
         opts += "CLOSE";
         startListen();
         llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
@@ -293,7 +354,8 @@ default
         {
             key id = llDetectedKey(0);
             llSay(0, "Found "+lookingFor+", emptying...");
-            osMessageObject(id, "DIE|"+llGetKey());
+            osMessageObject(id, "DIE|"+(string)llGetKey());
+            status = "";
         }
     }
     
@@ -302,6 +364,7 @@ default
     {
 
         llSay(0, "Error! "+lookingFor+" not found nearby. You must bring it near me!");
+        status = "";
     }
  
  
@@ -309,33 +372,55 @@ default
     {
         lastTs = llGetUnixTime();
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-        
-        //BW Load products and levels dynamically
-        integer i;
-        for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
+        loadConfig();
+        llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
+        llSetTimerEvent(1);
+    } 
+
+    link_message(integer sender, integer val, string m, key id)
+    {
+        if (val == 99) return;
+
+        list tok = llParseString2List(m, ["|"], []);
+        string cmd = llList2String(tok, 0);
+        if (cmd == "ADD_MENU_OPTION") 
         {
-            if (llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),0 ,2) == "SF ")
+            customOptions += [llList2String(tok,1)];
+        }
+        else if (cmd == "REM_MENU_OPTION")
+        {
+            integer findOpt = llListFindList(customOptions, [llList2String(tok,1)]);
+            if (findOpt != -1)
             {
-                products += llGetSubString(llGetInventoryName(INVENTORY_OBJECT, i),3,-1);
-                levels += 10;
+                customOptions = llDeleteSubList(customOptions, findOpt, findOpt);
             }
         }
-        llOwnerSay(llList2CSV(products));
-        
-        llSetTimerEvent(1);
-    }   
-    
-    
-    on_rez(integer n)
-    {
-        llResetScript();
+        else if (cmd == "SETSTATUS")
+        {
+            products = llParseStringKeepNulls(llList2String(tok,1), [","], []);
+            levels = llParseStringKeepNulls(llList2String(tok,2), [","], []);
+            refresh();
+        }
+        else if (cmd == "GETPRODUCT")
+        {
+            rezzItem(llList2String(tok,1));
+        }
     }
     
     object_rez(key id)
     {
         llSleep(.5);
-        osMessageObject(id, "INIT|"+PASSWORD+"|10|-1|<0.944,0.873,.3000>|");
+        osMessageObject(id, "INIT|"+PASSWORD+"|"+productAge+"|"+drinkable+"|"+flowcolor+"|"+poursound+"|"+productUses+"|");
     }
     
-    
+    changed(integer change)
+    {
+        if (change & CHANGED_INVENTORY)
+        {
+            loadConfig();
+            refresh();
+            customOptions = [];
+            llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
+        }
+    }
 }
