@@ -1,39 +1,32 @@
-//### kitchen.lsl
 /**
-Common script used by all food processing machines, e.g. juice maker, oven etc.
-Configuration goes in 'config' notecard. Example notecard with all the supported options:
+### kitchen.lsl
 
-# REZ_POS: Default rez position relative to root. Can be overridden in the RECIPES notecard with the RezPos:<x,y,z> optional parameter
-REZ_POS=<1,1,1>     
-# SENSOR_DISTANCE: How far to search (radius) when searching for ingredients to add
-SENSOR_DISTANCE=10
-# MUST_SIT: If the Avatar is required to sit on the object to produce items (like on the Oil Press)
-MUST_SIT=1
+config parameters:
+
+REZ_POS=<1,1,1>     # Default rez position relative to root. Can be overridden in the RECIPES notecard with the RezPos:<x,y,z> optional parameter
+SENSOR_DISTANCE=10  # How far to search (radius) when searching for ingredients to add
 
 **/
 
+
+integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer listener=-1;
 integer listenTs;
-integer startOffset = 0;
+integer startOffset =0;
 
-list customOptions = [];
 
 string status;
+integer steppedOn;
 
 list recipeNames;
 string recipeName;
 list ingredients; 
 list haveIngredients;
-integer mustSit = 0;
+vector rezzPosition = <1,0,0>; // Position of the product to rezz
 integer timeToCook; // in seconds
 string objectToGive; // Name of the object to give after done cooking
-vector rezzPosition; // Position of the product to rezz
-integer sensorRadius; //radius to scan for items
-//Default Values
-integer default_sensorRadius = 5;
-integer default_timeToCook = 60;
-vector default_rezzPosition = <1,0,0>;
+integer SENSOR_DISTANCE = 5;
 
 string lookingFor;
 
@@ -68,25 +61,42 @@ checkListen()
 loadConfig()
 {
     if (llGetInventoryType("config") != INVENTORY_NOTECARD) return;
-
+    
     list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
     {
-        string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
-        if (llGetSubString(line, 0, 0) != "#")
+        list tok = llParseString2List(llList2String(lines,i), ["="], []);
+        if (llList2String(tok,1) != "")
         {
-            list tok = llParseStringKeepNulls(line, ["="], []);
-            string tkey = llList2String(tok, 0);
-            string tval = llList2String(tok, 1);
-            if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
-            else if (tkey == "REZ_POSITION") default_rezzPosition = (vector)tval;
-            else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
-            else if (tkey == "MUST_SIT") mustSit = (integer)tval;
+                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                
+                if (cmd == "SENSOR_DISTANCE")     SENSOR_DISTANCE = (integer)val;   // How far to look for items
+                else if (cmd == "REZ_POS")     rezzPosition = (vector)val;          // Default rez position 
         }
     }
 }
 
+setAnimations(integer isOn)
+{
+
+    integer i;
+    for (i=0; i <= llGetNumberOfPrims(); i++)
+    {
+        if (llGetSubString(llGetLinkName(i),0,4) == "spin ")
+        {
+            list tk = llParseString2List(llGetLinkName(i), [" "], []);
+            llSetLinkPrimitiveParamsFast(i, [PRIM_OMEGA, llList2Vector(tk, 1), isOn* 1.0, 1.0]);
+        }
+        else if (llGetLinkName(i) == "show_while_cooking")
+        {
+            vector color = llList2Vector(llGetLinkPrimitiveParams(i, [PRIM_COLOR, 0]), 0);
+            llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, color, isOn*1.0]); 
+        }
+    }
+    
+}
 
 
 multiPageMenu(key id, string message, list buttons)
@@ -103,6 +113,8 @@ multiPageMenu(key id, string message, list buttons)
     startListen();
     llDialog(id, message, ["CLOSE"]+its+[">>"], ch);
 }
+
+
 
 psys(key k)
 {
@@ -130,7 +142,7 @@ psys(key k)
                     PSYS_SRC_MAX_AGE,2,
                     PSYS_PART_MAX_AGE,5,
                     PSYS_SRC_BURST_RATE, 10,
-                    PSYS_SRC_BURST_PART_COUNT, 30,
+                    PSYS_SRC_BURST_PART_COUNT, 10,
                     PSYS_SRC_ACCEL,<0.000000,0.000000,0.000000>,
                     PSYS_SRC_OMEGA,<0.000000,0.000000,0.000000>,
                     PSYS_SRC_BURST_SPEED_MIN, 0.1,
@@ -144,6 +156,8 @@ psys(key k)
                 ]);
                 
 }
+
+
 
 
 refresh()
@@ -171,13 +185,11 @@ refresh()
                 status = "Cooking";
 
                 llSay(0, "All set, preparing ... ");
-                llResetTime();
+                steppedOn = llGetUnixTime();
                 llSetTimerEvent(2);
-                llMessageLinked(LINK_SET,99, "STARTCOOKING", ""); 
-                if (llGetInventoryType("cooking") == INVENTORY_SOUND)
-                {
-                    llLoopSound("cooking", 1.0);
-                }
+                setAnimations(1);
+                llMessageLinked(LINK_SET,1, "STARTCOOKING", ""); 
+                llLoopSound("cooking", 1.0);
             }
             else 
                 str += "Click to add ingredients\n";
@@ -185,27 +197,15 @@ refresh()
     }
     else if (status == "Cooking")
     {
-        if (mustSit)
-        {
-            if (llGetObjectPrimCount(llGetKey()) == llGetNumberOfPrims())
-            {
-                llSetText("Sit here to produce item", <1.000, 0.863, 0.000>, 1.0);
-                llResetTime();
-                return;
-            }
-        }
-        float prog = (integer)((float)(llGetTime())*100./timeToCook);
+        float prog = (integer)((float)(llGetUnixTime()-steppedOn)*100./timeToCook);
         str = "Selected: "+recipeName+"\nProgress: "+ (string)((integer)prog)+ " %";
         if (prog >=100.)
         {
+            setAnimations(0);
+            llMessageLinked(LINK_SET,1, "ENDCOOKING", "");
             llStopSound();
-            llMessageLinked(LINK_SET,99, "ENDCOOKING", "");
             status = "Empty";
             llSay(0, "Congratulations, your "+recipeName+" is ready!");
-            if (mustSit)
-            {
-                llUnSit(llGetLinkKey(llGetNumberOfPrims()));
-            }
             llRezObject(objectToGive, llGetPos() + rezzPosition*llGetRot(), ZERO_VECTOR, ZERO_ROTATION, 1);
             recipeName = "";
             objectToGive = "";
@@ -216,168 +216,68 @@ refresh()
         psys(NULL_KEY);
     }
     else 
-    {
-        if (listener<0)
-            llSetTimerEvent(0.0);
-        else
-            llSetTimerEvent(300); 
-    }
+        llSetTimerEvent(900);    
     llSetText(str , <1,1,1>, 1.0);
 }
 
-//-- this function just exists for backwards compatibility with old
-//-- Recipes Notecard
-getRecipeNamesOld()
-{
-    list names;
-    list ltok = llParseString2List(osGetNotecard("RECIPES"), ["\n"], []);
-    integer l;
-    for (l=0; l < llGetListLength(ltok); l++)
-    {
-        list tok = llParseString2List(llList2String(ltok, l), ["="], []);
-        string name=llList2String(tok,0);
-        if ( name != "")
-        {
-            names += name;
-        }
-    }
-    recipeNames = names;
-}
 
 getRecipeNames()
 {
     list names;
     list ltok = llParseString2List(osGetNotecard("RECIPES"), ["\n"], []);
-    //-- if first character is not #, assume notecard has old format
-    //-- just needed for backwards compatibility
-    //-- will get removed in future releases
-    if (llGetSubString(llList2String(ltok,0),0,0) != "#")
-    {
-        getRecipeNamesOld();
-        return;
-    }
-    //-- end cpmpatibility section
     integer l;
     for (l=0; l < llGetListLength(ltok); l++)
     {
-        string line = llStringTrim(llList2String(ltok, l), STRING_TRIM);
-        if (llGetSubString(line, 0, 0) == "[" && llGetSubString(line, -1, -1) == "]" && line != "[END]")
+        string line = llList2String(ltok, l);
+        if (llGetSubString(line, 0, 0) != "#")
         {
-                names += [llStringTrim(llGetSubString(line,1,-2), STRING_TRIM)];
+            list tok = llParseString2List(line, ["="], []);
+            string name=llList2String(tok,0);
+            if ( name != "")
+            {
+                names += name;
+            }
         }
     }
     recipeNames = names;
 }
 
-//-- this function just exists for backwards compatibility with old
-//-- Recipes Notecard
-setRecipeOld(string nm)
-{
-    list ltok = llParseString2List(osGetNotecard("RECIPES"), ["\n"], []);
-    integer l;
-    recipeName = "";
-    for (l=0; l < llGetListLength(ltok); l++)
-    {
-        list tok = llParseString2List(llList2String(ltok, l), ["="], []);
-        string name=llList2String(tok,0);
-        if ( name == nm && nm != "")
-        {
-            ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
-            timeToCook   = llList2Integer(tok, 2);
-            objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
-            haveIngredients = [];
-            integer kk = llGetListLength(ingredients);
-            while (kk-->0)
-                haveIngredients += [0]; //Fill the list with zeros
-            recipeName = name;
-            status = "Adding";
-            llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
-            return;
-        }
-    }
-    status = "";
-    llSay(0, "Error! Recipe not found " +nm);
-}
-//-- end cpmpatibility section
-
 setRecipe(string nm)
 {
-    recipeName = "";
-    objectToGive = "";
-    ingredients = [];
-    timeToCook = default_timeToCook;
-    rezzPosition = default_rezzPosition;
-    sensorRadius = default_sensorRadius;
-    if (nm == "")
-    {
-        return;
-    }
     list ltok = llParseString2List(osGetNotecard("RECIPES"), ["\n"], []);
-    //-- if first character is not #, assume notecard has old format
-    //-- just needed for backwards compatibility
-    //-- will get removed in future releases
-    if (llGetSubString(llList2String(ltok,0),0,0) != "#")
-    {
-        setRecipeOld(nm);
-        return;
-    }
-    //-- end cpmpatibility section
-    integer rel = FALSE;
     integer l;
-    string stat = "SELECTEDRECIPE|" + nm + "|";
+    recipeName = "";
     for (l=0; l < llGetListLength(ltok); l++)
     {
-        string line = llStringTrim(llList2String(ltok, l), STRING_TRIM);
+        string line = llList2String(ltok, l);
         if (llGetSubString(line, 0, 0) != "#")
         {
-            string name;
-            if (!rel)
+            list tok = llParseString2List(line, ["="], []);
+            string name=llList2String(tok,0);
+            if ( name == nm && nm != "")
             {
-                //skip lines till recipe is reached
-                if (llGetSubString(line, 0, 0) == "[" && llGetSubString(line, -1, -1) == "]")
+                ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
+                timeToCook   = llList2Integer(tok, 2);
+                objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
+
+                llMessageLinked(LINK_SET, 1, "SELECTEDRECIPE|" + llDumpList2String(tok, "|"), "");
+                haveIngredients = [];
+                integer kk = llGetListLength(ingredients);
+                while (kk-->0)
+                    haveIngredients += [0]; //Fill the list with zeros
+                recipeName = name;
+                status = "Adding";
+                llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
+                
+
+                rezzPosition = <1,0,0>;
+                // Set/override optional parameters
+                for (kk=4; kk <llGetListLength(tok); kk++)
                 {
-                    name = llStringTrim(llGetSubString(line,1,-2), STRING_TRIM);
-                    if (name == nm)
-                    {
-                        rel = TRUE;
-                        recipeName = name;
-                    }
+                    list otok = llParseString2List(llList2String(tok, kk), [":"], []);
+                    if (llList2String(otok,0) == "RezPos") rezzPosition = llList2Vector(otok, 1);
                 }
-            }
-            else
-            {
-                //Notecard lines within the section of the selected recipe
-                if (llGetSubString(line, 0, 0) == "[" && llGetSubString(line, -1, -1) == "]")
-                {
-                    //finished reading relevant nc sections
-                    //check values and launch "Adding" status
-                    haveIngredients = [];
-                    integer kk = llGetListLength(ingredients);
-                    while (kk-->0)
-                    {
-                        haveIngredients += [0];
-                    }
-                    status = "Adding";
-                    if (ingredients == [] || objectToGive == "") 
-                    {
-                        llSay(0, "Error! No Ingrediments given");
-                        status = "";
-                        return;
-                    }
-                    llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
-                    llMessageLinked(LINK_SET, 99, stat, "");
-                    return;
-                }
-                //read key-value-pairs
-                list tmp = llParseString2List(line, ["="], []);
-                string tkey = llToUpper(llStringTrim(llList2String(tmp, 0), STRING_TRIM));
-                string tval = llStringTrim(llList2String(tmp, -1), STRING_TRIM);
-                stat += tkey + "|" + tval + "|";
-                if (tkey == "DURATION") timeToCook = (integer)tval;
-                if (tkey == "INGREDIENTS") ingredients  = llParseString2List(tval, [",", "+"], []);
-                if (tkey == "PRODUCT") objectToGive = tval;
-                if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
-                if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
+                return;
             }
         }
     }
@@ -388,8 +288,8 @@ setRecipe(string nm)
 dlgIngredients(key u)
 {
     list opts = [];
-    opts += ["ABORT"];
 
+    
     string t = "Add an ingredient";
     integer i;
     for (i=0; i < llGetListLength(haveIngredients); i++)
@@ -402,7 +302,8 @@ dlgIngredients(key u)
                 opts +=  llStringTrim(llList2String(possible, j), STRING_TRIM);
         }
     }
-
+    opts += "ABORT";
+    
     multiPageMenu(u, t, opts);
 }
 
@@ -411,32 +312,27 @@ default
 
     object_rez(key id)
     {
-        llSleep(.5);
-        //products with new prod_gen notecard just need the passowrd, everything else is just here for backwards compatibility
-        //and will be removed in the future
+        llSleep(.4);
         osMessageObject(id,  "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
     }
     
     
     listen(integer c, string nm, key id, string m)
     {
-        if (m == "CLOSE")
-        {
-            refresh();
-        }
+        if (m == "CLOSE") return;
         else if (m == "ABORT" )
         {
             recipeName = "";
             status = "";
             refresh();
-            llMessageLinked(LINK_SET,99, "ENDCOOKING", "");
+            setAnimations(0);
+            llMessageLinked(LINK_SET,1, "ENDCOOKING", "");
             llStopSound();
         }
         else if (m == "Recipes" )
         {
             multiPageMenu(id, "Menu", recipeNames);
             status = m;
-            return;
         }
         else if (status == "Recipes")
         {
@@ -446,28 +342,29 @@ default
                 multiPageMenu(id, "Menu", recipeNames);
                 return;
             }
+            
             setRecipe(m);
             refresh();
         }
         else if (status == "Adding")
         {
-            if (m == ">>")
+            
             {
-                startOffset += 10;
-                dlgIngredients(id);
-                return;
+                //string what = m;
+                //integer idx = llListFindList(ingredients, m);
+                //if (idx>=0)
+                {
+                    lookingFor = "SF "+m; //llList2String(ingredients,idx);
+                    llSay(0, "Looking for: " + lookingFor);
+                    llSensor(lookingFor , "",SCRIPTED,  SENSOR_DISTANCE, PI);
+                }
+                refresh();
             }
-            lookingFor = "SF "+m; //llList2String(ingredients,idx);
-            llSay(0, "Looking for: " + lookingFor);
-            llSensor(lookingFor , "",SCRIPTED,  sensorRadius, PI);
-            refresh();
+            
         }
         else
-        {
-            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, NULL_KEY);
+        { 
         }
-        llListenRemove(listener);
-        listener = -1;
     }
     
     dataserver(key k, string m)
@@ -503,8 +400,10 @@ default
     
     timer()
     {
-        checkListen();
         refresh();
+       
+        checkListen();
+
     }
 
     touch_start(integer n)
@@ -515,13 +414,11 @@ default
             return;
         }
         
-        startListen();
-        refresh();
+        
         list opts = [];       
         string t = "Select";
         if (status == "Adding")
         {
-            startOffset = 0; 
             dlgIngredients(llDetectedKey(0));
             return;
         }
@@ -532,11 +429,18 @@ default
         }
         else
         {
-            opts += "CLOSE";
+            
+
             opts += "Recipes";
-            opts += customOptions;
+            opts += "CLOSE";
+
         }
+        
+        
+        startListen();
+
         llDialog(llDetectedKey(0), t, opts, chan(llGetKey()));
+
     }
     
     sensor(integer n)
@@ -557,8 +461,8 @@ default
         refresh();
         llSetTimerEvent(300);
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-        getRecipeNames();
         loadConfig();
+        getRecipeNames();
     } 
 
     changed(integer change)
@@ -566,11 +470,6 @@ default
         if (change & CHANGED_INVENTORY)
         {
             getRecipeNames();
-            loadConfig();
-        }
-        if (status == "Cooking" && (llGetObjectPrimCount(llGetKey()) != llGetNumberOfPrims()))
-        {
-            refresh();
         }
     }
     
@@ -578,21 +477,7 @@ default
     {
         llResetScript();
     }
+    
 
-    link_message(integer sender, integer val, string m, key id)
-    {
-        if (val == 99) return;
-
-        list tok = llParseString2List(m, ["|"], []);
-        string cmd = llList2String(tok,0);
-        if (cmd == "SET_MENU_OPTIONS")  // Add custom dialog menu options. 
-        {
-            customOptions = llList2List(tok, 1, -1);
-        }
-        if (cmd == "SETRECIPE")
-        {
-            setRecipe(llList2String(tok, 1));
-            refresh();
-        }
-    }
 }
+
