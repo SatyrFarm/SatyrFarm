@@ -15,6 +15,10 @@ FLOWCOLOR=<1.000, 0.805, 0.609>
 #
 #(Optional)Some products require some days to mature before they  are ready to  be used (e.g. wine) . How many days to spend in maturation?
 MATURATION=10
+#
+#(Optional)Extra parameter that will be passed to the consumer of this
+EXTRAPARAM=Nutrition:1,10,1,2
+
 # end config
 
 
@@ -31,7 +35,7 @@ integer EXPIRES = -1;
 integer DRINKABLE = -1;
 integer PARTS = 1;
 vector FLOWCOLOR=<1.000, 0.805, 0.609>;
-
+string extraParam; // Params to be passed from config notecard to the target object
 
 
 
@@ -42,11 +46,16 @@ string myName()
 
 refresh()
 {
+    vector textColor = <1,1,1>;
     integer days = llFloor((llGetUnixTime()- lastTs)/86400);
     string str = myName() + "\n";
     
     if (EXPIRES>0)
     {
+        if (EXPIRES > 1 && (EXPIRES-days) < 2)
+        {
+            textColor = <1.000, 0.255, 0.212>;
+        }
         str += "Expires in "+(string)(EXPIRES-days)+ " days\n";
         if (days > EXPIRES)
         {
@@ -57,6 +66,7 @@ refresh()
     
     if ((DRINKABLE-days)>0) 
     {
+        textColor = <1.000, 0.863, 0.000>;
         str += "Not ready yet ... " +(string)(DRINKABLE-days)+" days left\n";
     }
 
@@ -65,7 +75,7 @@ refresh()
        str += (string)PARTS + " Uses left\n";
     }
         
-    llSetText( str, <1,1,1>, 1.0);
+    llSetText(str, textColor, 1.0);
 }
 
 
@@ -121,15 +131,20 @@ loadConfig()
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
     {
-        list tok = llParseString2List(llList2String(lines,i), ["="], []);
-        if (llList2String(tok,1) != "")
+        if (llGetSubString(llList2String(lines,i), 0, 0) != "#")
         {
-            string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
-            string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
-            if (cmd =="EXPIRES") EXPIRES = (integer)val;
-            else if (cmd == "PARTS")     PARTS = (integer)val;
-            else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
-            else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
+            list tok = llParseString2List(llList2String(lines,i), ["="], []);
+            if (llList2String(tok,1) != "")
+            {
+                    string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                    string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                    if (cmd =="EXPIRES") EXPIRES = (integer)val;
+                    else if (cmd == "PARTS")     PARTS = (integer)val;
+                    else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
+                    else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
+                    else if (cmd == "EXTRAPARAM")     extraParam = val;
+            }
+
         }
     }
 }
@@ -232,7 +247,7 @@ default
             llSetRot(llEuler2Rot(<0,PI/1.4, 0>));
             water(u);
             llSleep(2);
-            osMessageObject(u, llToUpper(myName())+"|"+PASSWORD);
+            osMessageObject(u, llToUpper(myName())+"|"+PASSWORD +"|"+(string)PARTS+"|"+extraParam);
             --PARTS;
             if (PARTS <= 0)
             {
@@ -246,19 +261,25 @@ default
             PASSWORD = llList2String(tk,1);
             reset();
         }
-        else if (cmd == "SET")
+        //following commands require correct password
+        if(llList2String(tk, 1) != PASSWORD)
         {
-            if(llList2String(tk, 1) != PASSWORD)
-            {
-                return;
-            }
-            integer days = llFloor((llGetUnixTime()- lastTs)/86400);
+            return;
+        }
+        integer days = llFloor((llGetUnixTime()- lastTs)/86400);
+        if (cmd == "SET")
+        {
             integer found_expire = llListFindList(tk, ["EXPIRE"]) + 1;
             integer found_drinkable = llListFindList(tk, ["MATURATION"]) + 1;
             integer found_parts = llListFindList(tk, ["USES"]) + 1;
             if (found_expire) EXPIRES = days + llList2Integer(tk, found_expire);
             else if (found_drinkable) DRINKABLE = days + llList2Integer(tk, found_drinkable);
             else if (found_parts) PARTS = llList2Integer(tk, found_parts);
+        }
+        else if (cmd == "GETSTATUS")
+        {
+            key idr = llList2Key(tk, 2);
+            osMessageObject(idr, "PRODSTATUS|USES|" + (string)PARTS + "|EXPIRE|" + (string)(EXPIRES-days) + "|READY|" + (string)(DRINKABLE-days));
         }
     }
 }
