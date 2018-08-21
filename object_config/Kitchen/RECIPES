@@ -1,14 +1,43 @@
-# 1. Name of Recipe
-# 2. Needed Items
-# 3. Time to cook
-# 4. Final Product to rezz
-# 5. Age of product
-Slop=Corn or Grain or Rice or Apples or Meat or Tomatoes or Potatoes or Grapes or Fish or Chicken,Water=60=SF Slop=10
-Cheese=Milk,Water=3600=SF Cheese=10
-Pasta=Water,Eggs,Milk,Flour=300=Pasta Plate=10
-Apple Pie=Apples,Water,Flour,Eggs=300=Apple Pie=10
-Breadsticks=Water,Flour=300=Bread Loaves=10
-Salad=Tomatoes or Peppers,Onions or Eggplants,Water or Olive Oil,Potatoes or Carrots=120=SF Salad=10
-Fries=Potatoes,Olive Oil=120=SF Fries=10
-Maple Syrup=Maple Sap,Water,Wood=120=SF Maple Syrup=10
-Cookies=Flour,Eggs,Honey,Milk=300=SF Cookies=10
+# Mandatery Options:
+# INGREDIENTS, PRODUCT
+# Possible Options:
+# DURATION, REZZ_POSITION, RADIUS
+# (default values can be set in the "config" notecard)
+# Last line has to be [END]
+[Slop]
+    INGREDIENTS=Corn or Grain or Rice or Apples or Meat or Tomatoes or Potatoes or Grapes or Fish or Chicken,Water
+    DURATION=60
+    PRODUCT=SF Slop
+[Cheese]
+    INGREDIENTS=Milk,Water
+    DURATION=3600
+    PRODUCT=SF Cheese
+[Pasta]
+    INGREDIENTS=Water,Eggs,Milk,Flour
+    DURATION=300
+    PRODUCT=Pasta Plate
+[Apple Pie]
+    INGREDIENTS=Apples,Water,Flour,Eggs
+    DURATION=300
+    PRODUCT=Apple Pie
+[Breadsticks]
+    INGREDIENTS=Water,Flour
+    DURATION=300
+    PRODUCT=Bread Loaves
+[Salad]
+    INGREDIENTS=Tomatoes or Peppers,Onions or Eggplants,Water or Olive Oil,Potatoes or Carrots
+    DURATION=120
+    PRODUCT=SF Salad
+[Fries]
+    INGREDIENTS=Potatoes,Olive Oil
+    DURATION=120
+    PRODUCT=SF Fries
+[Maple Syrup]
+    INGREDIENTS=Maple Sap,Water,Wood
+    DURATION=120
+    PRODUCT=SF Maple Syrup
+[Cookies]
+    INGREDIENTS=Flour,Eggs,Honey,Milk
+    DURATION=300
+    PRODUCT=SF Cookies
+[END]
