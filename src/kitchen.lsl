@@ -7,17 +7,8 @@ Configuration goes in 'config' notecard. Example notecard with all the supported
 REZ_POS=<1,1,1>     
 # SENSOR_DISTANCE: How far to search (radius) when searching for ingredients to add
 SENSOR_DISTANCE=10
-
-
-Recipes go in the RECIPES notecard. Example of RECIPES notecard:
-
-# Recipe Name = Ingredients (Without SF part)  =  Time to cook = Output object (With SF part) = Optional parameters between '=' specified as ParamName:ParamValue pairs
-# Example: barbecue needs SF Chicken or SF Meat & SF Wood & SF Salt, takes 200 seconds to cook, will rez SF Barbeque from inventory at the end in position <2,0,1>
-# OptionalParam2 and OptionalParam3 are optional parameters that may be interpreted by plugins
-# The kithen understands the Optional param RezPos:<x,y,z> which overrides the default Rez position for the cooked product
-# BBq recipe line:
-Barbeque=Chicken or Meat,Wood,Salt=200=SF Barbeque=RezPos:<2,0,1>=OptionalParam2:Value2=OptionalParam3:Value3
-
+# MUST_SIT: If the Avatar is required to sit on the object to produce items (like on the Oil Press)
+MUST_SIT=1
 
 **/
 
@@ -29,12 +20,12 @@ integer startOffset = 0;
 list customOptions = [];
 
 string status;
-integer steppedOn;
 
 list recipeNames;
 string recipeName;
 list ingredients; 
 list haveIngredients;
+integer mustSit = 0;
 integer timeToCook; // in seconds
 string objectToGive; // Name of the object to give after done cooking
 vector rezzPosition; // Position of the product to rezz
@@ -91,6 +82,7 @@ loadConfig()
             if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
             else if (tkey == "REZZ_POSITION") default_rezzPosition = (vector)tval;
             else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
+            else if (tkey == "MUST_SIT") mustSit = (integer)tval;
         }
     }
 }
@@ -179,7 +171,7 @@ refresh()
                 status = "Cooking";
 
                 llSay(0, "All set, preparing ... ");
-                steppedOn = llGetUnixTime();
+                llResetTime();
                 llSetTimerEvent(2);
                 llMessageLinked(LINK_SET,1, "STARTCOOKING", ""); 
                 llLoopSound("cooking", 1.0);
@@ -190,7 +182,12 @@ refresh()
     }
     else if (status == "Cooking")
     {
-        float prog = (integer)((float)(llGetUnixTime()-steppedOn)*100./timeToCook);
+        if (mustSit && llGetObjectPrimCount() == llGetNumberOfPrims())
+        {
+            llSetText("Sit to produce item.", <1,1,1>, 1.0);
+            llResetTime();
+        }
+        float prog = (integer)((float)(llGetTime())*100./timeToCook);
         str = "Selected: "+recipeName+"\nProgress: "+ (string)((integer)prog)+ " %";
         if (prog >=100.)
         {
@@ -555,6 +552,10 @@ default
         {
             getRecipeNames();
             loadConfig();
+        }
+        if (status == "Cooking" && (llGetObjectPrimCount() != llGetNumberOfPrims()))
+        {
+            refresh();
         }
     }
     
