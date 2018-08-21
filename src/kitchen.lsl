@@ -588,6 +588,7 @@ default
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         getRecipeNames();
         loadConfig();
+        llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
     } 
 
     changed(integer change)
@@ -596,6 +597,8 @@ default
         {
             getRecipeNames();
             loadConfig();
+            customOptions = [];
+            llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
         }
         if (status == "Cooking" && (llGetObjectPrimCount(llGetKey()) != llGetNumberOfPrims()))
         {
@@ -614,11 +617,19 @@ default
 
         list tok = llParseString2List(m, ["|"], []);
         string cmd = llList2String(tok,0);
-        if (cmd == "SET_MENU_OPTIONS")  // Add custom dialog menu options. 
+        if (cmd == "ADD_MENU_OPTION")  // Add custom dialog menu options. 
         {
-            customOptions = llList2List(tok, 1, -1);
+            customOptions += [llList2String(tok,1)];
         }
-        if (cmd == "SETRECIPE")
+        else if (cmd == "REM_MENU_OPTION")
+        {
+            integer findOpt = llListFindList(customOptions, [llList2String(tok,1)]);
+            if (findOpt != -1)
+            {
+                customOptions = llDeleteSubList(customOptions, findOpt, findOpt);
+            }
+        }
+        else if (cmd == "SETRECIPE")
         {
             setRecipe(llList2String(tok, 1));
             refresh();

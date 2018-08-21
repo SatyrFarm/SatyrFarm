@@ -297,8 +297,6 @@ default
     
     state_entry()
     {
-
-
         loadConfig();
 
         lastTs = llGetUnixTime();
@@ -471,15 +469,33 @@ default
         sense = "";
     }
 
+    changed(integer change)
+    {
+        if (change & CHANGED_INVENTORY)
+        {
+            loadConfig();
+            customOptions = [];
+            llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
+        }
+    }
+ 
     link_message(integer sender, integer val, string m, key id)
     {
         if (val ==99) return; // Dont listen to self
 
         list tok = llParseString2List(m, ["|"], []);
         string cmd = llList2String(tok,0);
-        if (cmd == "SET_MENU_OPTIONS")  // Add custom dialog menu options. 
+        if (cmd == "ADD_MENU_OPTION")  // Add custom dialog menu options. 
         {
-            customOptions = llList2List(tok, 1, -1);
+            customOptions += [llList2String(tok,1)];
+        }
+        else if (cmd == "REM_MENU_OPTION")
+        {
+            integer findOpt = llListFindList(customOptions, [llList2String(tok,1)]);
+            if (findOpt != -1)
+            {
+                customOptions = llDeleteSubList(customOptions, findOpt, findOpt);
+            }
         }
         else if (cmd == "SETSTATUS")    // Change the status of this plant
         {
