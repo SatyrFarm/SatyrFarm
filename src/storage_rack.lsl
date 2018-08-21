@@ -4,8 +4,18 @@ Storage rack - stores multiple products. The script scans its inventory to gener
 It uses the linked prims with the same name to set text   with the status of each product. E.g. for SF Olives the linked prim named 
 "Olives" is used to show the text about  the  current level  of SF Olives.
 
+Format of config notecard:
+#
+# How far to search for product to add
+SENSOR_DISTANCE=10
+#
+# What is the Z position (relative to root) of the "Olives" linked prim when it is empty
+MIN_HEIGHT=-2.0
+#
+# What is the Z position of the "Olives" link when it is 100% full
+MAX_HEIGHT=2.0
+
 **/
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer chan(key u)
 {
@@ -22,17 +32,15 @@ integer startOffset=0;
 integer lastTs;
 
 //config options for rezzing
-string productAge = "10";
-string drinkable = "-1";
-string flowcolor = "<1.000, 0.965, 0.773>";
-string productUses = "1";
-string poursound = "";
 vector rezzPosition = <0,1.5,2>;
 //config options for storage
 integer initialLevel = 5;
 integer dropTime = 86400;
 integer singleLevel = 10;
 integer doReset = 1;
+integer SENSOR_DISTANCE=10;
+float minHeight=-1;
+float maxHeight = 1;
 
 string lookingFor;
 string status;
@@ -83,16 +91,14 @@ loadConfig()
             list tok = llParseStringKeepNulls(line, ["="], []);
             string tkey = llList2String(tok, 0);
             string tval = llList2String(tok, 1);
-            if (tkey == "EXPIRETIME") productAge = tval;
-            if (tkey == "READYTIME") drinkable = tval;
-            if (tkey == "FLOWCOLOR") flowcolor = tval;
-            if (tkey == "USES") productUses = tval;
-            if (tkey == "POURSOUND") poursound = tval;
             if (tkey == "REZZ_POSITION") rezzPosition = (vector)tval;
-            if (tkey == "INITIAL_LEVEL") initialLevel = (integer)tval;
-            if (tkey == "DROP_TIME") dropTime = (integer)tval * 86400;
-            if (tkey == "ONE_PART") singleLevel = (integer)tval;
-            if (tkey == "RESET_ON_REZ") doReset = (integer)tval;
+            else if (tkey == "INITIAL_LEVEL") initialLevel = (integer)tval;
+            else if (tkey == "DROP_TIME") dropTime = (integer)tval * 86400;
+            else if (tkey == "ONE_PART") singleLevel = (integer)tval;
+            else if (tkey == "RESET_ON_REZ") doReset = (integer)tval;
+            else if (tkey == "SENSOR_DISTANCE") SENSOR_DISTANCE = (integer)tval;   // How far to look for items
+            else if (tkey == "MIN_HEIGHT") minHeight = (float)tval;          
+            else if (tkey == "MAX_HEIGHT") maxHeight = (float)tval;           
         }
     }
 
@@ -110,48 +116,6 @@ loadConfig()
         }
     }
     llOwnerSay(llList2CSV(products));
-}
-
-
-psys(key k)
-{
- 
-     llParticleSystem(
-                [
-                    PSYS_SRC_PATTERN, PSYS_SRC_PATTERN_EXPLODE,
-                    PSYS_SRC_BURST_RADIUS,1,
-                    PSYS_SRC_ANGLE_BEGIN,0,
-                    PSYS_SRC_ANGLE_END,0,
-                    PSYS_SRC_TARGET_KEY, (key) k,
-                    PSYS_PART_START_COLOR,<1.000000,1.00000,0.800000>,
-                    PSYS_PART_END_COLOR,<1.000000,1.00000,0.800000>,
-                        
-                    PSYS_PART_START_ALPHA,.5,
-                    PSYS_PART_END_ALPHA,0,
-                    PSYS_PART_START_GLOW,0,
-                    PSYS_PART_END_GLOW,0,
-                    PSYS_PART_BLEND_FUNC_SOURCE,PSYS_PART_BF_SOURCE_ALPHA,
-                    PSYS_PART_BLEND_FUNC_DEST,PSYS_PART_BF_ONE_MINUS_SOURCE_ALPHA,
-                    
-                    PSYS_PART_START_SCALE,<0.100000,0.100000,0.000000>,
-                    PSYS_PART_END_SCALE,<1.000000,1.000000,0.000000>,
-                    PSYS_SRC_TEXTURE,"",
-                    PSYS_SRC_MAX_AGE,2,
-                    PSYS_PART_MAX_AGE,5,
-                    PSYS_SRC_BURST_RATE, 10,
-                    PSYS_SRC_BURST_PART_COUNT, 30,
-                    PSYS_SRC_ACCEL,<0.000000,0.000000,0.000000>,
-                    PSYS_SRC_OMEGA,<0.000000,0.000000,0.000000>,
-                    PSYS_SRC_BURST_SPEED_MIN, 0.1,
-                    PSYS_SRC_BURST_SPEED_MAX, 1.,
-                    PSYS_PART_FLAGS,
-                        0 |
-                        PSYS_PART_EMISSIVE_MASK |
-                        PSYS_PART_TARGET_POS_MASK|
-                        PSYS_PART_INTERP_COLOR_MASK |
-                        PSYS_PART_INTERP_SCALE_MASK
-                ]);
-                
 }
 
 refresh()
@@ -254,7 +218,7 @@ default
             {
                 status = "WaitProduct";
                 lookingFor = "SF " +m;
-                llSensor(lookingFor, "",SCRIPTED,  10, PI);
+                llSensor(lookingFor, "",SCRIPTED,  SENSOR_DISTANCE, PI);
             }
         }
         else if (status  == "Get")
@@ -409,8 +373,10 @@ default
     
     object_rez(key id)
     {
-        llSleep(.5);
-        osMessageObject(id, "INIT|"+PASSWORD+"|"+productAge+"|"+drinkable+"|"+flowcolor+"|"+poursound+"|"+productUses+"|");
+        llSleep(.4);
+        //products with new prod_gen notecard just need the passowrd, everything else is just here for backwards compatibility
+        //and will be removed in the future
+        osMessageObject(id,  "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
     }
     
     changed(integer change)
