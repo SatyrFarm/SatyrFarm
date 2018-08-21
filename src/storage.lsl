@@ -140,16 +140,15 @@ refresh()
                 vector p = llList2Vector(pstate, 0);
                 list desc = llParseStringKeepNulls(llList2String(pstate, 1), [","], []);
                 vector c = <.6,1,.6>;
+                if (lev < 10)
+                    c = <1,0,0>;
+                else  if (lev<50)
+                    c = <1,1,0>;
                 if (llGetListLength(desc) == 2)
                 {
                     float minHeight = llList2Float(desc, 0);
                     float maxHeight = llList2Float(desc, 0);
                     p.z = minHeight + (maxHeight-minHeight)*0.99*lev/100;
-                    
-                    if (lev < 10)
-                        c = <1,0,0>;
-                    else  if (lev<50)
-                        c = <1,1,0>;
                     llSetLinkPrimitiveParamsFast(lnk, [PRIM_POS_LOCAL, p]);
                 }
                 llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXT,  llList2String(products,i)+": "+(string)llRound(lev)+"%\n" ,c, 1.0]);
