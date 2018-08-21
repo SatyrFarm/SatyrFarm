@@ -46,11 +46,16 @@ string myName()
 
 refresh()
 {
+    vector textColor = <1,1,1>;
     integer days = llFloor((llGetUnixTime()- lastTs)/86400);
     string str = myName() + "\n";
     
     if (EXPIRES>0)
     {
+        if (EXPIRES > 1 && (EXPIRES-days) < 2)
+        {
+            textColor = <1.000, 0.255, 0.212>;
+        }
         str += "Expires in "+(string)(EXPIRES-days)+ " days\n";
         if (days > EXPIRES)
         {
@@ -61,6 +66,7 @@ refresh()
     
     if ((DRINKABLE-days)>0) 
     {
+        textColor = <1.000, 0.863, 0.000>;
         str += "Not ready yet ... " +(string)(DRINKABLE-days)+" days left\n";
     }
 
@@ -69,7 +75,7 @@ refresh()
        str += (string)PARTS + " Uses left\n";
     }
         
-    llSetText( str, <1,1,1>, 1.0);
+    llSetText(str, textColor, 1.0);
 }
 
 
