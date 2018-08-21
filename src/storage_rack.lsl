@@ -9,11 +9,6 @@ Format of config notecard:
 # How far to search for product to add
 SENSOR_DISTANCE=10
 #
-# What is the Z position (relative to root) of the "Olives" linked prim when it is empty
-MIN_HEIGHT=-2.0
-#
-# What is the Z position of the "Olives" link when it is 100% full
-MAX_HEIGHT=2.0
 
 **/
 string PASSWORD="*";
@@ -39,8 +34,6 @@ integer dropTime = 86400;
 integer singleLevel = 10;
 integer doReset = 1;
 integer SENSOR_DISTANCE=10;
-float minHeight=-1;
-float maxHeight = 1;
 
 string lookingFor;
 string status;
@@ -97,8 +90,6 @@ loadConfig()
             else if (tkey == "ONE_PART") singleLevel = (integer)tval;
             else if (tkey == "RESET_ON_REZ") doReset = (integer)tval;
             else if (tkey == "SENSOR_DISTANCE") SENSOR_DISTANCE = (integer)tval;   // How far to look for items
-            else if (tkey == "MIN_HEIGHT") minHeight = (float)tval;          
-            else if (tkey == "MAX_HEIGHT") maxHeight = (float)tval;           
         }
     }
 
@@ -139,21 +130,28 @@ refresh()
     for (i=0; i < llGetListLength(products); i++)
     {
         integer lnk;
+        string product = llList2String(products, i);
         for (lnk=2; lnk <= llGetNumberOfPrims(); lnk++)
         {
-            if (llGetLinkName(lnk) == llList2String(products, i))
+            if (llGetLinkName(lnk) == product)
             {
                 float lev = llList2Float(levels, i);
-                vector p = llList2Vector(llGetLinkPrimitiveParams(lnk, [PRIM_POS_LOCAL]), 0);
-                p.z = .2 + 0.96*lev/100;
+                list pstate = llGetLinkPrimitiveParams(lnk, [PRIM_POS_LOCAL, PRIM_DESC]);
+                vector p = llList2Vector(pstate, 0);
+                list desc = llParseStringKeepNulls(llList2String(pstate, 1), [","], []);
                 vector c = <.6,1,.6>;
-                
-                if (lev < 10)
-                    c = <1,0,0>;
-                else  if (lev<50)
-                    c = <1,1,0>;
-                //TODO this thing
-                //llSetLinkPrimitiveParamsFast(lnk, [PRIM_POS_LOCAL, p, PRIM_TEXT,  llList2String(products,i)+": "+llRound(lev)+"%\n" ,c, 1.0]);
+                if (llGetListLength(desc) == 2)
+                {
+                    float minHeight = llList2Float(desc, 0);
+                    float maxHeight = llList2Float(desc, 0);
+                    p.z = minHeight + (maxHeight-minHeight)*0.99*lev/100;
+                    
+                    if (lev < 10)
+                        c = <1,0,0>;
+                    else  if (lev<50)
+                        c = <1,1,0>;
+                    llSetLinkPrimitiveParamsFast(lnk, [PRIM_POS_LOCAL, p]);
+                }
                 llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXT,  llList2String(products,i)+": "+(string)llRound(lev)+"%\n" ,c, 1.0]);
             }
         }
@@ -180,9 +178,6 @@ rezzItem(string m)
 
 default 
 { 
-
-   
-    
     listen(integer c, string nm, key id, string m)
     {
         if (m == "CLOSE") 
