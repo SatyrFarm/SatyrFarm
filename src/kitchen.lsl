@@ -174,7 +174,10 @@ refresh()
                 llResetTime();
                 llSetTimerEvent(2);
                 llMessageLinked(LINK_SET,99, "STARTCOOKING", ""); 
-                llLoopSound("cooking", 1.0);
+                if (llGetInventoryType("cooking") == INVENTORY_SOUND)
+                {
+                    llLoopSound("cooking", 1.0);
+                }
             }
             else 
                 str += "Click to add ingredients\n";
@@ -195,8 +198,8 @@ refresh()
         str = "Selected: "+recipeName+"\nProgress: "+ (string)((integer)prog)+ " %";
         if (prog >=100.)
         {
-            llMessageLinked(LINK_SET,99, "ENDCOOKING", "");
             llStopSound();
+            llMessageLinked(LINK_SET,99, "ENDCOOKING", "");
             status = "Empty";
             llSay(0, "Congratulations, your "+recipeName+" is ready!");
             if (mustSit)
