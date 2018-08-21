@@ -90,7 +90,7 @@ default
             integer found_water = llListFindList(tok, ["IN_WATER"]) + 1;
             if (found_fluid)
                 fluidTexture = llList2String(tok, found_fluid);
-            if (found_waterf)
+            if (found_water)
                 inWater = llList2String(tok, found_water);
         }
         else if (o == "STARTCOOKING")
