@@ -275,6 +275,7 @@ default
             if (found_expire) EXPIRES = dayse + llList2Integer(tk, found_expire);
             else if (found_drinkable) DRINKABLE = dayse + llList2Integer(tk, found_drinkable);
             else if (found_parts) PARTS = llList2Integer(tk, found_parts);
+            refresh();
         }
         else if (cmd == "GETSTATUS")
         {
