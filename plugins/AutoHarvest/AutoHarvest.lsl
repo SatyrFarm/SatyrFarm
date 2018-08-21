@@ -22,17 +22,26 @@ default
         else if (cmd == "RESET") // Main script reset 
         {
             // Add our menu options
-             llMessageLinked(LINK_THIS, 1, "SET_MENU_OPTIONS|+AutoHarvest", NULL_KEY);
+            if (autoHarvest)
+                llMessageLinked(LINK_THIS, 1, "ADD_MENU_OPTION|-AutoHarvest", NULL_KEY);
+            else
+                llMessageLinked(LINK_THIS, 1, "ADD_MENU_OPTION|+AutoHarvest", NULL_KEY);
         }
         else if (cmd == "MENU_OPTION")
         {
             string option = llList2String(tok, 1);
-            autoHarvest = (option == "+AutoHarvest");
-            llSay(0, "AutoHarvest="+(string)autoHarvest);
-            if (autoHarvest)
-                llMessageLinked(LINK_THIS, 1, "SET_MENU_OPTIONS|-AutoHarvest", NULL_KEY);
-            else
-                llMessageLinked(LINK_THIS, 1, "SET_MENU_OPTIONS|+AutoHarvest", NULL_KEY);
+            if (option == "+AutoHarvest")
+            {
+                autoHarvest = TRUE;
+                llMessageLinked(LINK_THIS, 1, "REM_MENU_OPTION|+AutoHarvest", NULL_KEY);
+                llMessageLinked(LINK_THIS, 1, "ADD_MENU_OPTION|-AutoHarvest", NULL_KEY);
+            }
+            else if (option == "-AutoHarvest")
+            {
+                autoHarvest = FALSE;
+                llMessageLinked(LINK_THIS, 1, "REM_MENU_OPTION|-AutoHarvest", NULL_KEY);
+                llMessageLinked(LINK_THIS, 1, "ADD_MENU_OPTION|+AutoHarvest", NULL_KEY);
+            }
         }
     }
 }
