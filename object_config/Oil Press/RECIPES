@@ -1,6 +1,14 @@
-#1.Product to press
-#2. TIme for pressing
-#3. Texture
-#4. Final Product to rezz
-Olives=100=olives=Olive Oil
-Sugar Cane=200=cane=Sugar Extract
+# Possible Options:
+# DURATION, INGREDIENTS, PRODUCT, TEXTURE, REZ_POSITION
+# Last line has to be [END]
+[Olive Oil]
+    DURATION=100
+    INGREDIENTS=Olives
+    PRODUCT=SF Olive Oil
+    TEXTURE=olives
+[Sugar Extract]
+    DURATION=200
+    INGREDIENTS=Sugar Cane
+    TEXTURE=cane
+    PRODUCT=SF Sugar Extract
+[END]

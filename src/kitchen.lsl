@@ -80,7 +80,7 @@ loadConfig()
             string tkey = llList2String(tok, 0);
             string tval = llList2String(tok, 1);
             if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
-            else if (tkey == "REZZ_POSITION") default_rezzPosition = (vector)tval;
+            else if (tkey == "REZ_POSITION") default_rezzPosition = (vector)tval;
             else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
             else if (tkey == "MUST_SIT") mustSit = (integer)tval;
         }
@@ -173,7 +173,7 @@ refresh()
                 llSay(0, "All set, preparing ... ");
                 llResetTime();
                 llSetTimerEvent(2);
-                llMessageLinked(LINK_SET,1, "STARTCOOKING", ""); 
+                llMessageLinked(LINK_SET,99, "STARTCOOKING", ""); 
                 llLoopSound("cooking", 1.0);
             }
             else 
@@ -182,19 +182,27 @@ refresh()
     }
     else if (status == "Cooking")
     {
-        if (mustSit && llGetObjectPrimCount() == llGetNumberOfPrims())
+        if (mustSit)
         {
-            llSetText("Sit to produce item.", <1,1,1>, 1.0);
-            llResetTime();
+            if (llGetObjectPrimCount(llGetKey()) == llGetNumberOfPrims())
+            {
+                llSetText("Sit here to produce item", <1.000, 0.863, 0.000>, 1.0);
+                llResetTime();
+                return;
+            }
         }
         float prog = (integer)((float)(llGetTime())*100./timeToCook);
         str = "Selected: "+recipeName+"\nProgress: "+ (string)((integer)prog)+ " %";
         if (prog >=100.)
         {
-            llMessageLinked(LINK_SET,1, "ENDCOOKING", "");
+            llMessageLinked(LINK_SET,99, "ENDCOOKING", "");
             llStopSound();
             status = "Empty";
             llSay(0, "Congratulations, your "+recipeName+" is ready!");
+            if (mustSit)
+            {
+                llUnSit(llGetLinkKey(llGetNumberOfPrims()));
+            }
             llRezObject(objectToGive, llGetPos() + rezzPosition*llGetRot(), ZERO_VECTOR, ZERO_ROTATION, 1);
             recipeName = "";
             objectToGive = "";
@@ -354,7 +362,7 @@ setRecipe(string nm)
                         return;
                     }
                     llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
-                    llMessageLinked(LINK_SET, 1, stat, "");
+                    llMessageLinked(LINK_SET, 99, stat, "");
                     return;
                 }
                 //read key-value-pairs
@@ -365,7 +373,7 @@ setRecipe(string nm)
                 if (tkey == "DURATION") timeToCook = (integer)tval;
                 if (tkey == "INGREDIENTS") ingredients  = llParseString2List(tval, [",", "+"], []);
                 if (tkey == "PRODUCT") objectToGive = tval;
-                if (tkey == "REZZ_POSITION") rezzPosition = (vector)tval;
+                if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
                 if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
             }
         }
@@ -418,7 +426,7 @@ default
             recipeName = "";
             status = "";
             refresh();
-            llMessageLinked(LINK_SET,1, "ENDCOOKING", "");
+            llMessageLinked(LINK_SET,99, "ENDCOOKING", "");
             llStopSound();
         }
         else if (m == "Recipes" )
@@ -450,6 +458,10 @@ default
             llSay(0, "Looking for: " + lookingFor);
             llSensor(lookingFor , "",SCRIPTED,  sensorRadius, PI);
             refresh();
+        }
+        else
+        {
+            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, NULL_KEY);
         }
         llListenRemove(listener);
         listener = -1;
@@ -553,7 +565,7 @@ default
             getRecipeNames();
             loadConfig();
         }
-        if (status == "Cooking" && (llGetObjectPrimCount() != llGetNumberOfPrims()))
+        if (status == "Cooking" && (llGetObjectPrimCount(llGetKey()) != llGetNumberOfPrims()))
         {
             refresh();
         }
