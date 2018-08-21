@@ -57,7 +57,7 @@ refresh()
             textColor = <1.000, 0.255, 0.212>;
         }
         str += "Expires in "+(string)(EXPIRES-days)+ " days\n";
-        if (days > EXPIRES)
+        if (days >= EXPIRES)
         {
             llSay(0, "I have expired! Removing...");
             llDie();
