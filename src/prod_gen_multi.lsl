@@ -7,9 +7,6 @@ Example of 'config' notecard:
 #How many days until the product expires (dies)
 EXPIRES=15
 #
-#A product may be used more than 1 times before it is empty. How many times?
-PARTS=5
-#
 #(Optional) When emptying the product, what color are the  particles rezzed?
 FLOWCOLOR=<1.000, 0.805, 0.609>
 #
@@ -33,7 +30,7 @@ integer lastTs;
 string PASSWORD="";
 integer EXPIRES = -1;
 integer DRINKABLE = -1;
-integer PARTS = 1;
+integer percent  = 100;
 vector FLOWCOLOR=<1.000, 0.805, 0.609>;
 string extraParam; // Params to be passed from config notecard to the target object
 
@@ -69,10 +66,12 @@ refresh()
         textColor = <1.000, 0.863, 0.000>;
         str += "Not ready yet ... " +(string)(DRINKABLE-days)+" days left\n";
     }
-
-    if (PARTS>1)
+    else
     {
-       str += (string)PARTS + " Uses left\n";
+        if (percent<100)
+        {
+           str += (string)percent+ "% left\n";
+        }
     }
         
     llSetText(str, textColor, 1.0);
@@ -139,7 +138,7 @@ loadConfig()
                     string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
                     string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
                     if (cmd =="EXPIRES") EXPIRES = (integer)val;
-                    else if (cmd == "PARTS")     PARTS = (integer)val;
+                    //else if (cmd == "PARTS")     PARTS = (integer)val;
                     else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
                     else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
                     else if (cmd == "EXTRAPARAM")     extraParam = val;
@@ -245,14 +244,27 @@ default
             
             key u = llList2Key(tk,1);
             llSetRot(llEuler2Rot(<0,PI/1.4, 0>));
-            water(u);
+            if (llList2Integer(llGetObjectDetails(u, [OBJECT_ATTACHED_POINT]), 0)>0)
+                water(llGetOwnerKey(u));
+            else
+                water(u);
+                
             llSleep(2);
-            osMessageObject(u, llToUpper(myName())+"|"+PASSWORD +"|"+(string)PARTS+"|"+extraParam);
-            --PARTS;
-            if (PARTS <= 0)
+            osMessageObject(u, llToUpper(myName())+"|"+PASSWORD +"|"+(string)percent+"|"+extraParam);
+            
+            
+            integer consume = 100;// Default consume 100%
+            if (llList2Integer(tk,2)>0)
+                consume = llList2Integer(tk,2)>0;
+            percent -= consume;
+            
+            if (percent <= 0)
             {
                 llDie();
+                return;
             }
+            
+            llSleep(1);
             llSetRot(llEuler2Rot(<0,0,0>));
             refresh();
         }
@@ -261,6 +273,7 @@ default
             PASSWORD = llList2String(tk,1);
             reset();
         }
+        
         //following commands require correct password
         if(llList2String(tk, 1) != PASSWORD)
         {
@@ -274,13 +287,26 @@ default
             integer found_parts = llListFindList(tk, ["USES"]) + 1;
             if (found_expire) EXPIRES = dayse + llList2Integer(tk, found_expire);
             else if (found_drinkable) DRINKABLE = dayse + llList2Integer(tk, found_drinkable);
-            else if (found_parts) PARTS = llList2Integer(tk, found_parts);
-            refresh();
+            //else if (found_parts) PARTS = llList2Integer(tk, found_parts);
+
         }
         else if (cmd == "GETSTATUS")
         {
             key idr = llList2Key(tk, 2);
-            osMessageObject(idr, "PRODSTATUS|USES|" + (string)PARTS + "|EXPIRE|" + (string)(EXPIRES-dayse) + "|READY|" + (string)(DRINKABLE-dayse));
+            osMessageObject(idr, "PRODSTATUS|USES|" + (string)percent + "|EXPIRE|" + (string)(EXPIRES-dayse) + "|READY|" + (string)(DRINKABLE-dayse));
         }
+        else if (cmd =="SETOBJECTNAME")
+        {
+            llSetObjectName( llList2String(tk, 2) );
+        }
+        else if (cmd == "SETLINKTEXTURE")
+        {
+            llSetLinkTexture( llList2Integer(tk, 2), llList2String(tk, 3), llList2Integer(tk, 4));
+        }
+        else if (cmd == "SETLINKCOLOR")
+        {
+            llSetLinkColor( llList2Integer(tk, 2), llList2Vector(tk, 3), llList2Integer(tk, 4) ) ;
+        }
+        refresh();
     }
 }
