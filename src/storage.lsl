@@ -153,7 +153,7 @@ refresh()
                 if (llGetListLength(desc) == 2)
                 {
                     float minHeight = llList2Float(desc, 0);
-                    float maxHeight = llList2Float(desc, 0);
+                    float maxHeight = llList2Float(desc, 1);
                     p.z = minHeight + (maxHeight-minHeight)*0.99*lev/100;
                     llSetLinkPrimitiveParamsFast(lnk, [PRIM_POS_LOCAL, p]);
                 }
@@ -309,6 +309,8 @@ default
 
     on_rez(integer n)
     {
+        llListenRemove(listener);
+        listener = -1;
         if (doReset)
         {
             llResetScript();
