@@ -31,7 +31,7 @@ For scripting plugins, check the code below for the emitted link_messages
 **/
 
 
-float LIFETIME = 86400*2.;
+float LIFETIME = 172800;
 float WATER_TIMES = 2.;
 list PLANTS = []; 
 list PRODUCTS = [];
@@ -39,7 +39,6 @@ float WOOD_TIMES = 4.;
 integer HAS_WOOD=0;
 integer AUTOREPLANT=0;
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 string PRODUCT_NAME;
 
@@ -108,6 +107,7 @@ loadConfig()
                 if (cmd == "HAS_WOOD")     HAS_WOOD= (integer)val;  // Trees dont need replanting after harvest
                 else if (cmd == "LIFEDAYS")    LIFETIME= 86400*(float)val;
                 else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
+                else if (cmd == "AUTOREPLANT") AUTOREPLANT = (integer)val;
                 else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;
                 else if (cmd == "PLANTLIST")
                 {
@@ -123,7 +123,7 @@ loadConfig()
 }
 
 
-psys(key k)
+psys()
 {
  
      llParticleSystem(
@@ -241,16 +241,16 @@ refresh(integer ts)
     else
     {
        float p= 1- ((float)(statusLeft)/(float)statusDur);
-       progress += "Status: "+status+" ("+(integer)(p*100.)+"%)\n";
+       progress += "Status: "+status+" ("+(string)((integer)(p*100.))+"%)\n";
     }
         
     float sw = water;
     if (sw< 0) sw=0;
 
     if (HAS_WOOD)
-        llSetText(customStr + "Water: " + (integer)(sw)+ "%\nWood: "+(string)(llFloor(wood))+"%\n"+progress, <1,.9,.6>, 1.0);
+        llSetText(customStr + "Water: " + (string)((integer)(sw))+ "%\nWood: "+(string)(llFloor(wood))+"%\n"+progress, <1,.9,.6>, 1.0);
     else
-        llSetText(customStr + "Water: " + (integer)(sw)+ "%\n"+progress, <1,.9,.6>, 1.0);
+        llSetText(customStr + "Water: " + (string)((integer)(sw))+ "%\n"+progress, <1,.9,.6>, 1.0);
 
     if (status == "Empty")
     {
@@ -267,7 +267,7 @@ refresh(integer ts)
     else if (status == "Dead")
         llSetLinkColor(2, <0.1,0,0>, ALL_SIDES);
         
-    psys(NULL_KEY);
+    psys();
 
     llMessageLinked(LINK_SET, 99, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant, NULL_KEY);
 }
