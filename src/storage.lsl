@@ -116,7 +116,6 @@ refresh()
     integer i;
     if (ts - lastTs > dropTime)
     {
-
             for (i=0; i < llGetListLength(products); i++)
             {
                 l = llList2Float(levels,  i);
@@ -127,23 +126,29 @@ refresh()
             lastTs = ts;
     }
     
+    integer found = 0;
+    string statTotal = "";
     for (i=0; i < llGetListLength(products); i++)
     {
-        integer lnk;
+        float lev = llList2Float(levels, i);
         string product = llList2String(products, i);
+        string stati = llList2String(products,i)+": "+(string)llRound(lev)+"%\n";
+        statTotal += "\n" + stati;
+        integer lnk;
         for (lnk=2; lnk <= llGetNumberOfPrims(); lnk++)
         {
+            //methode one: show status of specific products on linked prims
             if (llGetLinkName(lnk) == product)
             {
-                float lev = llList2Float(levels, i);
-                list pstate = llGetLinkPrimitiveParams(lnk, [PRIM_POS_LOCAL, PRIM_DESC]);
-                vector p = llList2Vector(pstate, 0);
-                list desc = llParseStringKeepNulls(llList2String(pstate, 1), [","], []);
+                found++;
                 vector c = <.6,1,.6>;
                 if (lev < 10)
                     c = <1,0,0>;
                 else  if (lev<50)
                     c = <1,1,0>;
+                list pstate = llGetLinkPrimitiveParams(lnk, [PRIM_POS_LOCAL, PRIM_DESC]);
+                vector p = llList2Vector(pstate, 0);
+                list desc = llParseStringKeepNulls(llList2String(pstate, 1), [","], []);
                 if (llGetListLength(desc) == 2)
                 {
                     float minHeight = llList2Float(desc, 0);
@@ -151,11 +156,16 @@ refresh()
                     p.z = minHeight + (maxHeight-minHeight)*0.99*lev/100;
                     llSetLinkPrimitiveParamsFast(lnk, [PRIM_POS_LOCAL, p]);
                 }
-                llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXT,  llList2String(products,i)+": "+(string)llRound(lev)+"%\n" ,c, 1.0]);
+                llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXT, stati, c, 1.0]);
             }
         }
     }
-    llMessageLinked(LINK_SET, 99, "STATUS|"+(string)singleLevel+"|"+llDumpList2String(products, ",")+"|"+llDumpList2String(levels, ","), NULL_KEY);
+    if (found == 0)
+    {
+        //methode two: show status of everything on root prim
+        llSetPrimitiveParamsFast([PRIM_TEXT, statTotal, <.6,1,.6>, 1.0]);
+    }
+    llMessageLinked(LINK_SET, 99, "STORESTATUS|"+(string)singleLevel+"|"+llDumpList2String(products, ",")+"|"+llDumpList2String(levels, ","), NULL_KEY);
 }
 
 rezzItem(string m)
@@ -173,6 +183,20 @@ rezzItem(string m)
     else llSay(0, "Sorry, there is not enough "+m);
 }
 
+getItem(string m)
+{
+    integer idx = llListFindList(products, [m]);
+    if (idx >=0 && llList2Integer(levels,idx) >=100)
+    {
+        llSay(0, "I am full of "+m);
+    }
+    else
+    {
+        status = "WaitProduct";
+        lookingFor = "SF " +m;
+        llSensor(lookingFor, "",SCRIPTED,  SENSOR_DISTANCE, PI);
+    }
+}
 
 
 default 
@@ -186,13 +210,19 @@ default
         else if (m == "Add Product")
         {
             status = "Sell";
-            multiPageMenu(id, "Select product to store", products);
+            if (llGetListLength(products) == 1)
+                getItem(llList2String(products,0));
+            else
+                multiPageMenu(id, "Select product to store", products);
             return;
         }
         else if (m == "Get Product")
         {
             status = "Get";
-            multiPageMenu(id, "Select product to get", products);
+            if (llGetListLength(products) == 1)
+                rezzItem(llList2String(products,0));
+            else
+                multiPageMenu(id, "Select product to get", products);
             return;
         }
         else if (status  == "Sell")
@@ -203,17 +233,7 @@ default
                 multiPageMenu(id, "Select product to store", products);
                 return;
             }
-            integer idx = llListFindList(products, [m]);
-            if (idx >=0 && llList2Integer(levels,idx) >=100)
-            {
-                llSay(0, "I am full of "+m);
-            }
-            else
-            {
-                status = "WaitProduct";
-                lookingFor = "SF " +m;
-                llSensor(lookingFor, "",SCRIPTED,  SENSOR_DISTANCE, PI);
-            }
+            getItem(m);
         }
         else if (status  == "Get")
         {
@@ -243,9 +263,7 @@ default
             {
                 string productName = llList2String(cmd,2);
                 key u = llList2Key(cmd,3);
-                
               //  if (!llSameGroup((u))) return;
-                
                 integer idx = llListFindList(products, [productName]);
                 if (idx>=0 && llList2Float(levels, idx) > singleLevel )
                 {
