@@ -44,6 +44,7 @@ string PASSWORD="*";
 string PRODUCT_NAME;
 
 list customOptions = [];
+list customText = [];
 
 integer createdTs =0;
 integer lastTs=0;
@@ -164,7 +165,12 @@ psys(key k)
 
 refresh(integer ts)
 {
-
+    string customStr = "";
+    integer i = llGetListLength(customText);
+    while (i--)
+    {
+        customStr = llList2String(customText, i) + "\n";
+    }
  
     water -=  (float)(llGetUnixTime() - lastTs)/(LIFETIME/WATER_TIMES)*100.;
     wood += (float)(llGetUnixTime() - lastTs)/(LIFETIME/WOOD_TIMES)*100.;
@@ -238,9 +244,9 @@ refresh(integer ts)
     if (sw< 0) sw=0;
 
     if (HAS_WOOD)
-        llSetText("Water: " + (integer)(sw)+ "%\nWood: "+(string)(llFloor(wood))+"%\n"+progress, <1,.9,.6>, 1.0);
+        llSetText(customStr + "Water: " + (integer)(sw)+ "%\nWood: "+(string)(llFloor(wood))+"%\n"+progress, <1,.9,.6>, 1.0);
     else
-        llSetText("Water: " + (integer)(sw)+ "%\n"+progress, <1,.9,.6>, 1.0);
+        llSetText(customStr + "Water: " + (integer)(sw)+ "%\n"+progress, <1,.9,.6>, 1.0);
 
     if (status == "Empty")
     {
@@ -384,7 +390,7 @@ default
         }
         else if (mode == "SelectPlant")
         {
-            integer idx = llListFindList(PLANTS, m);
+            integer idx = llListFindList(PLANTS, [m]);
             if (idx>=0)
             {
                 plant = llStringTrim(llList2String(PLANTS, idx), STRING_TRIM);
@@ -475,6 +481,7 @@ default
         {
             loadConfig();
             customOptions = [];
+            customText = [];
             llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
         }
     }
@@ -495,6 +502,18 @@ default
             if (findOpt != -1)
             {
                 customOptions = llDeleteSubList(customOptions, findOpt, findOpt);
+            }
+        }
+        else if (cmd == "ADD_TEXT")
+        {
+            customText += [llList2String(tok,1)];
+        }
+        else if (cmd == "REM_TEXT")
+        {
+            integer findTxt = llListFindList(customText, [llList2String(tok,1)]);
+            if (findTxt != -1)
+            {
+                customText = llDeleteSubList(customText, findTxt, findTxt);
             }
         }
         else if (cmd == "SETSTATUS")    // Change the status of this plant
