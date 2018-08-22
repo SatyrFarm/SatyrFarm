@@ -273,6 +273,7 @@ default
             }
             
             llSleep(1);
+            llParticleSystem([]);
             llSetRot(llEuler2Rot(<0,0,0>));
             refresh();
         }
