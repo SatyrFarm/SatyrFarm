@@ -410,7 +410,7 @@ default
             mode = "";
         }
         else
-            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, NULL_KEY);
+            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, id);
     }
     
     dataserver(key k, string m)
