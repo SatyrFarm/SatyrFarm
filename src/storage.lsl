@@ -20,6 +20,7 @@ integer chan(key u)
 list products = [];
 list levels = [];
 list customOptions = [];
+list customText = [];
 
 integer listener=-1;
 integer listenTs;
@@ -160,10 +161,20 @@ refresh()
             }
         }
     }
+    string customStr = "";
+    i = llGetListLength(customText);
+    while (i--)
+    {
+        customStr = llList2String(customText, i) + "\n";
+    }
     if (found == 0)
     {
-        //methode two: show status of everything on root prim
-        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, statTotal, <.6,1,.6>, 1.0]);
+        //if no link gets status text, display everything on the root prim
+        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, customStr + statTotal, <.6,1,.6>, 1.0]);
+    }
+    else
+    {
+        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, customStr + statTotal, <.6,1,.6>, 1.0]);
     }
     llMessageLinked(LINK_SET, 99, "STORESTATUS|"+(string)singleLevel+"|"+llDumpList2String(products, ",")+"|"+llDumpList2String(levels, ","), NULL_KEY);
 }
@@ -371,6 +382,18 @@ default
                 customOptions = llDeleteSubList(customOptions, findOpt, findOpt);
             }
         }
+        else if (cmd == "ADD_TEXT")
+        {
+            customText += [llList2String(tok,1)];
+        }
+        else if (cmd == "REM_TEXT")
+        {
+            integer findOpt = llListFindList(customText, [llList2String(tok,1)]);
+            if (findOpt != -1)
+            {
+                customText = llDeleteSubList(customText, findOpt, findOpt);
+            }
+        }
         else if (cmd == "SETSTATUS")
         {
             products = llParseStringKeepNulls(llList2String(tok,1), [","], []);
@@ -398,6 +421,7 @@ default
             loadConfig();
             refresh();
             customOptions = [];
+            customText = [];
             llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
         }
     }
