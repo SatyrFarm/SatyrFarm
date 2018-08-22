@@ -269,7 +269,7 @@ refresh(integer ts)
         
     psys(NULL_KEY);
 
-    llMessageLinked(LINK_SET, 99, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|"+plant, NULL_KEY);
+    llMessageLinked(LINK_SET, 99, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant, NULL_KEY);
 }
 
 doHarvest()
