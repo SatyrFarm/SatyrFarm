@@ -95,9 +95,12 @@ loadConfig()
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
     {
-        list tok = llParseString2List(llList2String(lines,i), ["="], []);
-        if (llList2String(tok,1) != "")
+        string line = llList2String(lines, i);
+        if (llGetSubString(line, 0, 0) != "#")
         {
+            list tok = llParseString2List(line, ["="], []);
+            if (llList2String(tok,1) != "")
+            {
                 string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
                 string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
                 //llOwnerSay(cmd+"="+val);
@@ -114,6 +117,7 @@ loadConfig()
                 {
                     PRODUCTS = llParseString2List(val, [","], []);
                 }
+            }
         }
     }
 }
