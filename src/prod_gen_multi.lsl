@@ -242,6 +242,17 @@ default
                 return;
             }
             
+            
+            integer consume = 100;// Default consume 100%
+            if (llList2Integer(tk,2)>0)
+                consume = llList2Integer(tk,2);
+
+            if (percent < consume -1) //allow 1% more
+            {
+                llSay(0, "There is not enough left.");
+                return;
+            }
+            
             key u = llList2Key(tk,1);
             llSetRot(llEuler2Rot(<0,PI/1.4, 0>));
             if (llList2Integer(llGetObjectDetails(u, [OBJECT_ATTACHED_POINT]), 0)>0)
@@ -250,13 +261,10 @@ default
                 water(u);
                 
             llSleep(2);
+            percent -= consume;
+            
             osMessageObject(u, llToUpper(myName())+"|"+PASSWORD +"|"+(string)percent+"|"+extraParam);
             
-            
-            integer consume = 100;// Default consume 100%
-            if (llList2Integer(tk,2)>0)
-                consume = llList2Integer(tk,2);
-            percent -= consume;
             
             if (percent <= 0)
             {
