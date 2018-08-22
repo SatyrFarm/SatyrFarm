@@ -25,6 +25,8 @@ string status;
 list recipeNames;
 string recipeName;
 list ingredients; 
+list ingredientsPercent;
+
 list haveIngredients;
 integer mustSit = 0;
 integer timeToCook; // in seconds
@@ -39,6 +41,7 @@ integer default_timeToCook = 60;
 vector default_rezzPosition = <1,0,0>;
 
 string lookingFor;
+integer lookingForPercent;
 
 
 integer chan(key u)
@@ -421,6 +424,49 @@ setRecipe(string nm)
     llSay(0, "Error! Recipe not found " +nm);
 }
 
+
+
+list itemAndPercent(string item)
+{
+    integer perc = 100;
+    string prod;
+    integer idx = llSubStringIndex(item,"%");
+    if (idx != -1)
+    {
+        perc = (integer)llGetSubString(item, 0, idx-1);
+        prod = llStringTrim(llGetSubString(item, idx+1, -1), STRING_TRIM);
+    }
+    else
+    {
+        perc = 100;
+        prod = llStringTrim(item, STRING_TRIM);
+    }
+    return [prod, perc];
+}
+
+integer getIngredientPercent(string active)
+{
+    integer i;
+    for (i=0; i < llGetListLength(haveIngredients); i++)
+    {
+        if (llList2Integer(haveIngredients,i)==0)
+        {
+            list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
+            integer j;
+            for (j=0; j < llGetListLength(possible); j++)
+            {
+                list itper = itemAndPercent(llList2String(possible, j));
+                if (llList2String(itper,0) == active)
+                {
+                    return llList2Integer(itper,1);
+                }
+            }
+        }
+    }
+    return 100;
+}
+
+
 dlgIngredients(key u)
 {
     list opts = [];
@@ -435,7 +481,10 @@ dlgIngredients(key u)
             list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
             integer j;
             for (j=0; j < llGetListLength(possible); j++)
-                opts +=  llStringTrim(llList2String(possible, j), STRING_TRIM);
+            {
+                list itper = itemAndPercent(llList2String(possible, j));
+                opts +=  llList2String(itper,0); //llStringTrim(llList2String(possible, j), STRING_TRIM);
+            }
         }
     }
 
@@ -495,7 +544,10 @@ default
                 dlgIngredients(id);
                 return;
             }
+            
             lookingFor = "SF "+m; //llList2String(ingredients,idx);
+            lookingForPercent = getIngredientPercent(m);
+            
             llSay(0, "Looking for: " + lookingFor);
             llSensor(lookingFor , "",SCRIPTED,  sensorRadius, PI);
             refresh();
@@ -521,10 +573,11 @@ default
                     integer j;
                     for (j=0; j < llGetListLength(possible); j++)
                     {
-                        
-                        //opts += llList2String(possible, j);                        
+
                         string poss = llStringTrim(llList2String(possible,j), STRING_TRIM);
-                        if (llToUpper(poss) == cmd )
+                        list inperc = itemAndPercent(poss);
+                        
+                        if (llToUpper( llList2String(inperc,0) ) == cmd )
                         {
                             if (llList2String(tk,1) != PASSWORD) { llOwnerSay("Bad Password"); return; } 
                             haveIngredients= llListReplaceList(haveIngredients, [1], i,i);
@@ -581,7 +634,7 @@ default
     {   
         llSay(0, "Found "+llDetectedName(0)+", emptying...");
         key id = llDetectedKey(0);
-        osMessageObject( id,  "DIE|"+(string)llGetKey());
+        osMessageObject( id,  "DIE|"+(string)llGetKey()+"|"+lookingForPercent);
         llSleep(2);
     }
     
