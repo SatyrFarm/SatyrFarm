@@ -255,7 +255,7 @@ default
             
             integer consume = 100;// Default consume 100%
             if (llList2Integer(tk,2)>0)
-                consume = llList2Integer(tk,2)>0;
+                consume = llList2Integer(tk,2);
             percent -= consume;
             
             if (percent <= 0)
