@@ -255,45 +255,45 @@ default
     
     dataserver(key k, string m)
     {
-            list cmd = llParseStringKeepNulls(m, ["|"] , []);
-            if (llList2String(cmd,1) != PASSWORD ) { llSay(0, "Bad password"); return; } 
-            string item = llList2String(cmd,0);
-            
-            if (item == "GIVE")
+        list cmd = llParseStringKeepNulls(m, ["|"] , []);
+        if (llList2String(cmd,1) != PASSWORD ) { llSay(0, "Bad password"); return; } 
+        string item = llList2String(cmd,0);
+        
+        if (item == "GIVE")
+        {
+            string productName = llList2String(cmd,2);
+            key u = llList2Key(cmd,3);
+          //  if (!llSameGroup((u))) return;
+            integer idx = llListFindList(products, [productName]);
+            if (idx>=0 && llList2Float(levels, idx) > singleLevel )
             {
-                string productName = llList2String(cmd,2);
-                key u = llList2Key(cmd,3);
-              //  if (!llSameGroup((u))) return;
-                integer idx = llListFindList(products, [productName]);
-                if (idx>=0 && llList2Float(levels, idx) > singleLevel )
-                {
-                    integer l = llList2Integer(levels,idx);
-                    l-= singleLevel; 
-                    if (l <0) l =0;
-                    levels = [] + llListReplaceList(levels, [l], idx, idx);;
-                    osMessageObject(u, "HAVE|"+PASSWORD+"|"+productName+"|"+(string)llGetKey());
-                    refresh();
-                }
-                else llSay(0, "Not enough "+productName);
+                integer l = llList2Integer(levels,idx);
+                l-= singleLevel; 
+                if (l <0) l =0;
+                levels = [] + llListReplaceList(levels, [l], idx, idx);;
+                osMessageObject(u, "HAVE|"+PASSWORD+"|"+productName+"|"+(string)llGetKey());
+                refresh();
             }
-            else
+            else llSay(0, "Not enough "+productName);
+        }
+        else
+        {
+            // Add something to the jars
+            integer i;
+            for (i=0; i < llGetListLength(products); i++)
             {
-                // Add something to the jars
-                integer i;
-                for (i=0; i < llGetListLength(products); i++)
+                if (llToUpper(llList2String(products,i)) ==  item)
                 {
-                    if (llToUpper(llList2String(products,i)) ==  item)
-                    {
-                        // Fill up
-                        integer l = llList2Integer(levels, i);
-                        l += singleLevel; if (l>100) l = 100;
-                        levels = llListReplaceList(levels, [l], i,i);
-                        llSay(0, "Added "+llToLower(item)+", level is now "+(string)llRound(l)+"%");
-                        refresh();
-                        return;
-                    }
+                    // Fill up
+                    integer l = llList2Integer(levels, i);
+                    l += singleLevel; if (l>100) l = 100;
+                    levels = llListReplaceList(levels, [l], i,i);
+                    llSay(0, "Added "+llToLower(item)+", level is now "+(string)llRound(l)+"%");
+                    refresh();
+                    return;
                 }
-            }        
+            }
+        }        
     }
 
     on_rez(integer n)
