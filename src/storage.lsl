@@ -163,7 +163,7 @@ refresh()
     if (found == 0)
     {
         //methode two: show status of everything on root prim
-        llSetPrimitiveParamsFast([PRIM_TEXT, statTotal, <.6,1,.6>, 1.0]);
+        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, statTotal, <.6,1,.6>, 1.0]);
     }
     llMessageLinked(LINK_SET, 99, "STORESTATUS|"+(string)singleLevel+"|"+llDumpList2String(products, ",")+"|"+llDumpList2String(levels, ","), NULL_KEY);
 }
