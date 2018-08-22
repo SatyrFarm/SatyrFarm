@@ -29,8 +29,10 @@ list haveIngredients;
 integer mustSit = 0;
 integer timeToCook; // in seconds
 string objectToGive; // Name of the object to give after done cooking
+string objectParams;
 vector rezzPosition; // Position of the product to rezz
 integer sensorRadius; //radius to scan for items
+
 //Default Values
 integer default_sensorRadius = 5;
 integer default_timeToCook = 60;
@@ -203,7 +205,7 @@ refresh()
                 llSay(0, "All set, preparing ... ");
                 llResetTime();
                 llSetTimerEvent(2);
-                llMessageLinked(LINK_SET,99, "STARTCOOKING", ""); 
+                llMessageLinked(LINK_SET,90, "STARTCOOKING", ""); 
                 setAnimations(1);
                 if (llGetInventoryType("cooking") == INVENTORY_SOUND)
                 {
@@ -240,8 +242,6 @@ refresh()
                 llUnSit(llGetLinkKey(llGetNumberOfPrims()));
             }
             llRezObject(objectToGive, llGetPos() + rezzPosition*llGetRot(), ZERO_VECTOR, ZERO_ROTATION, 1);
-            recipeName = "";
-            objectToGive = "";
             ingredients = [];
             haveIngredients = [];
             llSetTimerEvent(1);
@@ -318,6 +318,8 @@ setRecipeOld(string nm)
             ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
             timeToCook   = llList2Integer(tok, 2);
             objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
+            objectParams = llStringTrim(llList2String(tok, 4), STRING_TRIM);
+            
             haveIngredients = [];
             integer kk = llGetListLength(ingredients);
             while (kk-->0)
@@ -393,12 +395,12 @@ setRecipe(string nm)
                     status = "Adding";
                     if (ingredients == [] || objectToGive == "") 
                     {
-                        llSay(0, "Error! No Ingrediments given");
+                        llSay(0, "RECIPES Notecard parsing Error. Are ingredients and product set?");
                         status = "";
                         return;
                     }
                     llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
-                    llMessageLinked(LINK_SET, 99, stat, "");
+                    llMessageLinked(LINK_SET, 92, stat, "");
                     return;
                 }
                 //read key-value-pairs
@@ -407,10 +409,11 @@ setRecipe(string nm)
                 string tval = llStringTrim(llList2String(tmp, -1), STRING_TRIM);
                 stat += tkey + "|" + tval + "|";
                 if (tkey == "DURATION") timeToCook = (integer)tval;
-                if (tkey == "INGREDIENTS") ingredients  = llParseString2List(tval, [",", "+"], []);
-                if (tkey == "PRODUCT") objectToGive = tval;
-                if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
-                if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
+                else if (tkey == "INGREDIENTS") ingredients  = llParseString2List(tval, [",", "+"], []);
+                else if (tkey == "PRODUCT") objectToGive = tval;
+                else if (tkey == "PRODUCT_PARAMS") objectParams= (string)tval; // Custom parameters to be passed to prod_gen
+                else if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
+                else if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
             }
         }
     }
@@ -448,6 +451,7 @@ default
         //products with new prod_gen notecard just need the passowrd, everything else is just here for backwards compatibility
         //and will be removed in the future
         osMessageObject(id,  "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
+        llMessageLinked(LINK_SET, 91, "REZZED|"+id+"|"+recipeName, NULL_KEY);
     }
     
     
@@ -498,7 +502,7 @@ default
         }
         else
         {
-            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, id);
+            llMessageLinked(LINK_SET, 93, "MENU_OPTION|"+m, NULL_KEY);
         }
         llListenRemove(listener);
         listener = -1;
