@@ -15,7 +15,7 @@ default
             string option = llList2String(tok, 1);
             if (option == "Get Fishing Rod")
             {
-                llGiveInventory(id, "SF Fishing Rod (wear)");
+                llGiveInventory(id, "Fishing Rod (wear)");
             }
         }
     }
