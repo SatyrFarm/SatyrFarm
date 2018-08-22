@@ -18,6 +18,7 @@ integer listenTs;
 integer startOffset = 0;
 
 list customOptions = [];
+list customText = [];
 
 string status;
 
@@ -173,8 +174,12 @@ psys(key k)
 
 refresh()
 {
-    integer i;
-    string str;
+    string str = "";
+    integer i = llGetListLength(customText);
+    while (i--)
+    {
+        str = llList2String(customText, i) + "\n";
+    }
     if (status == "Adding")
     {
         str += "Recipe: "+recipeName+"\n";
@@ -493,7 +498,7 @@ default
         }
         else
         {
-            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, NULL_KEY);
+            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, id);
         }
         llListenRemove(listener);
         listener = -1;
@@ -598,6 +603,7 @@ default
             getRecipeNames();
             loadConfig();
             customOptions = [];
+            customText = [];
             llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
         }
         if (status == "Cooking" && (llGetObjectPrimCount(llGetKey()) != llGetNumberOfPrims()))
@@ -627,6 +633,18 @@ default
             if (findOpt != -1)
             {
                 customOptions = llDeleteSubList(customOptions, findOpt, findOpt);
+            }
+        }
+        else if (cmd == "ADD_TEXT")
+        {
+            customText += [llList2String(tok,1)];
+        }
+        else if (cmd == "REM_TEXT")
+        {
+            integer findTxt = llListFindList(customText, [llList2String(tok,1)]);
+            if (findTxt != -1)
+            {
+                customText = llDeleteSubList(customText, findTxt, findTxt);
             }
         }
         else if (cmd == "SETRECIPE")
