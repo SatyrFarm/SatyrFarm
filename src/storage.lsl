@@ -313,6 +313,7 @@ default
         listener = -1;
         if (doReset)
         {
+            llSay(0, "Reset");
             llResetScript();
         }
     } 
