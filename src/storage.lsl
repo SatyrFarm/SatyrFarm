@@ -1,4 +1,4 @@
-//### storage_rack.lsl
+//### storage.lsl
 /** 
 Storage rack - stores multiple products. The script scans its inventory to generate the list of products automatically. 
 It uses the linked prims with the same name to set text   with the status of each product. E.g. for SF Olives the linked prim named 
@@ -85,7 +85,7 @@ loadConfig()
             list tok = llParseStringKeepNulls(line, ["="], []);
             string tkey = llList2String(tok, 0);
             string tval = llList2String(tok, 1);
-            if (tkey == "REZZ_POSITION") rezzPosition = (vector)tval;
+            if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
             else if (tkey == "INITIAL_LEVEL") initialLevel = (integer)tval;
             else if (tkey == "DROP_TIME") dropTime = (integer)tval * 86400;
             else if (tkey == "ONE_PART") singleLevel = (integer)tval;
@@ -170,11 +170,11 @@ refresh()
     if (found == 0)
     {
         //if no link gets status text, display everything on the root prim
-        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, customStr + statTotal, <.6,1,.6>, 1.0]);
+        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, customStr + statTotal, <1,1,1>, 1.0]);
     }
     else
     {
-        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, customStr + statTotal, <.6,1,.6>, 1.0]);
+        llSetLinkPrimitiveParamsFast(LINK_THIS, [PRIM_TEXT, customStr, <1,1,1>, 1.0]);
     }
     llMessageLinked(LINK_SET, 99, "STORESTATUS|"+(string)singleLevel+"|"+llDumpList2String(products, ",")+"|"+llDumpList2String(levels, ","), NULL_KEY);
 }
@@ -258,7 +258,7 @@ default
         }
         else
         {
-            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, NULL_KEY);
+            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, id);
         }
         llListenRemove(listener);
         listener = -1;
@@ -388,10 +388,10 @@ default
         }
         else if (cmd == "REM_TEXT")
         {
-            integer findOpt = llListFindList(customText, [llList2String(tok,1)]);
-            if (findOpt != -1)
+            integer findTxt = llListFindList(customText, [llList2String(tok,1)]);
+            if (findTxt != -1)
             {
-                customText = llDeleteSubList(customText, findOpt, findOpt);
+                customText = llDeleteSubList(customText, findTxt, findTxt);
             }
         }
         else if (cmd == "SETSTATUS")
