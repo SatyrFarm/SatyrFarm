@@ -360,7 +360,6 @@ default
         lastTs = llGetUnixTime();
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         loadConfig();
-        refresh();
         llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
         llSetTimerEvent(1);
     } 
