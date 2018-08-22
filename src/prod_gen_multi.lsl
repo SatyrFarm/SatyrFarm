@@ -292,11 +292,11 @@ default
         {
             integer found_expire = llListFindList(tk, ["EXPIRE"]) + 1;
             integer found_drinkable = llListFindList(tk, ["MATURATION"]) + 1;
-            integer found_parts = llListFindList(tk, ["USES"]) + 1;
+            integer found_percent = llListFindList(tk, ["PERCENT"]) + 1;
             if (found_expire) EXPIRES = dayse + llList2Integer(tk, found_expire);
             else if (found_drinkable) DRINKABLE = dayse + llList2Integer(tk, found_drinkable);
-            //else if (found_parts) PARTS = llList2Integer(tk, found_parts);
-
+            else if (found_percent) percent = llList2Integer(tk, found_percent);
+            refresh();
         }
         else if (cmd == "GETSTATUS")
         {
