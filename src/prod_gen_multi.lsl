@@ -75,6 +75,7 @@ refresh()
     }
         
     llSetText(str, textColor, 1.0);
+    llSetObjectDesc("P;" + (string)percent + ";" + (string)(EXPIRES-days) + ";" + (string)(DRINKABLE-days));
 }
 
 
