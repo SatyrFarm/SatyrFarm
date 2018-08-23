@@ -109,8 +109,15 @@ loadConfig()
         {
             if (doReset)
             {
-                llSay(0, "Reset");
+                saveNC = 1;
+                if (llGetInventoryType("storagenc-old") == INVENTORY_NOTECARD)
+                {
+                    saveNC++;
+                    llRemoveInventory("storagenc-old");
+                }
+                osMakeNotecard("storagenc-old", llDumpList2String(storageNC, ";"));
                 llRemoveInventory("storagenc");
+                llSay(0, "Reset");
             }
         }
         products = llParseString2List(llList2String(storageNC,1), [","], []);
