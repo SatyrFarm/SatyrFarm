@@ -77,41 +77,44 @@ multiPageMenu(key id, string message, list buttons)
 
 loadConfig()
 { 
+    integer i;
     //sfp Notecard
     PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
     //config Notecard
-    integer i;
-    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
-    for (i=0; i < llGetListLength(lines); i++)
+    if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
-        string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
-        if (llGetSubString(line, 0, 0) != "#")
+        list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+        for (i=0; i < llGetListLength(lines); i++)
         {
-            list tok = llParseStringKeepNulls(line, ["="], []);
-            string tkey = llList2String(tok, 0);
-            string tval = llList2String(tok, 1);
-            if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
-            else if (tkey == "INITIAL_LEVEL") initialLevel = (integer)tval;
-            else if (tkey == "DROP_TIME") dropTime = (integer)tval * 86400;
-            else if (tkey == "ONE_PART") singleLevel = (integer)tval;
-            else if (tkey == "RESET_ON_REZ") doReset = (integer)tval;
-            else if (tkey == "SENSOR_DISTANCE") SENSOR_DISTANCE = (integer)tval;   // How far to look for items
+            string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
+            if (llGetSubString(line, 0, 0) != "#")
+            {
+                list tok = llParseStringKeepNulls(line, ["="], []);
+                string tkey = llList2String(tok, 0);
+                string tval = llList2String(tok, 1);
+                if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
+                else if (tkey == "INITIAL_LEVEL") initialLevel = (integer)tval;
+                else if (tkey == "DROP_TIME") dropTime = (integer)tval * 86400;
+                else if (tkey == "ONE_PART") singleLevel = (integer)tval;
+                else if (tkey == "RESET_ON_REZ") doReset = (integer)tval;
+                else if (tkey == "SENSOR_DISTANCE") SENSOR_DISTANCE = (integer)tval;   // How far to look for items
+            }
         }
     }
     //storagenc Notecard
     if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
     {
-      list storageNC = llParseString2List(llStringTrim(osGetNotecard("storagenc"), STRING_TRIM), [";"], []);
-      if (llGetListLength(storageNC) < 3 || llList2Key(storageNC, 0) != ownkey)
-      {
-          if (doReset)
-          {
-              llSay(0, "Reset");
-              llRemoveInventory("storagenc");
-          }
-      }
-      products = llParseString2List(llList2String(storageNC,1), [","], []);
-      levels = llParseString2List(llList2String(storageNC,2), [","], []);
+        list storageNC = llParseString2List(llStringTrim(osGetNotecard("storagenc"), STRING_TRIM), [";"], []);
+        if (llGetListLength(storageNC) < 3 || llList2Key(storageNC, 0) != ownkey)
+        {
+            if (doReset)
+            {
+                llSay(0, "Reset");
+                llRemoveInventory("storagenc");
+            }
+        }
+        products = llParseString2List(llList2String(storageNC,1), [","], []);
+        levels = llParseString2List(llList2String(storageNC,2), [","], []);
     }
     //objects in inventory
     for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
