@@ -16,6 +16,8 @@ integer chan(key u)
 {
     return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
 }
+key ownkey;
+integer saveNC;
 
 list products = [];
 list levels = [];
@@ -75,6 +77,9 @@ multiPageMenu(key id, string message, list buttons)
 
 loadConfig()
 { 
+    //sfp Notecard
+    PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+    //config Notecard
     integer i;
     list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
     for (i=0; i < llGetListLength(lines); i++)
@@ -93,7 +98,22 @@ loadConfig()
             else if (tkey == "SENSOR_DISTANCE") SENSOR_DISTANCE = (integer)tval;   // How far to look for items
         }
     }
-
+    //storagenc Notecard
+    if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
+    {
+      list storageNC = llParseString2List(llStringTrim(osGetNotecard("storagenc"), STRING_TRIM), [";"], []);
+      if (llGetListLength(storageNC) < 3 || llList2Key(storageNC, 0) != ownkey)
+      {
+          if (doReset)
+          {
+              llSay(0, "Reset");
+              llRemoveInventory("storagenc");
+          }
+      }
+      products = llParseString2List(llList2String(storageNC,1), [","], []);
+      levels = llParseString2List(llList2String(storageNC,2), [","], []);
+    }
+    //objects in inventory
     for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
     {
         string name = llGetInventoryName(INVENTORY_OBJECT, i);
@@ -108,6 +128,17 @@ loadConfig()
         }
     }
     llOwnerSay(llList2CSV(products));
+}
+
+saveConfig()
+{
+    saveNC = 2;
+    //storage Notecard
+    if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
+    {
+        llRemoveInventory("storagenc");
+    }
+    osMakeNotecard("storagenc", (string)ownkey + ";" + llDumpList2String(products, ",") + ";" + llDumpList2String(levels, ","));
 }
 
 refresh()
@@ -189,6 +220,7 @@ rezzItem(string m)
         if (l <0) l =0;
         levels = [] + llListReplaceList(levels, [l], idx, idx);;
         llRezObject("SF "+m, llGetPos() + rezzPosition*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1);
+        saveConfig();
         refresh();
     }
     else llSay(0, "Sorry, there is not enough "+m);
@@ -283,6 +315,7 @@ default
                 if (l <0) l =0;
                 levels = [] + llListReplaceList(levels, [l], idx, idx);;
                 osMessageObject(u, "HAVE|"+PASSWORD+"|"+productName+"|"+(string)llGetKey());
+                saveConfig();
                 refresh();
             }
             else llSay(0, "Not enough "+productName);
@@ -300,6 +333,7 @@ default
                     l += singleLevel; if (l>100) l = 100;
                     levels = llListReplaceList(levels, [l], i,i);
                     llSay(0, "Added "+llToLower(item)+", level is now "+(string)llRound(l)+"%");
+                    saveConfig();
                     refresh();
                     return;
                 }
@@ -309,13 +343,7 @@ default
 
     on_rez(integer n)
     {
-        llListenRemove(listener);
-        listener = -1;
-        if (doReset)
-        {
-            llSay(0, "Reset");
-            llResetScript();
-        }
+        llResetScript();
     } 
 
     timer()
@@ -360,8 +388,8 @@ default
  
     state_entry()
     {
+        ownkey = llGetKey();
         lastTs = llGetUnixTime();
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         loadConfig();
         llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
         llSetTimerEvent(1);
@@ -420,11 +448,10 @@ default
     {
         if (change & CHANGED_INVENTORY)
         {
-            loadConfig();
-            refresh();
-            customOptions = [];
-            customText = [];
-            llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
+            if (saveNC)
+                --saveNC;
+            else
+                llResetScript();
         }
     }
 }
