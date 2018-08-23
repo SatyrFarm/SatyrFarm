@@ -105,7 +105,7 @@ loadConfig()
     if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
     {
         list storageNC = llParseString2List(llStringTrim(osGetNotecard("storagenc"), STRING_TRIM), [";"], []);
-        if (llGetListLength(storageNC) < 3 || llList2Key(storageNC, 0) != ownkey)
+        if (llGetListLength(storageNC) < 3 || (llList2Key(storageNC, 0) != ownkey && llList2String(storageNC, 0) != "null"))
         {
             if (doReset)
             {
