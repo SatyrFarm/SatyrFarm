@@ -25,7 +25,6 @@ string status;
 list recipeNames;
 string recipeName;
 list ingredients; 
-list ingredientsPercent;
 
 list haveIngredients;
 integer mustSit = 0;
@@ -500,7 +499,7 @@ default
         //products with new prod_gen notecard just need the passowrd, everything else is just here for backwards compatibility
         //and will be removed in the future
         osMessageObject(id,  "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
-        llMessageLinked(LINK_SET, 91, "REZZED|"+id+"|"+recipeName, NULL_KEY);
+        llMessageLinked(LINK_SET, 91, "REZZED|"+(string)id+"|"+recipeName, NULL_KEY);
     }
     
     
@@ -634,7 +633,7 @@ default
     {   
         llSay(0, "Found "+llDetectedName(0)+", emptying...");
         key id = llDetectedKey(0);
-        osMessageObject( id,  "DIE|"+(string)llGetKey()+"|"+lookingForPercent);
+        osMessageObject( id,  "DIE|"+(string)llGetKey()+"|"+(string)lookingForPercent);
         llSleep(2);
     }
     
@@ -676,8 +675,6 @@ default
 
     link_message(integer sender, integer val, string m, key id)
     {
-        if (val == 99) return;
-
         list tok = llParseString2List(m, ["|"], []);
         string cmd = llList2String(tok,0);
         if (cmd == "ADD_MENU_OPTION")  // Add custom dialog menu options. 

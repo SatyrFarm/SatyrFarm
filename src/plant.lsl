@@ -269,7 +269,7 @@ refresh(integer ts)
         
     psys();
 
-    llMessageLinked(LINK_SET, 99, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant, NULL_KEY);
+    llMessageLinked(LINK_SET, 92, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant, NULL_KEY);
 }
 
 doHarvest()
@@ -303,6 +303,7 @@ default
     {
         llSleep(.5);
         osMessageObject(id, "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
+        llMessageLinked(LINK_SET, 91, "REZZED|"+(string)id, NULL_KEY);
     }
     
     state_entry()
@@ -410,7 +411,7 @@ default
             mode = "";
         }
         else
-            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, id);
+            llMessageLinked(LINK_SET, 93, "MENU_OPTION|"+m, id);
     }
     
     dataserver(key k, string m)
@@ -492,8 +493,6 @@ default
  
     link_message(integer sender, integer val, string m, key id)
     {
-        if (val ==99) return; // Dont listen to self
-
         list tok = llParseString2List(m, ["|"], []);
         string cmd = llList2String(tok,0);
         if (cmd == "ADD_MENU_OPTION")  // Add custom dialog menu options. 

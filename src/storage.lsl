@@ -258,7 +258,7 @@ default
         }
         else
         {
-            llMessageLinked(LINK_SET, 99, "MENU_OPTION|"+m, id);
+            llMessageLinked(LINK_SET, 93, "MENU_OPTION|"+m, id);
         }
         llListenRemove(listener);
         listener = -1;
@@ -369,8 +369,6 @@ default
 
     link_message(integer sender, integer val, string m, key id)
     {
-        if (val == 99) return;
-
         list tok = llParseString2List(m, ["|"], []);
         string cmd = llList2String(tok, 0);
         if (cmd == "ADD_MENU_OPTION") 
@@ -415,6 +413,7 @@ default
         //products with new prod_gen notecard just need the passowrd, everything else is just here for backwards compatibility
         //and will be removed in the future
         osMessageObject(id,  "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
+        llMessageLinked(LINK_SET, 91, "REZZED|"+(string)id, NULL_KEY);
     }
     
     changed(integer change)
