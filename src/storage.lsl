@@ -117,7 +117,7 @@ loadConfig()
                     saveNC++;
                     llRemoveInventory("storagenc-old");
                 }
-                osMakeNotecard("storagenc-old", llDumpList2String(storageNC, ";"));
+                osMakeNotecard("storagenc-old", "null;" + llDumpList2String(llList2List(storageNC, 1, -1), ";"));
                 llRemoveInventory("storagenc");
                 llSay(0, "Reset");
             }
