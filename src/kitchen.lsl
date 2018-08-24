@@ -335,6 +335,7 @@ setRecipeOld(string nm)
             recipeName = name;
             status = "Adding";
             llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
+            llMessageLinked(LINK_SET, 92, "SELECTEDRECIPE|"+recipeName, "");
             return;
         }
     }
@@ -567,33 +568,33 @@ default
     
     dataserver(key k, string m)
     {
-        list tk = llParseStringKeepNulls(m, ["|"] , []);
-        string cmd = llList2Key(tk,0);
-        integer i ;
-        for (i=0; i< llGetListLength(ingredients); i++)
-        {
-            if (llList2Integer(haveIngredients,i) == 0)
+            list tk = llParseStringKeepNulls(m, ["|"] , []);
+            string cmd = llList2Key(tk,0);
+            integer i ;
+            for (i=0; i< llGetListLength(ingredients); i++)
             {
-                list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
-                integer j;
-                for (j=0; j < llGetListLength(possible); j++)
+                if (llList2Integer(haveIngredients,i) == 0)
                 {
-
-                    string poss = llStringTrim(llList2String(possible,j), STRING_TRIM);
-                    list inperc = itemAndPercent(poss);
-                    
-                    if (llToUpper( llList2String(inperc,0) ) == cmd )
+                    list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
+                    integer j;
+                    for (j=0; j < llGetListLength(possible); j++)
                     {
-                        if (llList2String(tk,1) != PASSWORD) { llOwnerSay("Bad Password"); return; } 
-                        haveIngredients= llListReplaceList(haveIngredients, [1], i,i);
-                        llSay(0, "Found "+poss);
-                        refresh();
-                        return;
+
+                        string poss = llStringTrim(llList2String(possible,j), STRING_TRIM);
+                        list inperc = itemAndPercent(poss);
+                        
+                        if (llToUpper( llList2String(inperc,0) ) == cmd )
+                        {
+                            if (llList2String(tk,1) != PASSWORD) { llOwnerSay("Bad Password"); return; } 
+                            haveIngredients= llListReplaceList(haveIngredients, [1], i,i);
+                            llSay(0, "Found "+poss);
+                            refresh();
+                            return;
+                        }
                     }
                 }
             }
-        }
-        refresh();
+            refresh();
     }
 
     
@@ -717,4 +718,3 @@ default
         }
     }
 }
-
