@@ -126,10 +126,12 @@ setAnimations(integer level)
             
             llSetLinkPrimitiveParamsFast(i, [PRIM_OMEGA, llList2Vector(tk, 1), rate, 1.0]);
         }
-        else if (llGetLinkName(i) == "show_while_cooking")
+        else if (llGetSubString( llGetLinkName(i), 0, 17)  == "show_while_cooking")
         {
             vector color = llList2Vector(llGetLinkPrimitiveParams(i, [PRIM_COLOR, 0]), 0);
-            llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, color, (level>0)*1.0]); 
+            float f = (float)llGetSubString( llGetLinkName(i), 18, -1);
+            if (f ==0.) f= 1.0;
+            llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, color, (level>0)*f]); 
         }
     }
     
@@ -715,3 +717,4 @@ default
         }
     }
 }
+
