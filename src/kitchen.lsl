@@ -13,34 +13,36 @@ MUST_SIT=1
 **/
 
 string PASSWORD="*";
+//for listener and menus
 integer listener=-1;
 integer listenTs;
 integer startOffset = 0;
+string status;
 
 list customOptions = [];
 list customText = [];
-
-string status;
-
 list recipeNames;
+//cooking vars
 string recipeName;
-list ingredients; 
-
-list haveIngredients;
-integer mustSit = 0;
+list ingredients; //strided list with num, item, percent 
 integer timeToCook; // in seconds
 string objectToGive; // Name of the object to give after done cooking
-string objectParams;
 vector rezzPosition; // Position of the product to rezz
 integer sensorRadius; //radius to scan for items
-
+string objectParams;
 //Default Values
+//(can be set in the config notecard)
+integer mustSit = 0;
 integer default_sensorRadius = 5;
 integer default_timeToCook = 60;
 vector default_rezzPosition = <1,0,0>;
-
+//temp
 string lookingFor;
 integer lookingForPercent;
+integer ingLength;
+integer haveIngredients;
+integer clickedButton;
+key lastUser;
 
 
 integer chan(key u)
@@ -58,9 +60,9 @@ startListen()
     listenTs = llGetUnixTime();
 }
 
-checkListen()
+checkListen(integer force)
 {
-    if (listener > 0 && llGetUnixTime() - listenTs > 300)
+    if ((listener > 0 && llGetUnixTime() - listenTs > 300) || force)
     {
         llListenRemove(listener);
         listener = -1;
@@ -84,7 +86,7 @@ loadConfig()
             list tok = llParseStringKeepNulls(line, ["="], []);
             string tkey = llList2String(tok, 0);
             string tval = llList2String(tok, 1);
-            if (tkey == "SENSOR_DISTANCE") sensorRadius = (integer)tval;
+            if (tkey == "SENSOR_DISTANCE") default_sensorRadius = (integer)tval;
             else if (tkey == "REZ_POSITION") default_rezzPosition = (vector)tval;
             else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
             else if (tkey == "MUST_SIT") mustSit = (integer)tval;
@@ -194,34 +196,45 @@ refresh()
     {
         str += "Recipe: "+recipeName+"\n";
         integer missing=0;
-        if (llGetListLength(ingredients))
+        for (i=0; i < ingLength;i++)    
         {
-            for (i=0; i < llGetListLength(ingredients);i++)    
+            integer length = llGetListLength(ingredients) / 3;
+            list ingsep = [];
+            while (length--)
             {
-                str += llList2String(ingredients,i)+": ";
-                if (llList2Integer(haveIngredients,i)) str += "OK\n";
-                else 
+                if(llList2Integer(ingredients, length*3) == i)
                 {
-                    str += "Missing\n";
-                    missing++;
+                    ingsep += [llList2String(ingredients, length*3 + 1)];
                 }
             }
-            if (missing==0)
+            str += llDumpList2String(ingsep, ", ");
+            if (haveIngredients & (0x01 < i))
             {
-                status = "Cooking";
-
-                llSay(0, "All set, preparing ... ");
-                llResetTime();
-                llSetTimerEvent(2);
-                llMessageLinked(LINK_SET,90, "STARTCOOKING", ""); 
-                setAnimations(1);
-                if (llGetInventoryType("cooking") == INVENTORY_SOUND)
-                {
-                    llLoopSound("cooking", 1.0);
-                }
+                str += ": OK\n";
             }
             else 
-                str += "Click to add ingredients\n";
+            {
+                str += ": Missing\n";
+                missing++;
+            }
+        }
+        if (missing==0)
+        {
+            status = "Cooking";
+
+            llSay(0, "All set, preparing ... ");
+            llResetTime();
+            llSetTimerEvent(2);
+            llMessageLinked(LINK_SET,90, "STARTCOOKING", ""); 
+            setAnimations(1);
+            if (llGetInventoryType("cooking") == INVENTORY_SOUND)
+            {
+                llLoopSound("cooking", 1.0);
+            }
+        }
+        else 
+        {
+            str += "Click to add ingredients\n";
         }
     }
     else if (status == "Cooking")
@@ -251,7 +264,6 @@ refresh()
             }
             llRezObject(objectToGive, llGetPos() + rezzPosition*llGetRot(), ZERO_VECTOR, ZERO_ROTATION, 1);
             ingredients = [];
-            haveIngredients = [];
             llSetTimerEvent(1);
         }
         psys(NULL_KEY);
@@ -323,15 +335,11 @@ setRecipeOld(string nm)
         string name=llList2String(tok,0);
         if ( name == nm && nm != "")
         {
-            ingredients  = llParseString2List(llList2String(tok, 1), [",", "+"], []);
+            ingredients  = parseIngredients(llList2String(tok, 1));
             timeToCook   = llList2Integer(tok, 2);
             objectToGive = llStringTrim(llList2String(tok, 3), STRING_TRIM);
             objectParams = llStringTrim(llList2String(tok, 4), STRING_TRIM);
             
-            haveIngredients = [];
-            integer kk = llGetListLength(ingredients);
-            while (kk-->0)
-                haveIngredients += [0]; //Fill the list with zeros
             recipeName = name;
             status = "Adding";
             llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
@@ -394,12 +402,6 @@ setRecipe(string nm)
                 {
                     //finished reading relevant nc sections
                     //check values and launch "Adding" status
-                    haveIngredients = [];
-                    integer kk = llGetListLength(ingredients);
-                    while (kk-->0)
-                    {
-                        haveIngredients += [0];
-                    }
                     status = "Adding";
                     if (ingredients == [] || objectToGive == "") 
                     {
@@ -417,7 +419,7 @@ setRecipe(string nm)
                 string tval = llStringTrim(llList2String(tmp, -1), STRING_TRIM);
                 stat += tkey + "|" + tval + "|";
                 if (tkey == "DURATION") timeToCook = (integer)tval;
-                else if (tkey == "INGREDIENTS") ingredients  = llParseString2List(tval, [",", "+"], []);
+                else if (tkey == "INGREDIENTS") ingredients  = parseIngredients(tval);
                 else if (tkey == "PRODUCT") objectToGive = tval;
                 else if (tkey == "PRODUCT_PARAMS") objectParams= (string)tval; // Custom parameters to be passed to prod_gen
                 else if (tkey == "REZ_POSITION") rezzPosition = (vector)tval;
@@ -429,71 +431,59 @@ setRecipe(string nm)
     llSay(0, "Error! Recipe not found " +nm);
 }
 
-
-
-list itemAndPercent(string item)
+list parseIngredients(string stringred)
 {
-    integer perc = 100;
-    string prod;
-    integer idx = llSubStringIndex(item,"%");
-    if (idx != -1)
+    clickedButton = 0;
+    haveIngredients = 0;
+    list ing  = llParseString2List(stringred, [",", "+"], []);
+    list ret = [];
+    ingLength = llGetListLength(ing);
+    integer i = ingLength;
+    while (i--)
     {
-        perc = (integer)llGetSubString(item, 0, idx-1);
-        prod = llStringTrim(llGetSubString(item, idx+1, -1), STRING_TRIM);
-    }
-    else
-    {
-        perc = 100;
-        prod = llStringTrim(item, STRING_TRIM);
-    }
-    return [prod, perc];
-}
-
-integer getIngredientPercent(string active)
-{
-    integer i;
-    for (i=0; i < llGetListLength(haveIngredients); i++)
-    {
-        if (llList2Integer(haveIngredients,i)==0)
+        list possible = llParseString2List(llList2String(ing, i), [" or "], []);
+        integer c = llGetListLength(possible);
+        while (c--)
         {
-            list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
-            integer j;
-            for (j=0; j < llGetListLength(possible); j++)
+            list itemper = llParseString2List(llList2String(possible, c), ["%"], []);
+            integer perc;
+            string item;
+            if (llGetListLength(itemper) == 1)
             {
-                list itper = itemAndPercent(llList2String(possible, j));
-                if (llList2String(itper,0) == active)
-                {
-                    return llList2Integer(itper,1);
-                }
+                perc = 100;
+                item = llStringTrim(llList2String(possible, c), STRING_TRIM);
             }
+            else
+            {
+                perc = llList2Integer(itemper, 0);
+                item = llStringTrim(llList2String(itemper, 1), STRING_TRIM);
+            }
+            ret += [i, item, perc];
         }
     }
-    return 100;
+    return ret;
 }
-
 
 dlgIngredients(key u)
 {
+    lastUser = u;
     list opts = [];
     opts += ["ABORT"];
 
     string t = "Add an ingredient";
-    integer i;
-    for (i=0; i < llGetListLength(haveIngredients); i++)
+    integer i = llGetListLength(ingredients) / 3;
+    while (i--)
     {
-        if (llList2Integer(haveIngredients,i)==0)
+        integer num = llList2Integer(ingredients, i*3);
+        if ((~haveIngredients & (0x01 << num)) && (~clickedButton & (0x01 << num)))
         {
-            list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
-            integer j;
-            for (j=0; j < llGetListLength(possible); j++)
-            {
-                list itper = itemAndPercent(llList2String(possible, j));
-                opts +=  llList2String(itper,0); //llStringTrim(llList2String(possible, j), STRING_TRIM);
-            }
+            opts +=  llList2String(ingredients, i*3 + 1);
         }
     }
-
-    multiPageMenu(u, t, opts);
+    if (llGetListLength(opts) > 1)
+        multiPageMenu(u, t, opts);
+    else 
+        checkListen(TRUE);
 }
 
 default 
@@ -540,6 +530,9 @@ default
             }
             setRecipe(m);
             refresh();
+            startOffset = 0;
+            dlgIngredients(id);
+            return;
         }
         else if (status == "Adding")
         {
@@ -550,56 +543,41 @@ default
                 return;
             }
             
-            lookingFor = "SF "+m; //llList2String(ingredients,idx);
-            lookingForPercent = getIngredientPercent(m);
-            
+            lookingFor = "SF "+m;
+            lookingForPercent = llList2Integer(ingredients, llListFindList(ingredients, [m])*3 + 1);
+
             llSay(0, "Looking for: " + lookingFor);
             llSensor(lookingFor , "",SCRIPTED,  sensorRadius, PI);
             refresh();
+            return;
         }
         else
         {
             llMessageLinked(LINK_SET, 93, "MENU_OPTION|"+m, id);
         }
-        llListenRemove(listener);
-        listener = -1;
+        checkListen(TRUE);
     }
     
     dataserver(key k, string m)
     {
         list tk = llParseStringKeepNulls(m, ["|"] , []);
-        string cmd = llList2Key(tk,0);
-        integer i ;
-        for (i=0; i< llGetListLength(ingredients); i++)
+        if (llList2String(tk,1) != PASSWORD)
         {
-            if (llList2Integer(haveIngredients,i) == 0)
-            {
-                list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
-                integer j;
-                for (j=0; j < llGetListLength(possible); j++)
-                {
-
-                    string poss = llStringTrim(llList2String(possible,j), STRING_TRIM);
-                    list inperc = itemAndPercent(poss);
-                    
-                    if (llToUpper( llList2String(inperc,0) ) == cmd )
-                    {
-                        if (llList2String(tk,1) != PASSWORD) { llOwnerSay("Bad Password"); return; } 
-                        haveIngredients= llListReplaceList(haveIngredients, [1], i,i);
-                        llSay(0, "Found "+poss);
-                        refresh();
-                        return;
-                    }
-                }
-            }
-        }
+            llOwnerSay("Bad Password");
+            return;
+        } 
+        string cmd = llList2Key(tk,0);
+        integer found_pro = llGetListLength(ingredients) / 3;
+        while (found_pro-- && llToUpper(llList2String(ingredients, found_pro*3 + 1)) != cmd);
+        integer i = llList2Integer(ingredients, found_pro*3);
+        haveIngredients= haveIngredients | (0x01 << i);
         refresh();
     }
 
     
     timer()
     {
-        checkListen();
+        checkListen(FALSE);
         refresh();
     }
 
@@ -611,6 +589,7 @@ default
             return;
         }
         
+        llSetTimerEvent(300);
         startListen();
         refresh();
         list opts = [];       
@@ -618,6 +597,7 @@ default
         if (status == "Adding")
         {
             startOffset = 0; 
+            clickedButton = 0;
             dlgIngredients(llDetectedKey(0));
             return;
         }
@@ -636,22 +616,47 @@ default
     }
     
     sensor(integer n)
-    {   
-        llSay(0, "Found "+llDetectedName(0)+", emptying...");
-        key id = llDetectedKey(0);
-        osMessageObject( id,  "DIE|"+(string)llGetKey()+"|"+(string)lookingForPercent);
-        llSleep(2);
+    { 
+        string name = llGetSubString(lookingFor, 3, -1);
+        //get first product that has enough percent left
+        integer c;
+        key ready_obj = NULL_KEY;
+        for (c = 0; ready_obj == NULL_KEY && c < n; c++)
+        {
+            key obj = llDetectedKey(c);
+            list stats = llParseString2List(llList2String(llGetObjectDetails(obj,[OBJECT_DESC]),0), [";"], []);
+            integer have_percent = llList2Integer(stats, 1);
+            // have_percent == 0 for backwards compatibility with old items
+            if (have_percent >= lookingForPercent || have_percent == 0)
+            {
+                ready_obj = llDetectedKey(c);
+            }
+        }
+        //--
+        if (ready_obj == NULL_KEY)
+        {
+            llSay(0, "Error! No "+lookingFor+" with enough percent not found nearby. You must bring it near me!");
+            dlgIngredients(lastUser);
+            return;
+        }
+        llSay(0, "Found "+name+", emptying...");
+        osMessageObject( ready_obj,  "DIE|"+(string)llGetKey()+"|"+(string)lookingForPercent);
+        //set button as pressed and launch menu again
+        integer d = llList2Integer(ingredients, llListFindList(ingredients, [name]) - 1);
+        clickedButton = clickedButton | (0x01 << d);
+        startOffset = 0;
+        dlgIngredients(lastUser);
     }
     
     no_sensor()
     {
         llSay(0, "Error! "+lookingFor+" not found nearby! You must bring it near me!");
+        dlgIngredients(lastUser);
     }
  
     state_entry()
     {
         refresh();
-        llSetTimerEvent(300);
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         getRecipeNames();
         loadConfig();
@@ -717,4 +722,3 @@ default
         }
     }
 }
-
