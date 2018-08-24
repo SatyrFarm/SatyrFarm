@@ -392,23 +392,35 @@ default
     
     sensor(integer n)
     {
-        //get first product that isn't already selected
-        integer c = 0;
-        while (llListFindList(selitems, [llDetectedKey(c)]) != -1)
-            c++;
-        //
-        key id = llDetectedKey(c);
-        selitems += [id];
+        //get first product that isn't already selected and has enough percentage
+        integer c;
+        key ready_obj = NULL_KEY;
+        for (c = 0; ready_obj == NULL_KEY && c < n; c++)
+        {
+            key obj = llDetectedKey(c);
+            list stats = llParseString2List(llList2String(llGetObjectDetails(obj,[OBJECT_DESC]),0), [";"], []);
+            integer have_percent = llList2Integer(stats, 1);
+            // have_percent == 0 for backwards compatibility with old items
+            if (llListFindList(selitems, [obj]) == -1 && (have_percent == 100 || have_percent == 0))
+            {
+                ready_obj = llDetectedKey(c);
+            }
+        }
+        //--
+        if (ready_obj == NULL_KEY)
+        {
+            llSay(0, "Error! Full "+lookingFor+" not found nearby. You must bring it near me!");
+            return;
+        }
+        selitems += [ready_obj];
         llSay(0, "Found "+lookingFor+", emptying...");
-        osMessageObject(id, "DIE|"+(string)llGetKey());
+        osMessageObject(ready_obj, "DIE|"+(string)llGetKey());
     }
     
 
     no_sensor()
     {
-
         llSay(0, "Error! "+lookingFor+" not found nearby. You must bring it near me!");
-        status = "";
     }
  
  
