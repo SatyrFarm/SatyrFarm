@@ -565,33 +565,33 @@ default
     
     dataserver(key k, string m)
     {
-            list tk = llParseStringKeepNulls(m, ["|"] , []);
-            string cmd = llList2Key(tk,0);
-            integer i ;
-            for (i=0; i< llGetListLength(ingredients); i++)
+        list tk = llParseStringKeepNulls(m, ["|"] , []);
+        string cmd = llList2Key(tk,0);
+        integer i ;
+        for (i=0; i< llGetListLength(ingredients); i++)
+        {
+            if (llList2Integer(haveIngredients,i) == 0)
             {
-                if (llList2Integer(haveIngredients,i) == 0)
+                list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
+                integer j;
+                for (j=0; j < llGetListLength(possible); j++)
                 {
-                    list possible = llParseString2List(llList2String(ingredients, i), [" or "], []);
-                    integer j;
-                    for (j=0; j < llGetListLength(possible); j++)
-                    {
 
-                        string poss = llStringTrim(llList2String(possible,j), STRING_TRIM);
-                        list inperc = itemAndPercent(poss);
-                        
-                        if (llToUpper( llList2String(inperc,0) ) == cmd )
-                        {
-                            if (llList2String(tk,1) != PASSWORD) { llOwnerSay("Bad Password"); return; } 
-                            haveIngredients= llListReplaceList(haveIngredients, [1], i,i);
-                            llSay(0, "Found "+poss);
-                            refresh();
-                            return;
-                        }
+                    string poss = llStringTrim(llList2String(possible,j), STRING_TRIM);
+                    list inperc = itemAndPercent(poss);
+                    
+                    if (llToUpper( llList2String(inperc,0) ) == cmd )
+                    {
+                        if (llList2String(tk,1) != PASSWORD) { llOwnerSay("Bad Password"); return; } 
+                        haveIngredients= llListReplaceList(haveIngredients, [1], i,i);
+                        llSay(0, "Found "+poss);
+                        refresh();
+                        return;
                     }
                 }
             }
-            refresh();
+        }
+        refresh();
     }
 
     
