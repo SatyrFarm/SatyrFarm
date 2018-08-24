@@ -590,7 +590,6 @@ default
             return;
         }
         
-        llSetTimerEvent(300);
         startListen();
         refresh();
         list opts = [];       
