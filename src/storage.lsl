@@ -16,30 +16,31 @@ integer chan(key u)
 {
     return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
 }
+//for notecard config saving
 key ownkey;
 integer saveNC;
-
+//status variables
 list products = [];
 list levels = [];
 list customOptions = [];
 list customText = [];
-
+//listens and menus
 integer listener=-1;
 integer listenTs;
 integer startOffset=0;
 integer lastTs;
-
-//config options for rezzing
-vector rezzPosition = <0,1.5,2>;
 //config options for storage
+//(adjustable in config notecard)
+vector rezzPosition = <0,1.5,2>;
 integer initialLevel = 5;
 integer dropTime = 86400;
 integer singleLevel = 10;
 integer doReset = 1;
 integer SENSOR_DISTANCE=10;
-
+//temp 
 string lookingFor;
 string status;
+list selitems = [];
 
 
 startListen()
@@ -51,12 +52,13 @@ startListen()
     listenTs = llGetUnixTime();
 }
 
-checkListen()
+checkListen(integer force)
 {
-    if (listener > 0 && llGetUnixTime() - listenTs > 300)
+    if ((listener > 0 && llGetUnixTime() - listenTs > 300) || force)
     {
         llListenRemove(listener);
         listener = -1;
+        selitems = [];
     }
 }
 
@@ -142,10 +144,11 @@ loadConfig()
 
 saveConfig()
 {
-    saveNC = 2;
+    saveNC++;
     //storage Notecard
     if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
     {
+        saveNC++;
         llRemoveInventory("storagenc");
     }
     osMakeNotecard("storagenc", (string)ownkey + ";" + llDumpList2String(products, ",") + ";" + llDumpList2String(levels, ","));
@@ -245,7 +248,6 @@ getItem(string m)
     }
     else
     {
-        status = "WaitProduct";
         lookingFor = "SF " +m;
         llSensor(lookingFor, "",SCRIPTED,  SENSOR_DISTANCE, PI);
     }
@@ -256,54 +258,70 @@ default
 { 
     listen(integer c, string nm, key id, string m)
     {
+        //pre-select product if there is just one
+        string product = "";
+        if (llGetListLength(products) == 1)
+        {
+            product = llList2String(products, 0);
+        }
+        //parse buttons
         if (m == "CLOSE") 
         {
             refresh();
         }
         else if (m == "Add Product")
         {
-            status = "Sell";
-            if (llGetListLength(products) == 1)
-                getItem(llList2String(products,0));
+            if (product != "")
+            {
+                getItem(product);
+                list opts = ["CLOSE", "Add Product", "Get Product"] + customOptions;
+                llDialog(id, "Select", opts, chan(llGetKey()));
+            }
             else
+            {
+                status = "Sell";
                 multiPageMenu(id, "Select product to store", products);
+            }
             return;
         }
         else if (m == "Get Product")
         {
-            status = "Get";
-            if (llGetListLength(products) == 1)
-                rezzItem(llList2String(products,0));
+            if (product != "")
+            {
+                rezzItem(product);
+                list opts = ["CLOSE", "Add Product", "Get Product"] + customOptions;
+                llDialog(id, "Select", opts, chan(llGetKey()));
+            }
             else
+            {
+                status = "Get";
                 multiPageMenu(id, "Select product to get", products);
+            }
             return;
         }
         else if (status  == "Sell")
         {
             if (m == ">>")
-            {
                 startOffset += 10;
-                multiPageMenu(id, "Select product to store", products);
-                return;
-            }
-            getItem(m);
+            else
+                getItem(m);
+            multiPageMenu(id, "Select product to store", products);
+            return;
         }
         else if (status  == "Get")
         {
             if (m == ">>")
-            {
                 startOffset += 10;
-                multiPageMenu(id, "Select product to get", products);
-                return;
-            }
-            rezzItem(m);
+            else
+                rezzItem(m);
+            multiPageMenu(id, "Select product to get", products);
+            return;
         }
         else
         {
             llMessageLinked(LINK_SET, 93, "MENU_OPTION|"+m, id);
         }
-        llListenRemove(listener);
-        listener = -1;
+        checkListen(TRUE);
     }
     
     dataserver(key k, string m)
@@ -359,18 +377,14 @@ default
     timer()
     {
         refresh();
-        checkListen();
+        checkListen(FALSE);
         llSetTimerEvent(1000);
     }
 
     touch_start(integer n)
     {
         status = "";
-        list opts = [];
-        opts += "Add Product";
-        opts += "Get Product";
-        opts += customOptions;
-        opts += "CLOSE";
+        list opts = ["CLOSE", "Add Product", "Get Product"] + customOptions;
         startListen();
         llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
         llSetTimerEvent(300);
@@ -378,13 +392,15 @@ default
     
     sensor(integer n)
     {
-        if ( status == "WaitProduct")
-        {
-            key id = llDetectedKey(0);
-            llSay(0, "Found "+lookingFor+", emptying...");
-            osMessageObject(id, "DIE|"+(string)llGetKey());
-            status = "";
-        }
+        //get first product that isn't already selected
+        integer c = 0;
+        while (llListFindList(selitems, [llDetectedKey(c)]) != -1)
+            c++;
+        //
+        key id = llDetectedKey(c);
+        selitems += [id];
+        llSay(0, "Found "+lookingFor+", emptying...");
+        osMessageObject(id, "DIE|"+(string)llGetKey());
     }
     
 
