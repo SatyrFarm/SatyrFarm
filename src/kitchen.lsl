@@ -343,6 +343,7 @@ setRecipeOld(string nm)
             recipeName = name;
             status = "Adding";
             llSay(0,"Selected recipe is "+name+". Click to begin adding ingredients");
+            llMessageLinked(LINK_SET, 92, "SELECTEDRECIPE|"+recipeName, "");
             return;
         }
     }
