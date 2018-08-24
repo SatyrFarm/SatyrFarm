@@ -111,7 +111,7 @@ multiPageMenu(key id, string message, list buttons)
 
 
 
-setAnimations(integer isOn)
+setAnimations(integer level)
 {
 
     integer i;
@@ -120,12 +120,16 @@ setAnimations(integer isOn)
         if (llGetSubString(llGetLinkName(i),0,4) == "spin ")
         {
             list tk = llParseString2List(llGetLinkName(i), [" "], []);
-            llSetLinkPrimitiveParamsFast(i, [PRIM_OMEGA, llList2Vector(tk, 1), isOn* 1.0, 1.0]);
+            float rate=0.;
+            if ((mustSit==0 && level==1) || (mustSit == 1 && level==2))
+                rate = 1.0;
+            
+            llSetLinkPrimitiveParamsFast(i, [PRIM_OMEGA, llList2Vector(tk, 1), rate, 1.0]);
         }
         else if (llGetLinkName(i) == "show_while_cooking")
         {
             vector color = llList2Vector(llGetLinkPrimitiveParams(i, [PRIM_COLOR, 0]), 0);
-            llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, color, isOn*1.0]); 
+            llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, color, (level>0)*1.0]); 
         }
     }
     
@@ -662,8 +666,11 @@ default
             customText = [];
             llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
         }
+        
         if (status == "Cooking" && (llGetObjectPrimCount(llGetKey()) != llGetNumberOfPrims()))
         {
+            llMessageLinked(LINK_SET,94, "SIT", "");
+            setAnimations(2);
             refresh();
         }
     }
