@@ -208,7 +208,7 @@ refresh()
                 }
             }
             str += llDumpList2String(ingsep, ", ");
-            if (haveIngredients & (0x01 < i))
+            if (haveIngredients & (0x01 << i))
             {
                 str += ": OK\n";
             }
