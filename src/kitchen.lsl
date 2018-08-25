@@ -545,7 +545,7 @@ default
             }
             
             lookingFor = "SF "+m;
-            lookingForPercent = llList2Integer(ingredients, llListFindList(ingredients, [m])*3 + 1);
+            lookingForPercent = llList2Integer(ingredients, llListFindList(ingredients, [m]) + 1);
 
             llSay(0, "Looking for: " + lookingFor);
             llSensor(lookingFor , "",SCRIPTED,  sensorRadius, PI);
