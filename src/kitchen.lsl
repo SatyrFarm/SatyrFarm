@@ -510,6 +510,7 @@ default
         {
             recipeName = "";
             status = "";
+            ingredients = [];
             refresh();
             setAnimations(0);
             llMessageLinked(LINK_SET,99, "ENDCOOKING", "");
