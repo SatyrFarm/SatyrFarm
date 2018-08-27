@@ -270,7 +270,7 @@ refresh(integer ts)
     psys();
 
     llMessageLinked(LINK_SET, 92, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant, NULL_KEY);
-    llSetObjectDesc("T;"+plant+";"+status+";"+(string)(statusLeft)+";"+(string)llRound(water)+";"+(string)llRound(wood));
+    llSetObjectDesc("T;"+PRODUCT_NAME+";"+status+";"+(string)(statusLeft)+";"+(string)llRound(water)+";"+(string)llRound(wood));
 }
 
 doHarvest()
