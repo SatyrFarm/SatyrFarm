@@ -325,7 +325,7 @@ default
 
     touch_start(integer n)
     {
-        if (llSameGroup(llDetectedKey(0)))
+        if (llSameGroup(llDetectedKey(0)) || osIsNpc(llDetectedKey(0)))
         {
 
            list opts = [];
