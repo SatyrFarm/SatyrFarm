@@ -89,33 +89,35 @@ checkListen()
 
 loadConfig()
 {
-    
-    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
-    integer i;
-    for (i=0; i < llGetListLength(lines); i++)
+    if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
-        string line = llList2String(lines, i);
-        if (llGetSubString(line, 0, 0) != "#")
+        list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+        integer i;
+        for (i=0; i < llGetListLength(lines); i++)
         {
-            list tok = llParseString2List(line, ["="], []);
-            if (llList2String(tok,1) != "")
+            string line = llList2String(lines, i);
+            if (llGetSubString(line, 0, 0) != "#")
             {
-                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
-                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
-                //llOwnerSay(cmd+"="+val);
-                
-                if (cmd == "HAS_WOOD")     HAS_WOOD= (integer)val;  // Trees dont need replanting after harvest
-                else if (cmd == "LIFEDAYS")    LIFETIME= 86400*(float)val;
-                else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
-                else if (cmd == "AUTOREPLANT") AUTOREPLANT = (integer)val;
-                else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;
-                else if (cmd == "PLANTLIST")
+                list tok = llParseString2List(line, ["="], []);
+                if (llList2String(tok,1) != "")
                 {
-                    PLANTS = llParseString2List(val, [","], []);
-                }
-                else if (cmd == "PRODUCTLIST")
-                {
-                    PRODUCTS = llParseString2List(val, [","], []);
+                    string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                    string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                    //llOwnerSay(cmd+"="+val);
+                    
+                    if (cmd == "HAS_WOOD")     HAS_WOOD= (integer)val;  // Trees dont need replanting after harvest
+                    else if (cmd == "LIFEDAYS")    LIFETIME= 86400*(float)val;
+                    else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
+                    else if (cmd == "AUTOREPLANT") AUTOREPLANT = (integer)val;
+                    else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;
+                    else if (cmd == "PLANTLIST")
+                    {
+                        PLANTS = llParseString2List(val, [","], []);
+                    }
+                    else if (cmd == "PRODUCTLIST")
+                    {
+                        PRODUCTS = llParseString2List(val, [","], []);
+                    }
                 }
             }
         }
