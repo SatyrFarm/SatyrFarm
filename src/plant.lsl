@@ -273,6 +273,7 @@ refresh(integer ts)
     psys();
 
     llMessageLinked(LINK_SET, 92, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant, NULL_KEY);
+    llSetObjectDesc("T;"+PRODUCT_NAME+";"+status+";"+(string)(statusLeft)+";"+(string)llRound(water)+";"+(string)llRound(wood));
 }
 
 doHarvest()
@@ -327,7 +328,7 @@ default
 
     touch_start(integer n)
     {
-        if (llSameGroup(llDetectedKey(0)))
+        if (llSameGroup(llDetectedKey(0)) || osIsNpc(llDetectedKey(0)))
         {
 
            list opts = [];

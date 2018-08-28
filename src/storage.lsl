@@ -471,6 +471,11 @@ default
         {
             rezzItem(llList2String(tok,1));
         }
+        else if (cmd == "ADDPRODUCT")
+        {
+            getItem(llList2String(tok,1));
+        }
+        
     }
     
     object_rez(key id)
