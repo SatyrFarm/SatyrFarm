@@ -38,6 +38,7 @@ list PRODUCTS = [];
 float WOOD_TIMES = 4.;
 integer HAS_WOOD=0;
 integer AUTOREPLANT=0;
+integer doReset = 1;
 
 string PASSWORD="*";
 string PRODUCT_NAME;
@@ -110,6 +111,7 @@ loadConfig()
                     else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
                     else if (cmd == "AUTOREPLANT") AUTOREPLANT = (integer)val;
                     else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;
+                    else if (cmd == "RESET_ON_REZ") doReset = (integer)val;
                     else if (cmd == "PLANTLIST")
                     {
                         PLANTS = llParseString2List(val, [","], []);
@@ -120,6 +122,25 @@ loadConfig()
                     }
                 }
             }
+        }
+    }
+
+    list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
+    if (llList2String(desc, 0) == "T")
+    {
+        if (llList2String(desc, 7) != (string)chan(llGetKey()) && doReset)
+        {
+            llSetObjectDesc("");
+            llResetScript();
+        }
+        else
+        {
+            PRODUCT_NAME = llList2String(desc, 1);
+            status = llList2String(desc, 2);
+            statusLeft = llList2Integer(desc, 3);
+            water = llList2Float(desc, 4);
+            wood = llList2Float(desc, 5);
+            plant = llList2String(desc, 6);
         }
     }
 }
@@ -271,8 +292,8 @@ refresh(integer ts)
         
     psys();
 
-    llMessageLinked(LINK_SET, 92, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant, NULL_KEY);
-    llSetObjectDesc("T;"+PRODUCT_NAME+";"+status+";"+(string)(statusLeft)+";"+(string)llRound(water)+";"+(string)llRound(wood));
+    llMessageLinked(LINK_SET, 92, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant+"|LIFETIME|"+(string)LIFETIME, NULL_KEY);
+    llSetObjectDesc("T;"+PRODUCT_NAME+";"+status+";"+(string)(statusLeft)+";"+(string)llRound(water)+";"+(string)llRound(wood)+";"+plant+";"+(string)chan(llGetKey()));
 }
 
 doHarvest()
@@ -487,10 +508,7 @@ default
     {
         if (change & CHANGED_INVENTORY)
         {
-            loadConfig();
-            customOptions = [];
-            customText = [];
-            llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
+            llResetScript();
         }
     }
  
