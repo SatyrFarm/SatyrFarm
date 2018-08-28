@@ -215,7 +215,7 @@ refresh()
     if (status == "New" || status == "Growing" || status == "Ripe")
     {
         progress = plant+"\n";
-        if (llGetAndResetTime() >= (INTERVAL - 5))
+        if (llGetAndResetTime() >= (INTERVAL - 20))
         {
             water -= (float)(INTERVAL / LIFETIME * WATER_TIMES) * 100.;
             wood += (float)(INTERVAL / LIFETIME * WOOD_TIMES) * 100.;
