@@ -23,6 +23,8 @@ list myItems;
 integer scan;
 list clients;
 integer counter;
+integer counter_none;
+integer counter_scan;
 
 loadConfig()
 {
@@ -69,10 +71,12 @@ scanNext()
     string target = llList2String(UPGRADEABLES, scan);
     if (target == "")
     {
-        llSay(0, "Update finished.\nUpdated " + (string)counter + " objects");
+        llSay(0, "Update finished.\nScanned for " + (string)counter_scan + "objects.\nUpdated " + (string)counter + " objects.\nUpdate not neccessary on " + (string)counter_none + " objects.\n" );
+        llResetScript();
         return;
     }
     llSay(0, "Scanning for " + target);
+    llSetText("Updating " + target + "!", <1.0,0.0,0.0>, 1.0);
     ++scan;
     llSensor(target, "", SCRIPTED, 96, PI);
 }
@@ -90,7 +94,7 @@ string itemsToReplace(string sItems, key kObject)
     while (c--)
     {
         string item = llList2String(lItems, c);
-        if (llListFindList(myItems, [item]) != -1 && llListFindList(ITEMIGNORE, [item]) == -1)
+        if (llListFindList(myItems, [item]) != -1 && llListFindList(ITEMIGNORE, [item]) == -1 && llListFindList(lReplace, [item]) == -1)
         {
             lReplace += [item];
         }
@@ -103,13 +107,33 @@ default
 {
     state_entry()
     {
-        llSetText("", <1,1,1>, 0.0);
+        llSetText("Click to Update!", <1.0,0.0,0.0>, 1.0);
         loadConfig();
     }
 
     touch_start(integer n)
     {
+        state update;
+    }
+
+    changed(integer change)
+    {
+        if (change & CHANGED_INVENTORY)
+        {
+            llResetScript();
+        }
+    }
+}
+
+
+state update
+{
+    state_entry()
+    {
+        llSetText("Update Running!", <1.0,0.0,0.0>, 1.0);
         counter = 0;
+        counter_none = 0;
+        counter_scan = 0;
         scan = 0;
         scanNext();
     }
@@ -141,6 +165,7 @@ default
         clients = llDeleteSubList(clients, 0, 0);
         llSay(0, " \n-------------\nRequest version info for " + llKey2Name(target) + "\n" + (string)target);
         llSetTimerEvent(3.0);
+        ++counter_scan;
         osMessageObject(target, "VERSION-CHECK|" + PASSWORD + "|" + (string)llGetKey());
     }
 
@@ -170,15 +195,15 @@ default
                     llSay(0, "Update possible. Try to update item.");
                     osMessageObject(llList2Key(cmd, 2), "DO-UPDATE|"+PASSWORD+"|"+(string)llGetKey()+"|"+repstr);
                     llSetTimerEvent(20.0);
-                }
-                else
-                {
-                    llSetTimerEvent(0.5);
+                    return;
                 }
             }
+            ++counter_none;
+            llSetTimerEvent(0.5);
         }
         else if (command == "DO-UPDATE-REPLY")
         {
+            llSleep(2.0);
             key kobject = llList2Key(cmd, 2);
             integer ipin = llList2Integer(cmd, 3);
             list litems = llParseString2List(llList2String(cmd, 4), [","], []);
@@ -191,7 +216,7 @@ default
                 {
                     llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
                 }
-                else if (type == INVENTORY_OBJECT)
+                else if (type != INVENTORY_NONE)
                 {
                     llGiveInventory(kobject, sitem);
                 }
@@ -199,14 +224,6 @@ default
             llSay(0, "Updated items: \n    " + llList2String(cmd,4) + "\n-----------");
             ++counter;
             llSetTimerEvent(1.0);
-        }
-    }
-
-    changed(integer change)
-    {
-        if (change & CHANGED_INVENTORY)
-        {
-            llResetScript();
         }
     }
 }
