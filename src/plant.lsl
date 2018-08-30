@@ -30,6 +30,7 @@ WOOD_TIMES=1
 
 For scripting plugins, check the code below for the emitted link_messages
 **/
+integer VERSION=1;
 
 string PASSWORD="*";
 integer INTERVAL = 300;
@@ -86,9 +87,9 @@ checkListen(integer force)
 }
 
 
-
 loadConfig()
 {
+    //config notecard
     if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
         list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
@@ -128,6 +129,7 @@ loadConfig()
         llSay(0, "Error: No config Notecard found.\nI can't work without one :(");
     }
 
+    //sate by description
     list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
     if (llList2String(desc, 0) == "T")
     {
@@ -144,6 +146,7 @@ loadConfig()
             water = llList2Float(desc, 4);
             wood = llList2Float(desc, 5);
             plant = llList2String(desc, 6);
+            autoWater = llList2Integer(desc, 7);
             if (status == "New")
             {
                 statusDur = (integer)(LIFETIME / 3);
@@ -283,11 +286,7 @@ refresh()
         }
         float p= 1- ((float)(statusLeft)/(float)statusDur);
         progress += "Status: "+status+" ("+(string)((integer)(p*100.))+"%)\n";
-        float sw = water;
-        if (sw < 0) sw = 0;
-        {
-            progress += "Water: " + (string)((integer)(sw))+ "%\n";
-        }
+        progress += "Water: " + (string)((integer)osMax(0.0, water))+ "%\n";
         if (HAS_WOOD)
         {
             progress += "Wood: "+(string)(llFloor(wood))+"%\n";
@@ -309,7 +308,7 @@ refresh()
     psys();
     llSetText(customStr + progress, color, 1.0);
     llMessageLinked(LINK_SET, 92, "STATUS|"+status+"|"+(string)statusLeft+"|WATER|"+(string)water+"|PRODUCT|"+PRODUCT_NAME+"|PLANT|"+plant+"|LIFETIME|"+(string)LIFETIME, NULL_KEY);
-    llSetObjectDesc("T;"+PRODUCT_NAME+";"+status+";"+(string)(statusLeft)+";"+(string)llRound(water)+";"+(string)llRound(wood)+";"+plant+";"+(string)chan(llGetKey()));
+    llSetObjectDesc("T;"+PRODUCT_NAME+";"+status+";"+(string)(statusLeft)+";"+(string)llRound(water)+";"+(string)llRound(wood)+";"+plant+";"+(string)chan(llGetKey())+";"+(string)autoWater);
 }
 
 doHarvest()
@@ -348,9 +347,22 @@ default
     
     state_entry()
     {
+        //for updates
+        if (llGetObjectName() == "SF Rezzer")
+        {
+            string me = llGetScriptName();
+            llOwnerSay("Script " + me + " went to sleep inside Updater.");
+            llSetScriptState(me, FALSE);
+            llSleep(0.5);
+            return;
+        }
+        llSetRemoteScriptAccessPin(0);
+        //
+        llSay(0, "Getting ready for you :)");
         status = "Empty";
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         loadConfig();
+        llSay(0, "Ready");
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
         llSetTimerEvent(1);
     }
@@ -454,18 +466,24 @@ default
     dataserver(key k, string m)
     {
         list cmd = llParseStringKeepNulls(m, ["|"], []);
-        if (llList2String(cmd,0) == "WATER" && llList2String(cmd,1) == PASSWORD )
+        if (llList2String(cmd,1) != PASSWORD)
+        {
+            return;
+        }
+        string command = llList2String(cmd, 0);
+
+        if (command == "WATER")
         {
             water=100.;
             refresh();
         }
-         else if (llList2String(cmd,0) == "MANURE" && llList2String(cmd,1) == PASSWORD )
+        else if (command == "MANURE")
         {
             statusLeft -= 86400;
             if (statusLeft<0) statusLeft=0;
             refresh();
         }
-        else if (llList2String(cmd,0) == "HAVEWATER" && llList2String(cmd,1) == PASSWORD )
+        else if (command == "HAVEWATER")
         {
              // found water
             if (sense == "WaitTower")
@@ -476,6 +494,62 @@ default
                 sense = "";
             }
         }
+        //for updates
+        else if (command == "VERSION-CHECK")
+        {
+            string answer = "VERSION-REPLY|" + PASSWORD + "|";
+            answer += (string)llGetKey() + "|" + (string)VERSION + "|";
+            integer len = llGetInventoryNumber(INVENTORY_OBJECT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
+            }
+            len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+            }
+            answer += "|";
+            len = llGetInventoryNumber(INVENTORY_NOTECARD);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
+            }
+            osMessageObject(llList2Key(cmd, 2), answer);
+        }
+        else if (command == "DO-UPDATE")
+        {
+            if (llGetOwnerKey(k) != llGetOwner())
+            {
+                llSay(0, "Reject Update, because you are not my Owner.");
+                return;
+            }
+            string me = llGetScriptName();
+            string sRemoveItems = llList2String(cmd, 3);
+            list lRemoveItems = llParseString2List(sRemoveItems, [","], []);
+            integer delSelf = FALSE;
+            integer d = llGetListLength(lRemoveItems);
+            while (d--)
+            {
+                string item = llList2String(lRemoveItems, d);
+                if (item == me) delSelf = TRUE;
+                else if (llGetInventoryType(item) != INVENTORY_NONE)
+                {
+                    llRemoveInventory(item);
+                }
+              }
+              integer pin = llRound(llFrand(1000.0));
+              llSetRemoteScriptAccessPin(pin);
+              osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
+              if (delSelf)
+              {
+                  llSay(0, "Removing myself for update.");
+                  llRemoveInventory(me);
+              }
+              llSleep(10.0);
+              llResetScript();
+        }
+        //
     }
 
     
