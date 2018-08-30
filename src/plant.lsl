@@ -136,6 +136,7 @@ loadConfig()
         if (llList2String(desc, 7) != (string)chan(llGetKey()) && doReset)
         {
             llSetObjectDesc("");
+            llSleep(2.0);
             llResetScript();
         }
         else
@@ -259,6 +260,7 @@ refresh()
             }
         }
 
+        llSetLinkColor(2, <1,1,1>, ALL_SIDES);
         llSetLinkTexture(2, plant+"-"+status, ALL_SIDES);
         if (water <= 5.)
         {
@@ -279,10 +281,6 @@ refresh()
         else if (status == "Ripe")
         {
             color = <0.180, 0.800, 0.251>;
-        }
-        else
-        {
-            llSetLinkColor(2, <1,1,1>, ALL_SIDES);
         }
         float p= 1- ((float)(statusLeft)/(float)statusDur);
         progress += "Status: "+status+" ("+(string)((integer)(p*100.))+"%)\n";
@@ -348,7 +346,7 @@ default
     state_entry()
     {
         //for updates
-        if (llGetObjectName() == "SF Rezzer")
+        if (llSubStringIndex(llGetObjectName(), "Updater") != -1)
         {
             string me = llGetScriptName();
             llOwnerSay("Script " + me + " went to sleep inside Updater.");
