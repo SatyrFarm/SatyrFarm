@@ -13,9 +13,15 @@ default
             {
                 if (autoHarvest) // If autoharvest is on, send message to harvest
                 {
+                     integer TIME = 300;
+                     integer found = llListFindList(tok, ["LIFETIME"]) + 1;
+                     if (found)
+                     {
+                         TIME = llList2Integer(tok, found) / 3;
+                     }
                      llMessageLinked(LINK_THIS, 1, "HARVEST", NULL_KEY);
                      llSleep(1.);
-                     llMessageLinked(LINK_THIS, 1, "SETSTATUS|New|300", NULL_KEY); 
+                     llMessageLinked(LINK_THIS, 1, "SETSTATUS|New|" + (string)TIME, NULL_KEY); 
                 }
             }
         }
