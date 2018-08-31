@@ -127,7 +127,7 @@ default
             }
             else if (first != "" && first != "NEEDS")
             {
-                PLANT = first;
+                PLANT = llList2String(lines,c);
             }
         }
         if (STATUS != "")
