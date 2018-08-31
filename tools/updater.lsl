@@ -208,9 +208,10 @@ state update
             integer ipin = llList2Integer(cmd, 3);
             list litems = llParseString2List(llList2String(cmd, 4), [","], []);
             integer d = llGetListLength(litems);
-            while (d--)
+            integer c;
+            for (c = 0; c < d; c++)
             {
-                string sitem = llList2String(litems, d);
+                string sitem = llList2String(litems, c);
                 if (llListFindList(ITEMIGNORE, [sitem]) == -1)
                 {
                     integer type = llGetInventoryType(sitem);
