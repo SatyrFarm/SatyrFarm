@@ -1,11 +1,10 @@
-//### updater.lsl
+//### legacy-updater.lsl
 /**
-This script is used to upgrade SatyrFarm items.
-It scans for upgradeable items nearby (96m), asks for it's version and a list of items in its inventory, decides what and if to upgrade and initiates the update.
+This script is used to upgrade Legacy SatyrFarm items.
+It scans for upgradeable items nearby (96m), asks for a list of items in its inventory, decides what and if to upgrade and initiates the update.
 
 #Configuration Notecards:
 sfp = SatyrFarm Password
-version = Current version of the farm
 upgradeables = List of objects that will be upgraded, one per line
 itemignore = List of items in own inventory that will not be shared while updating
 uuidignore = List of ignored UUIDs that won't get updated
@@ -19,18 +18,24 @@ list UUIDIGNORE = [];
 list ADDITIONS = [];
 list myItems;
 
+integer listener;
 integer scan;
 list clients;
 integer counter;
 integer counter_none;
 integer counter_scan;
 
+integer chan(key u)
+{
+    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
+}
+
 loadConfig()
 {
     //config notecards
-    if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("version") == INVENTORY_NONE)
+    if (llGetInventoryType("sfp") == INVENTORY_NONE)
     {
-        llSay(0, "No verion or password notecard in inventory! Can't work like that.");
+        llSay(0, "No password notecard in inventory! Can't work like that.");
     }
     PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
     if (llGetInventoryType("upgradeables") != INVENTORY_NONE)
@@ -69,7 +74,7 @@ scanNext()
     string target = llList2String(UPGRADEABLES, scan);
     if (target == "")
     {
-        llSay(0, "Update finished.\nScanned for " + (string)counter_scan + "objects.\nUpdated " + (string)counter + " objects.\nUpdate not neccessary on " + (string)counter_none + " objects.\n" );
+        llSay(0, "Update finished.\nScanned for " + (string)counter_scan + " objects.\nUpdated " + (string)counter + " objects.\nUpdate not neccessary on " + (string)counter_none + " objects.\n" );
         llResetScript();
         return;
     }
@@ -105,13 +110,50 @@ default
 {
     state_entry()
     {
-        llSetText("Click to Update!", <1.0,0.0,0.0>, 1.0);
+        llSetText("==Legacy Updater==\nClick to Update!", <1.0,0.0,0.0>, 1.0);
         loadConfig();
+    }
+
+    state_exit()
+    {
+        llSetTimerEvent(0.0);
     }
 
     touch_start(integer n)
     {
-        state update;
+        string text = "This Updater is for LEGACY items. For old items with scripts older than 09.2018 that can't be updated on any other way.\n"
+                    + "You first have to put the drop-in scripts into your items, click \"Help\" to get introductions on how to do that.\n"
+                    + "\"Plant DropIn\" is for all plants and trees. \"Storage DropIn\" is for Storage Rack and Fridge.";
+        llSetTimerEvent(60.0);
+        llDialog(llDetectedKey(0), text, ["CLOSE", "Plant DropIn", "Storage DropIn", "UPDATE", "Help"], chan(llGetKey()));
+        listener = llListen(chan(llGetKey()), "", "", "");
+    }
+
+    listen(integer c, string n ,key id , string m)
+    {
+        if (m == "UPDATE")
+        {
+            state update;
+        }
+        else if (m == "Help")
+        {
+            llGiveInventory(id, "help");
+        }
+        else if (m == "Plant DropIn")
+        {
+            llGiveInventory(id, "plant-dropin");
+        }
+        else if (m == "Storage DropIn")
+        {
+            llGiveInventory(id, "storage-dropin");
+        }
+        llListenRemove(listener);
+    }
+
+    timer()
+    {
+        llSetTimerEvent(0.0);
+        llListenRemove(listener);
     }
 
     changed(integer change)
@@ -206,13 +248,14 @@ state update
             integer ipin = llList2Integer(cmd, 3);
             list litems = llParseString2List(llList2String(cmd, 4), [","], []);
             integer d = llGetListLength(litems);
-            while (d--)
+            integer c;
+            for (c = 0; c < d; c++)
             {
-                string sitem = llList2String(litems, d);
+                string sitem = llList2String(litems, c);
                 if (llListFindList(ITEMIGNORE, [sitem]) == -1)
                 {
                     integer type = llGetInventoryType(sitem);
-                    else if (type == INVENTORY_SCRIPT)
+                    if (type == INVENTORY_SCRIPT)
                     {
                         llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
                     }

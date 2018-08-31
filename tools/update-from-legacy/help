@@ -1,0 +1,49 @@
+==Satyr Farm Legacy Updater==
+
+This updater is for items older than 09.2018 that can't be updated in any other way. Newer items, or items that did already get updated with this box, will get updated later with an general Update Box.
+This Box can update:
+- SF Small Field
+- SF Square Field
+- SF Olive Tree
+- SF Cherry Tree
+- SF Lemon Tree
+- SF Apple Tree
+- SF Orange Tree
+- SF Rice Field
+- SF Storage Rack
+- SF Fridge
+- SatyrFarm Grapevine
+Animals, Kichens and processing objects like Olive Oil Press can not be updated with with this.
+Animal scripts didn't change much in the last revisions, and Kitchen, Wood Oven, Cauldron, etc. are better updated by simply replacing them.
+
+The Updater updates all items within 96m, if you have things farther away, you may have to move it and run it again.
+
+What this Updater can do:
+- Preserve the current status. A field that's 50% Growing before, will be 50% Growing after the update. A Ripe Apple Tree will stay a Ripe Apple tree.
+- Preserve the percentage if it is shown by a Hovertext. 99% Slop in the fridge will still be there after the update.
+- Add new products like Sugar Cane
+- Replace scripts with the newest version
+- Replace the items within the objects with the newer versions
+- Convert Cherry, Lemon, Apple and Orange Trees to general "SF Tree", which also includes Cocoa and Coffee tree (if you want to choose one of those, reset the scripts of the tree after the update and you will get the menu to choose your prefered tree)
+- Add new configuration notecards
+
+What this Updater can not do:
+- If you had some custom AddOns or Products inside your fields, they will get removed, you have to add them again.
+- Percentages of things that are not shown as hovertext (like Carrots and Olives in the storage rack) will be lost
+
+Why you should do an update:
+Scripts got improved very much, have better performance, more features and fixed many Bugs. Also future Updates will be way easier with update boxes. If you want to be able to run a NPC in your farm, you have to update.
+
+How to Update:
+You have to prepare the items you want to update by dropping a script inside them first.
+1. For fields and trees Click the Updater Box and select "Plant DropIn", it will give you a script. Add this script inside all the Fields and Trees that you want to update. After you added the script, the hover text of the field/tree will change to "Ready for Update".
+2. For the Storage Rack or Fridge, select "Storage DropIn". Add this script inside all your Storage Racks and Fridges.
+3. After your fields/trees/storages are ready, select "UPDATE". The Updater will scan for items in the range of 96m that can be updated and will update them. This can take some time. Items that didn't get prepared with a dropin script and items that are already updated will not get touched.
+4. At the End of the Update, it will give you a summary of how many items it checked, how many items it did update and how many items it didn't have to update (because they are already the latest version). 
+
+Some general interpretation of the numbers:
+• Scanned items: 8, Updated: 7, Didn't have to Update: 1 - 1 item was already a current version, all other items got updated.
+• Scanned items: 8, Updated 2, Didn't have to Update: 0 - You just prepared 2 items with a dropin script, those got updated, 6 items are still the old version, they didn't get touched.
+• Scanned items: 4, but you see 8 items that you prepared with the dropin script - This means that at least 4 items aren't owned by you. Tell the owner to rezz a Legacy Updater and do it.
+
+The Legacy Updater will not always be supplied with the newest version of the farm. So if you read this a few months from now, when there are already probably other versions and updaters out there, it is still saver to update your < 09.2018 old things with this first, and then use the latest updater.

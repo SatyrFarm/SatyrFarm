@@ -1,4 +1,4 @@
-//### field-dropin-update.lsl
+//### plant-dropin.lsl
 /**
 This helper script provides the Update-API for old fields.
 Insert this script in your old fields, then use the update box.
@@ -19,8 +19,8 @@ string PRODUCT = "";
 string myPlants = "";
 string myProducts = "";
 
-list PLANTS = ["Orange Tree","Apple Tree","Cherry Tree","Lemon Tree","Coffee Tree","Cocoa Tree","Corn","Grain","Hay","Carrots","Eggplants","Onions","Peppers","Pot","Potatoes","Strawberries","Sugar Cane","Tomatoes", "Olive Tree"];
-list PRODUCTS = ["SF Oranges","SF Apples","SF Cherries","SF Lemons","SF Coffee Beans","SF Cocoa Beans","SF Corn","SF Grain","SF Hay","SF Carrots","SF Eggplants","SF Onions","SF Peppers","SF Pot","SF Potatoes","SF Strawberries","SF Sugar Cane","SF Tomatoes", "SF Olives"];
+list PLANTS = ["Orange Tree","Apple Tree","Cherry Tree","Lemon Tree","Coffee Tree","Cocoa Tree","Corn","Grain","Hay","Carrots","Eggplants","Onions","Peppers","Pot","Potatoes","Strawberries","Sugar Cane","Tomatoes", "Olive Tree", "Rice", "Grapevine"];
+list PRODUCTS = ["SF Oranges","SF Apples","SF Cherries","SF Lemons","SF Coffee Beans","SF Cocoa Beans","SF Corn","SF Grain","SF Hay","SF Carrots","SF Eggplants","SF Onions","SF Peppers","SF Pot","SF Potatoes","SF Strawberries","SF Sugar Cane","SF Tomatoes", "SF Olives", "SF Rice", "SF Grapes"];
 string plantsTree = "Orange Tree,Apple Tree,Cherry Tree,Lemon Tree,Coffee Tree,Cocoa Tree";
 string productsTree = "SF Oranges,SF Apples,SF Cherries,SF Lemons,SF Coffee Beans,SF Cocoa Beans";
 string plantsSmallField = "Carrots,Eggplants,Onions,Peppers,Pot,Potatoes,Strawberries,Sugar Cane,Tomatoes";
@@ -74,11 +74,30 @@ default
         {
             myPlants = "Olive Tree";
             myProducts = "SF Olives";
+            PLANT = "Olive Tree";
+            PRODUCT = "SF Olives";
             LIFEDAYS = 4;
             WATERTIMES = 4;
             AUTOREPLANT = 1;
             WOODTIMES = 1;
             ISTREE = 1;
+        }
+        else if (name == "SF Rice Field")
+        {
+            myPlants = "Rice";
+            myProducts = "SF Rice";
+            PLANT = "Rice";
+            PRODUCT = "SF Rice";
+        }
+        else if (name == "SatyrFarm Grapevine")
+        {
+            WATERTIMES = 4;
+            LIFEDAYS = 4;
+            ISTREE = 1;
+            WOODTIMES = 1;
+            myPlants = "Grapevine";
+            myProducts = "SF Grapes";
+            AUTOREPLANT = 1;
         }
         else
         {
@@ -106,7 +125,7 @@ default
             {
                 WOOD = llList2Integer(line, 1);
             }
-            else
+            else if (first != "" && first != "NEEDS")
             {
                 PLANT = first;
             }
@@ -117,6 +136,10 @@ default
             if (name == "SF Cherry Tree" || name == "SF Lemon Tree" || name == "SF Orange Tree" || name == "SF Apple Tree" || name == "SF Olive Tree")
             {
                 PLANT = llGetSubString(name, 3, -1);
+            }
+            else if (name == "SatyrFarm Grapevine")
+            {
+                PLANT = "Grapevine";
             }
             if (PLANT == "")
             {
@@ -131,6 +154,10 @@ default
                 statusDur = LIFETIME / 3;
             integer statusLeft = (integer)((100 - PERCENT) * statusDur / 100);
             llSetObjectDesc("T;"+PRODUCT+";"+STATUS+";"+(string)(statusLeft)+";"+(string)llRound(WATER)+";"+(string)llRound(WOOD)+";"+PLANT+";"+(string)chan(llGetKey())+";1");
+        }
+        else
+        {
+            llSetObjectDesc("");
         }
         //change name for trees
         if (name == "SF Cherry Tree" || name == "SF Lemon Tree" || name == "SF Orange Tree" || name == "SF Apple Tree")
@@ -174,6 +201,7 @@ state ready
     state_entry()
     {
         llSetText("Ready For Update!", <1,0,0>, 1.0);
+        llSay(0, "Ready for update.");
     }
 
     dataserver(key k, string m)
@@ -200,27 +228,20 @@ state ready
             string me = llGetScriptName();
             string sRemoveItems = llList2String(cmd, 3);
             list lRemoveItems = llParseString2List(sRemoveItems, [","], []);
-            integer delSelf = FALSE;
             integer d = llGetListLength(lRemoveItems);
             while (d--)
             {
                 string item = llList2String(lRemoveItems, d);
-                if (item == me) delSelf = TRUE;
-                else if (llGetInventoryType(item) != INVENTORY_NONE)
+                if (item != me && llGetInventoryType(item) != INVENTORY_NONE)
                 {
                     llRemoveInventory(item);
                 }
-              }
-              integer pin = llRound(llFrand(1000.0));
-              llSetRemoteScriptAccessPin(pin);
-              osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
-              if (delSelf)
-              {
-                  llSay(0, "Removing myself for update.");
-                  llRemoveInventory(me);
-              }
-              llSleep(10.0);
-              llResetScript();
+            }
+            integer pin = llRound(llFrand(1000.0));
+            llSetRemoteScriptAccessPin(pin);
+            osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
+            llSay(0, "Removing myself for update.");
+            llRemoveInventory(me);
         }
         //
     }
