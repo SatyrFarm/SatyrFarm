@@ -12,7 +12,6 @@ uuidignore = List of ignored UUIDs that won't get updated
 additions = List of additionally items to add (per line: upgradeable:item1,item2,...)
 **/
 
-integer VERSION;
 string PASSWORD;
 list UPGRADEABLES = [];
 list ITEMIGNORE = [];
@@ -34,7 +33,6 @@ loadConfig()
         llSay(0, "No verion or password notecard in inventory! Can't work like that.");
     }
     PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-    VERSION = (integer)llStringTrim(osGetNotecard("version"), STRING_TRIM);
     if (llGetInventoryType("upgradeables") != INVENTORY_NONE)
     {
         UPGRADEABLES = llParseString2List(osGetNotecard("upgradeables"), ["\n"], []);
@@ -187,7 +185,7 @@ state update
         if (command == "VERSION-REPLY")
         {
             integer iVersion = llList2Integer(cmd,3);
-            if(iVersion != VERSION)
+            if(iVersion == 0)
             {
                 string repstr = itemsToReplace(llList2String(cmd,4), llList2Key(cmd, 2));
                 if (repstr != "")

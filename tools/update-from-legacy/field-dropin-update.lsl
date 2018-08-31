@@ -68,6 +68,7 @@ default
             WATERTIMES = 4;
             AUTOREPLANT = 1;
             WOODTIMES = 1;
+            ISTREE = 1;
         }
         else if (name == "SF Olive Tree")
         {
@@ -77,6 +78,7 @@ default
             WATERTIMES = 4;
             AUTOREPLANT = 1;
             WOODTIMES = 1;
+            ISTREE = 1;
         }
         else
         {
@@ -103,37 +105,38 @@ default
             else if (first == "Wood:")
             {
                 WOOD = llList2Integer(line, 1);
-                ISTREE = 1;
             }
             else
             {
                 PLANT = first;
             }
         }
-        if (STATUS == "")
+        if (STATUS != "")
         {
-            llOwnerSay("NOPE NOPE NOPE NOPE NOPE NOPE!!!");
-            llRemoveInventory(llGetScriptName());
+            //Get product
+            if (name == "SF Cherry Tree" || name == "SF Lemon Tree" || name == "SF Orange Tree" || name == "SF Apple Tree" || name == "SF Olive Tree")
+            {
+                PLANT = llGetSubString(name, 3, -1);
+            }
+            if (PLANT == "")
+            {
+                llOwnerSay("NOPE NOPE NOPE NOPE NOPE NOPE!!!");
+                llRemoveInventory(llGetScriptName());
+            }
+            PRODUCT = llList2String(PRODUCTS, llListFindList(PLANTS, [PLANT]));
+            //Description
+            integer LIFETIME = 86400 * LIFEDAYS;
+            integer statusDur = LIFETIME;
+            if (STATUS == "New")
+                statusDur = LIFETIME / 3;
+            integer statusLeft = (integer)((100 - PERCENT) * statusDur / 100);
+            llSetObjectDesc("T;"+PRODUCT+";"+STATUS+";"+(string)(statusLeft)+";"+(string)llRound(WATER)+";"+(string)llRound(WOOD)+";"+PLANT+";"+(string)chan(llGetKey())+";1");
         }
-        //Get product
-        if (name == "SF Cherry Tree" || name == "SF Lemon Tree" || name == "SF Orange Tree" || name == "SF Apple Tree" || name == "SF Olive Tree")
+        //change name for trees
+        if (name == "SF Cherry Tree" || name == "SF Lemon Tree" || name == "SF Orange Tree" || name == "SF Apple Tree")
         {
-            PLANT = llGetSubString(name, 3, -1);
             llSetObjectName("SF Tree");
         }
-        if (PLANT == "")
-        {
-            llOwnerSay("NOPE NOPE NOPE NOPE NOPE NOPE!!!");
-            llRemoveInventory(llGetScriptName());
-        }
-        PRODUCT = llList2String(PRODUCTS, llListFindList(PLANTS, [PLANT]));
-        //Description
-        integer LIFETIME = 86400 * LIFEDAYS;
-        integer statusDur = LIFETIME;
-        if (STATUS == "New")
-            statusDur = LIFETIME / 3;
-        integer statusLeft = (integer)((100 - PERCENT) * statusDur / 100);
-        llSetObjectDesc("T;"+PRODUCT+";"+STATUS+";"+(string)(statusLeft)+";"+(string)llRound(WATER)+";"+(string)llRound(WOOD)+";"+PLANT+";"+(string)chan(llGetKey())+";1");
         //Config Notecard
         string config = "";
         config += "HAS_WOOD="+(string)ISTREE+"\n";
