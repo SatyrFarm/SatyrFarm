@@ -11,6 +11,8 @@ SENSOR_DISTANCE=10
 #
 
 **/
+integer VERSION=1;
+
 string PASSWORD="*";
 integer chan(key u)
 {
@@ -348,6 +350,62 @@ default
             }
             else llSay(0, "Not enough "+productName);
         }
+        //for updates
+        else if (item == "VERSION-CHECK")
+        {
+            string answer = "VERSION-REPLY|" + PASSWORD + "|";
+            answer += (string)llGetKey() + "|" + (string)VERSION + "|";
+            integer len = llGetInventoryNumber(INVENTORY_OBJECT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
+            }
+            len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+            }
+            answer += "|";
+            len = llGetInventoryNumber(INVENTORY_NOTECARD);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
+            }
+            osMessageObject(llList2Key(cmd, 2), answer);
+        }
+        else if (item == "DO-UPDATE")
+        {
+            if (llGetOwnerKey(k) != llGetOwner())
+            {
+                llSay(0, "Reject Update, because you are not my Owner.");
+                return;
+            }
+            string me = llGetScriptName();
+            string sRemoveItems = llList2String(cmd, 3);
+            list lRemoveItems = llParseString2List(sRemoveItems, [","], []);
+            integer delSelf = FALSE;
+            integer d = llGetListLength(lRemoveItems);
+            while (d--)
+            {
+                string sitem = llList2String(lRemoveItems, d);
+                if (sitem == me) delSelf = TRUE;
+                else if (llGetInventoryType(sitem) != INVENTORY_NONE)
+                {
+                    llRemoveInventory(sitem);
+                }
+              }
+              integer pin = llRound(llFrand(1000.0));
+              llSetRemoteScriptAccessPin(pin);
+              osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
+              if (delSelf)
+              {
+                  llSay(0, "Removing myself for update.");
+                  llRemoveInventory(me);
+              }
+              llSleep(10.0);
+              llResetScript();
+        }
+        //
         else
         {
             // Add something to the jars
@@ -426,10 +484,23 @@ default
  
     state_entry()
     {
+        //for updates
+        if (llSubStringIndex(llGetObjectName(), "Updater") != -1)
+        {
+            string me = llGetScriptName();
+            llOwnerSay("Script " + me + " went to sleep inside Updater.");
+            llSetScriptState(me, FALSE);
+            llSleep(0.5);
+            return;
+        }
+        llSetRemoteScriptAccessPin(0);
+        //
+        llSay(0, "Getting ready for you :)");
         ownkey = llGetKey();
         lastTs = llGetUnixTime();
         loadConfig();
         llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
+        llSay(0, "Ready");
         llSetTimerEvent(1);
     } 
 

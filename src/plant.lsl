@@ -89,6 +89,8 @@ checkListen(integer force)
 
 loadConfig()
 {
+    //sfp notecard
+    PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
     //config notecard
     if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
@@ -147,7 +149,7 @@ loadConfig()
             water = llList2Float(desc, 4);
             wood = llList2Float(desc, 5);
             plant = llList2String(desc, 6);
-            autoWater = llList2Integer(desc, 7);
+            autoWater = llList2Integer(desc, 8);
             if (status == "New")
             {
                 statusDur = (integer)(LIFETIME / 3);
@@ -358,7 +360,6 @@ default
         //
         llSay(0, "Getting ready for you :)");
         status = "Empty";
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         loadConfig();
         llSay(0, "Ready");
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
