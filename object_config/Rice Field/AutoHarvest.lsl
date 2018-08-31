@@ -1,0 +1,1 @@
+../../plugins/AutoHarvest/AutoHarvest.lsl
