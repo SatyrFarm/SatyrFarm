@@ -211,14 +211,17 @@ state update
             while (d--)
             {
                 string sitem = llList2String(litems, d);
-                integer type = llGetInventoryType(sitem);
-                if (type == INVENTORY_SCRIPT)
+                if (llListFindList(ITEMIGNORE, [sitem]) == -1)
                 {
-                    llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
-                }
-                else if (type != INVENTORY_NONE)
-                {
-                    llGiveInventory(kobject, sitem);
+                    integer type = llGetInventoryType(sitem);
+                    else if (type == INVENTORY_SCRIPT)
+                    {
+                        llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
+                    }
+                    else if (type != INVENTORY_NONE)
+                    {
+                        llGiveInventory(kobject, sitem);
+                    }
                 }
             }
             llSay(0, "Updated items: \n    " + llList2String(cmd,4) + "\n-----------");
