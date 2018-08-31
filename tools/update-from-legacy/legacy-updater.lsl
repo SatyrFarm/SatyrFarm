@@ -121,6 +121,11 @@ default
 
     touch_start(integer n)
     {
+        if (llDetectedKey(0) != llGetOwner())
+        {
+            llSay(0, "You are not my owner, please go away '.'");
+            return;
+        }
         string text = "This Updater is for LEGACY items. For old items with scripts older than 09.2018 that can't be updated on any other way.\n"
                     + "You first have to put the drop-in scripts into your items, click \"Help\" to get introductions on how to do that.\n"
                     + "\"Plant DropIn\" is for all plants and trees. \"Storage DropIn\" is for Storage Rack and Fridge.";

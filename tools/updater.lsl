@@ -113,6 +113,11 @@ default
 
     touch_start(integer n)
     {
+        if (llDetectedKey(0) != llGetOwner())
+        {
+            llSay(0, "You are not my owner, please go away '.'");
+            return;
+        }
         state update;
     }
 
