@@ -109,23 +109,25 @@ loadConfig()
     if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
     {
         list storageNC = llParseString2List(llStringTrim(osGetNotecard("storagenc"), STRING_TRIM), [";"], []);
-        if (llGetListLength(storageNC) < 3 || (llList2Key(storageNC, 0) != ownkey && llList2String(storageNC, 0) != "null"))
+        if ((llGetListLength(storageNC) < 3 || (llList2Key(storageNC, 0) != ownkey && llList2String(storageNC, 0) != "null")) && doReset)
         {
-            if (doReset)
+            llSay(0, "Reset");
+            saveNC = 2;
+            if (llGetInventoryType("storagenc-old") == INVENTORY_NOTECARD)
             {
-                saveNC = 1;
-                if (llGetInventoryType("storagenc-old") == INVENTORY_NOTECARD)
-                {
-                    saveNC++;
-                    llRemoveInventory("storagenc-old");
-                }
-                osMakeNotecard("storagenc-old", "null;" + llDumpList2String(llList2List(storageNC, 1, -1), ";"));
-                llRemoveInventory("storagenc");
-                llSay(0, "Reset");
+                saveNC++;
+                llRemoveInventory("storagenc-old");
             }
+            osMakeNotecard("storagenc-old", "null;" + llDumpList2String(llList2List(storageNC, 1, -1), ";"));
+            llRemoveInventory("storagenc");
+            products = [];
+            levels = [];
         }
-        products = llParseString2List(llList2String(storageNC,1), [","], []);
-        levels = llParseString2List(llList2String(storageNC,2), [","], []);
+        else
+        {
+            products = llParseString2List(llList2String(storageNC,1), [","], []);
+            levels = llParseString2List(llList2String(storageNC,2), [","], []);
+        }
     }
     //objects in inventory
     for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
@@ -484,6 +486,8 @@ default
  
     state_entry()
     {
+        //give it some time to load inventory items
+        llSleep(2.0);
         //for updates
         if (llSubStringIndex(llGetObjectName(), "Updater") != -1)
         {

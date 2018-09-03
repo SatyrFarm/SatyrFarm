@@ -139,8 +139,6 @@ loadConfig()
         if ((llList2String(desc, 7) != (string)chan(llGetKey())) && doReset)
         {
             llSetObjectDesc("");
-            //llSleep(2.0);
-            //llResetScript();
         }
         else
         {
