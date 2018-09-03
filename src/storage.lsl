@@ -486,6 +486,7 @@ default
  
     state_entry()
     {
+        llSay(0, "Getting ready for you :)");
         //give it some time to load inventory items
         llSleep(2.0);
         //for updates
@@ -499,7 +500,6 @@ default
         }
         llSetRemoteScriptAccessPin(0);
         //
-        llSay(0, "Getting ready for you :)");
         ownkey = llGetKey();
         lastTs = llGetUnixTime();
         loadConfig();

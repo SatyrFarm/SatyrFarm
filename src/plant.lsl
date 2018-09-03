@@ -347,6 +347,8 @@ default
     
     state_entry()
     {
+        llSay(0, "Getting ready for you :)");
+        llSleep(2.0);
         //for updates
         if (llSubStringIndex(llGetObjectName(), "Updater") != -1)
         {
@@ -358,7 +360,6 @@ default
         }
         llSetRemoteScriptAccessPin(0);
         //
-        llSay(0, "Getting ready for you :)");
         status = "Empty";
         loadConfig();
         llSay(0, "Ready");

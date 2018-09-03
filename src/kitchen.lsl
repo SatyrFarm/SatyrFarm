@@ -657,10 +657,13 @@ default
  
     state_entry()
     {
+        llSay(0, "Getting ready for you :)");
+        llSleep(2.0);
         refresh();
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         getRecipeNames();
         loadConfig();
+        llSay(0, "Ready");
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
     } 
 
