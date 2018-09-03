@@ -11,6 +11,8 @@ integer AN_HASWOOL = 0;
 integer AN_HASMANURE = 0;
 string name;
 
+integer VERSION = 1;
+
 list ADULT_MALE_PRIMS = [];
 
 list ADULT_FEMALE_PRIMS = []; // link numbers -   Both sexes
@@ -157,6 +159,39 @@ loadConfig()
                 else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
         }
     }
+
+}
+
+loadStateByDesc()
+{
+    //state by description
+    list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
+    if (llList2String(desc, 0) == "A")
+    {
+        if ((llList2String(desc, 5) != (string)chan(llGetKey())) )
+        {
+            llSetObjectDesc("");
+            llSleep(1.0);
+            //llResetScript();
+        }
+        else
+        {
+            //PRODUCT_NAME = llList2String(desc, 1);
+            if (llList2Integer(desc,1) == 1) sex = "Female";
+            else sex = "Male";
+            
+            water = llList2Integer(desc, 2);
+            food = llList2Integer(desc, 3);
+            
+            createdTs = llList2Integer(desc, 4);
+            geneA = llList2Integer(desc, 6);
+            geneB = llList2Integer(desc, 7);
+            fatherGene = llList2Integer(desc, 8);
+            pregnantTs = llList2Integer(desc, 9);
+            name = llList2String(desc, 10);
+        }
+    } 
+// llSetObjectDesc("A;"+scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+geneA+";"+geneB+";"+pregnantTs+";"+name+";");
 }
 
 
@@ -415,7 +450,10 @@ refresh(integer ts)
                     llSetText(name , color, 1.0);
                 else
                     llSetText(str , color, 1.0);
-            }           
+            }
+     integer scode=0;
+     if (sex == "Female") scode=1;
+     llSetObjectDesc("A;"+scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+pregnantTs+";"+name+";");
 }
 
 
@@ -457,13 +495,12 @@ default
         //Reset Everything
         llSetRot(ZERO_ROTATION);
         llSetLinkColor(LINK_ALL_OTHERS, <1, 1,1>, ALL_SIDES);
-         
+
         
         if (llFrand(1.) < 0.5) sex = "Female";
         else sex = "Male";
         geneA = 1+ (integer)llFrand(3);
         geneB = 1+ (integer)llFrand(3);
-        setGenes();
         
         lastTs = createdTs = llGetUnixTime()-10;
         initpos = llGetPos();
@@ -475,6 +512,10 @@ default
         setAlpha(CHILD_PRIMS, 1.);        
         lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        
+        loadStateByDesc();
+
+        setGenes();
 
         llSetTimerEvent(5);
     }
@@ -709,8 +750,64 @@ default
            list tk = llParseStringKeepNulls(m , ["|"], []);
             if (llList2String(tk,1) != PASSWORD)  { llOwnerSay("Password mismatch '"+llList2String(tk,1)+"'!='"+PASSWORD+"'"); return;  } 
             
-            string cmd = llList2String(tk,0);
-            if (cmd == "MATEME" )
+        string cmd = llList2String(tk,0);
+        //for updates
+        if (cmd == "VERSION-CHECK")
+        {
+            string answer = "VERSION-REPLY|" + PASSWORD + "|";
+            answer += (string)llGetKey() + "|" + (string)VERSION + "|";
+            integer len = llGetInventoryNumber(INVENTORY_OBJECT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
+            }
+            len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+            }
+            answer += "|";
+            len = llGetInventoryNumber(INVENTORY_NOTECARD);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
+            }
+            osMessageObject(llList2Key(tk, 2), answer);
+        }
+        else if (cmd == "DO-UPDATE")
+        {
+            if (llGetOwnerKey(kk) != llGetOwner())
+            {
+                llSay(0, "Reject Update, because you are not my Owner.");
+                return;
+            }
+            string me = llGetScriptName();
+            string sRemoveItems = llList2String(tk, 3);
+            list lRemoveItems = llParseString2List(sRemoveItems, [","], []);
+            integer delSelf = FALSE;
+            integer d = llGetListLength(lRemoveItems);
+            while (d--)
+            {
+                string item = llList2String(lRemoveItems, d);
+                if (item == me) delSelf = TRUE;
+                else if (llGetInventoryType(item) != INVENTORY_NONE)
+                {
+                    llRemoveInventory(item);
+                }
+              }
+              integer pin = llRound(llFrand(1000.0));
+              llSetRemoteScriptAccessPin(pin);
+              osMessageObject(llList2Key(tk, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
+              if (delSelf)
+              {
+                  llSay(0, "Removing myself for update.");
+                  llRemoveInventory(me);
+              }
+              llSleep(10.0);
+              llResetScript();
+        }
+        //
+        else if (cmd == "MATEME" )
             {
                 if (isBaby)
                 {
@@ -875,7 +972,7 @@ default
         
         integer ts = llGetUnixTime();
         refresh(ts);
-        if (llSameGroup(llDetectedKey(0) ))
+        if (llSameGroup(llDetectedKey(0) ) || osIsNpc(llDetectedKey(0)) )
         {
          
            list opts = [];
