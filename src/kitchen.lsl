@@ -11,6 +11,7 @@ SENSOR_DISTANCE=10
 MUST_SIT=1
 
 **/
+integer VERSION = 1;
 
 string PASSWORD="*";
 //for listener and menus
@@ -569,11 +570,72 @@ default
             return;
         } 
         string cmd = llList2Key(tk,0);
-        integer found_pro = llGetListLength(ingredients) / 3;
-        while (found_pro-- && llToUpper(llList2String(ingredients, found_pro*3 + 1)) != cmd);
-        integer i = llList2Integer(ingredients, found_pro*3);
-        haveIngredients= haveIngredients | (0x01 << i);
-        refresh();
+        //for updates
+        if (cmd == "VERSION-CHECK")
+        {
+            string answer = "VERSION-REPLY|" + PASSWORD + "|";
+            answer += (string)llGetKey() + "|" + (string)VERSION + "|";
+            integer len = llGetInventoryNumber(INVENTORY_OBJECT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
+            }
+            len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+            }
+            answer += "|";
+            len = llGetInventoryNumber(INVENTORY_NOTECARD);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
+            }
+            osMessageObject(llList2Key(tk, 2), answer);
+        }
+        else if (cmd == "DO-UPDATE")
+        {
+            if (llGetOwnerKey(k) != llGetOwner())
+            {
+                llSay(0, "Reject Update, because you are not my Owner.");
+                return;
+            }
+            string me = llGetScriptName();
+            string sRemoveItems = llList2String(tk, 3);
+            list lRemoveItems = llParseString2List(sRemoveItems, [","], []);
+            integer delSelf = FALSE;
+            integer d = llGetListLength(lRemoveItems);
+            while (d--)
+            {
+                string item = llList2String(lRemoveItems, d);
+                if (item == me) delSelf = TRUE;
+                else if (llGetInventoryType(item) != INVENTORY_NONE)
+                {
+                    llRemoveInventory(item);
+                }
+              }
+              integer pin = llRound(llFrand(1000.0));
+              llSetRemoteScriptAccessPin(pin);
+              osMessageObject(llList2Key(tk, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
+              if (delSelf)
+              {
+                  llSay(0, "Removing myself for update.");
+                  llRemoveInventory(me);
+              }
+              llSleep(10.0);
+              llResetScript();
+        }
+        //
+        else
+        {
+            //Add Ingredient
+            integer found_pro = llGetListLength(ingredients) / 3;
+            //just a fancy way of llListFindList that isn't case sensitive
+            while (found_pro-- && llToUpper(llList2String(ingredients, found_pro*3 + 1)) != cmd);
+            integer i = llList2Integer(ingredients, found_pro*3);
+            haveIngredients= haveIngredients | (0x01 << i);
+            refresh();
+        }
     }
 
     
@@ -659,6 +721,17 @@ default
     {
         llSay(0, "Getting ready for you :)");
         llSleep(2.0);
+        //for updates
+        if (llSubStringIndex(llGetObjectName(), "Updater") != -1)
+        {
+            string me = llGetScriptName();
+            llOwnerSay("Script " + me + " went to sleep inside Updater.");
+            llSetScriptState(me, FALSE);
+            llSleep(0.5);
+            return;
+        }
+        llSetRemoteScriptAccessPin(0);
+        //
         refresh();
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         getRecipeNames();
