@@ -1,46 +1,6 @@
-/** Animal.lsl - animals
-Part of the  SatyrFarm scripts license: CC-BY-NC 
-
-Configuration  goes in the 'an_config' notecard
-Example of an_config notecard
-
-# begin an_config
-# Name of the animal - the animal object must be named SF Reindeer in this case
-NAME=Reindeer
-#
-# Name of the feeder to use 
-FEEDER=SF Feeder
-#
-# How does this animal cry?
-CRY=Honk
-#
-# Does this female animal give milk after it has had its first pregnancy?
-HASMILK=0
-#
-# Does this animal give wool after becoming adult?
-HASWOOL=0
-#
-# Does this animal give manure when adult ?
-HASMANURE=1
-#
-# Link numbers that become visible only on male animals when they become adult
-ADULT_MALE_PRIMS=7,6,14,15
-#
-# Link numbers that become visible only on female animals when they become adult
-ADULT_MALE_PRIMS=7,6,14,15
-#
-# Link numbers that become visible only on female animals when they become adult
-CHILD_PRIMS=7,6,14,15
-#
-# Default lifetime for this animal. Actual life time will be (randomly) up to 10% differnt from this
-LIFEDAYS=135
-# end an_config
-
-
-An animal must also contain  in inventory SF Milk (if needed) SF Wool (if needed) SF Meat, SF Manure (if needed) SF Skin , 5 pose notecards (see the animal_pose_maker.lsl in tools)
-, baby sounds (called baby1, baby2), adult sounds (called adult1, adult2, adult3, adult4) and the setpin script
-
-**/
+/* Part of the  SatyrFarm scripts
+   This code is provided under the CC-BY-NC license
+   */
 
 string AN_NAME = "Animal";
 string AN_FEEDER = "SF Animal Feeder";
@@ -168,40 +128,36 @@ loadConfig()
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
     {
-        if (llGetSubString(llList2String(lines,i), 0, 0) != "#")
+        list tok = llParseString2List(llList2String(lines,i), ["="], []);
+        
+        if (llList2String(tok,1) != "")
         {
-            list tok = llParseString2List(llList2String(lines,i), ["="], []);
-            
-            if (llList2String(tok,1) != "")
-            {
-                    string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
-                    string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
-                    //llOwnerSay(cmd+"="+val);
-                    if (cmd =="NAME") AN_NAME = val;
-                    else if (cmd == "FEEDER") AN_FEEDER = val;
-                    else if (cmd == "CRY") AN_BAAH = val;
-                    else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
-                    else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
-                    else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
-                    else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
-                    else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
-                    else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);                
-                    else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
-                    else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
-                    else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
-                    else if (cmd == "MILKTIME") MILKTIME= (integer)val;
-                    else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
-                    else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
-                    else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
-                    else if (cmd == "WATERMOUNT") WATERAMOUNT= (float)val;
-                    else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
-                    else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
-                    else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
-            }
+                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                //llOwnerSay(cmd+"="+val);
+                if (cmd =="NAME") AN_NAME = val;
+                else if (cmd == "FEEDER") AN_FEEDER = val;
+                else if (cmd == "CRY") AN_BAAH = val;
+                else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
+                else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
+                else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
+                else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
+                else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
+                else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);                
+                else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
+                else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
+                else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
+                else if (cmd == "MILKTIME") MILKTIME= (integer)val;
+                else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
+                else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
+                else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
+                else if (cmd == "WATERMOUNT") WATERAMOUNT= (float)val;
+                else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
+                else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
+                else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
         }
     }
 }
-
 
 
 
@@ -367,7 +323,11 @@ refresh(integer ts)
             age = (ts-createdTs);
             
             float days = (age/86400.);
-            string str =""+name+" ("+sex+")\n";
+            string uc = "♂";
+            if (sex == "Female")
+                uc = "♀";
+
+            string str =""+name+" "+uc+"\n";
                         
             if (isBaby && days  > (lifeTime*0.15/86400.))
             {
@@ -656,7 +616,14 @@ default
             if (labelType==1) opts += "Long Label";
             else opts += "Short Label";
             
-           llDialog(id, "Select", opts, chan(llGetKey()) );
+            opts += "Range";
+
+            llDialog(id, "Select", opts, chan(llGetKey()) );
+        }
+        else if (m == "Range")
+        {
+            llTextBox(id, "Set Walking Range to (meters):", chan(llGetKey()));
+            status = "WaitRadius";
         }
         else if (m == "Set Name")
         {
@@ -716,9 +683,16 @@ default
                 llRezObject("SF Wool", llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
                 woolTs = llGetUnixTime();
         }
+        else if (status == "WaitRadius")
+        {
+            RADIUS = (integer)m;
+            if (RADIUS<1) RADIUS = 1;
+            say(0, "Alright, I won't go further than "+(string)RADIUS+" meters");
+            status = "OK";
+        }
         else if (status =="WaitName")
         {
-            name = llStringTrim(m, STRING_TRIM);
+            name = m;
             say(0, "Hello! My name is "+name+"!");
             status ="OK";
             refresh(llGetUnixTime());
