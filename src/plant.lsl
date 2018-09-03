@@ -131,15 +131,16 @@ loadConfig()
         llSay(0, "Error: No config Notecard found.\nI can't work without one :(");
     }
 
-    //sate by description
+  
+    //state by description
     list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
     if (llList2String(desc, 0) == "T")
     {
-        if (llList2String(desc, 7) != (string)chan(llGetKey()) && doReset)
+        if ((llList2String(desc, 7) != (string)chan(llGetKey())) && doReset)
         {
             llSetObjectDesc("");
-            llSleep(2.0);
-            llResetScript();
+            //llSleep(2.0);
+            //llResetScript();
         }
         else
         {
@@ -160,6 +161,7 @@ loadConfig()
             }
         }
     }
+
 }
 
 
@@ -633,4 +635,3 @@ default
         }
     }
 }
-
