@@ -1,50 +1,72 @@
 /*
 
-This script builds animation notecards for SF animals. 
-
 INSTRUCTIONS
 
+The easiest way is to start with an existing animal and use its root prim. Remove the animal script from an existing animal, and bring the two animals near, and make them face the same direction. 
 
-1.  Rotate the sculpty dog facing the positive X axis (looking towards the east)
-rez a root prim on the ground (height ~ 0.1m)  and move it right under the dog's feet at ground level. 
-this will be the center of its movement when moving. DONT ROTATE IT. keep it in the default orientation.
+Unlink the root prim from the existing animal, move it under the new animal, and link the new animal with the root prim. 
 
+insert this script into the new animal. Click "Save Scales" to save the scales notecard. Continue by posing the aniaml and saving the poses.  The walkl and walkr poses are used when walking, the other poses can be anything. After you re done click START  to test them. When you 're happy  you can remove this script. 
 
-2. Link the dog with the root prim
+Insert sound files for the animal as baby and adult. They should be named baby1,baby2, and adult1,adult2, adult3, adult4 respectively
 
+Change the an_config notecard to match your animal's properties. 
 
-4. Set BUILDING=2 in this script below. Touch the dog. the notecard "scales" will be created with the sizes of all the 
-sculptys in the linkset.
+To show some prims only as adults, enter their link numbers in this format:
 
-3. Set BUILDING=1 in this script below. this means you will now be saving pose notecards
+ADULT_MALE_PRIMS=12,13,15
+ADULT_FEMALE_PRIMS=12,13
 
-5. You must create 5 notecards with poses. the notecard names are :  rest, eat, down, walkl, walkr
-walkl and walkr are used for the dog's walk when the dog is moving. the other poses are static and can be 
-anything and they will appear randomly. 
+To show some prims only as child enter this:
 
-6. For each pose, arrange the pose by rotating and moving the linkset (do not change sizes!), 
-then click the dog and its current pose will be written in a notecard named  "pose".  
-Rename the notecard "pose" to "walkl" . Then repeat the same for all the other poses. 
-When you are done you should have 5 notecards with the poses in the dog's contents: rest, eat, down,  walkr, walkl
+CHILD_PRIMS=16,19
 
-7. You can now test the dog by setting BUILDING=0 in the script and touching it. It should start walking and turning normally. 
+Make sure your animals contains SF Wool, SF Milk, SF Skin, SF Manure and all are full perm
 
-Then you can delete this script, add the rest of the animal contents (SF Meat/Milk/Wool/Skin/Manure) inside and edit an_config
-to customize your animal properties. 
+Rename your animal object such as "SF Elephant" and take it into inventory
+
+Place it inside the animal rezzer. You should be able to rez it now.
 
 */
 
+integer chan(key u)
+{
+    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
+}
+
+integer listener=-1;
+integer listenTs;
+
+startListen()
+{
+    if (listener<0) 
+    {
+        listener = llListen(chan(llGetKey()), "", "", "");
+        listenTs = llGetUnixTime();
+    }
+}
 
 
 
+checkListen()
+{
+    if (listener > 0 && llGetUnixTime() - listenTs > 300)
+    {
+        llListenRemove(listener);
+        listener = -1;
+    }
+}
 
-integer BUILDING=2;
+
+integer BUILDING=0;
 
 list rest;
 list walkl;
 list walkr;
 list eat;
 list down;
+list link_scales;
+
 
 
 integer RADIUS=10;
@@ -61,9 +83,12 @@ setpose(list pose)
     integer idx=0;
     integer i;
 
-    for (i=2; i <= 1+llGetListLength(pose)/2; i++)
+
+    float scale = 1.;
+    
+    for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
     {
-        llSetLinkPrimitiveParamsFast(i, [PRIM_POS_LOCAL, llList2Vector(pose, idx++), PRIM_ROT_LOCAL, llList2Rot(pose, idx++)] );
+        llSetLinkPrimitiveParamsFast(i, [PRIM_POS_LOCAL, llList2Vector(pose, (i-1)*2-2)*scale, PRIM_ROT_LOCAL, llList2Rot(pose, (i-1)*2-1), PRIM_SIZE, llList2Vector(link_scales, i-2)*scale]);
     }
 }
 
@@ -121,10 +146,12 @@ default
             eat = getnc("eat");
             walkl = getnc("walkl");
             walkr = getnc("walkr");
+            link_scales = getnc("scales");
             llSay(0, "Touch to start/stop");
         }
         
         initpos = llGetPos();
+        llSetText("", <1,1,1>, 1.0);
         //llSetTimerEvent(1);
     }
     on_rez(integer n)
@@ -134,41 +161,69 @@ default
 
     touch_start(integer n)
     {        
-        if (BUILDING==1)
+        llOwnerSay("Link number clicked="+(string)llDetectedLinkNumber(0));
+            list opts = ["CLOSE"];
+            opts += "Save scales";
+            opts += "Save walkr";
+            opts += "Save walkl";
+            opts += "Save rest";
+            opts += "Save eat";
+            opts += "Save down";
+            
+            opts += "START";
+            opts += "STOP";
+            opts += "RESET";
+    
+            startListen();
+            llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()) );
+    }
+    
+    listen(integer chan, string nm, key id, string m)
+    {
+        if (m == "Save walkr"  || m == "Save walkl" || m == "Save rest"|| m == "Save eat"|| m == "Save down")
         {
+            string nc = llGetSubString(m, 5,-1);
             integer i;
             list c;
             for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
                 c +=  llGetLinkPrimitiveParams(i, [PRIM_POS_LOCAL, PRIM_ROT_LOCAL]);
                 
             //llSay(0, llList2CSV((c)));
-            
-            osMakeNotecard("pose", llDumpList2String(c, "|"));
-            llSay(0, "Notecard written. Please rename.");
+            llRemoveInventory(nc);
+            llSleep(.2);
+            osMakeNotecard(nc, llDumpList2String(c, "|"));
+            llSay(0, "Pose Notecard '"+nc+"' written.");
         }
-        else if (BUILDING==2)
+        else if (m == "Save scales")
         {
             integer i;
             list c;
             for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
                 c +=  llGetLinkPrimitiveParams(i, [PRIM_SIZE]);
             //llSay(0, llList2CSV((c)));
+            llRemoveInventory("scales");
+            llSleep(.2);
             osMakeNotecard("scales", llDumpList2String(c, "|"));
             llSay(0, "Notecard scales written. ");
         }
-        else
+        else if (m == "START" || m == "STOP")
         {        
             initpos=llGetPos();
-            isOn=!isOn;
+            isOn= (m == "START");
             llSetTimerEvent(isOn*TIMER);
 
             llSay(0, "Active="+(string)isOn);
             if (isOn)
                 changepose();
-        }    
+        }
+        else if (m == "RESET")
+        {
+            isOn = 0;
+            llSetRot(ZERO_ROTATION);
+            llSetTimerEvent(0);
+        }
     }
-    
-    
+
     timer()
     {
 
@@ -176,7 +231,8 @@ default
         if (llFrand(1)<.3)
             llTriggerSound(llGetInventoryName(INVENTORY_SOUND,  (integer)llFrand(llGetInventoryNumber(INVENTORY_SOUND))), 1.0);
         changepose();
-             
+ 
+        checkListen();            
         //llSetTimerEvent(3.+llFrand(7));
     } 
 }
