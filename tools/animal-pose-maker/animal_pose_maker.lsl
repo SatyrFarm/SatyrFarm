@@ -6,7 +6,9 @@ The easiest way is to start with an existing animal and use its root prim. Remov
 
 Unlink the root prim from the existing animal, move it under the new animal, and link the new animal with the root prim. 
 
-insert this script into the new animal. Click "Save Scales" to save the scales notecard. Continue by posing the aniaml and saving the poses.  The walkl and walkr poses are used when walking, the other poses can be anything. After you re done click START  to test them. When you 're happy  you can remove this script. 
+insert this script into the new animal. Click "Save Scales" to save the scales notecard. Continue by posing the aniaml and saving the poses.  The walkl and walkr poses are used when walking, the other poses can be anything. 
+
+After you re done with poses click RESET, then START  to test them. When you 're happy, remove this script. 
 
 Insert sound files for the animal as baby and adult. They should be named baby1,baby2, and adult1,adult2, adult3, adult4 respectively
 
@@ -220,7 +222,7 @@ default
         {
             isOn = 0;
             llSetRot(ZERO_ROTATION);
-            llSetTimerEvent(0);
+            llResetScript();
         }
     }
 
