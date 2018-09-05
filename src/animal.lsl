@@ -23,7 +23,6 @@ list CHILD_PRIMS = [];
 
 list colorable = []; //[2,3,4,9,10,11,12,13,14,15,16,17];
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 
 integer deathFlags=0;
@@ -62,16 +61,16 @@ checkListen()
 
 integer RADIUS=5;
 
-integer LIFETIME = 86400*30; 
+integer LIFETIME = 2592000; 
 
 float WATERTIME = 5000. ;
 float FEEDTIME  = 5900. ;
 
 integer MILKTIME = 86400 ;
-integer MANURETIME = 86400*2  ;
-integer WOOLTIME = 86400*4  ;
+integer MANURETIME = 172800  ;
+integer WOOLTIME = 345600 ;
 
-integer PREGNANT_TIME = 86400*5;
+integer PREGNANT_TIME = 432000;
 
 integer lifeTime;
 
@@ -93,12 +92,9 @@ list eat;
 list down;
 list link_scales;
 
-integer tail;
 vector initpos;
 
-integer lastFed;
 integer lastTs;
-integer lastWater;
 integer createdTs;
 integer milkTs;
 integer woolTs;
@@ -118,7 +114,6 @@ key followUser=NULL_KEY;
 integer pregnantTs;
 integer givenBirth =0;
 string fatherName;
-integer days;
 integer age;
 
 
@@ -241,9 +236,9 @@ say(integer whisper, string str)
 baah()
 {
     if (isBaby)
-        llTriggerSound("baby"+(1+(integer)llFrand(TOTAL_BABYSOUNDS)), 1.0);
+        llTriggerSound("baby"+(string)(1+(integer)llFrand(TOTAL_BABYSOUNDS)), 1.0);
     else
-        llTriggerSound("adult"+(1+(integer)llFrand(TOTAL_ADULTSOUNDS)), 1.0);
+        llTriggerSound("adult"+(string)(1+(integer)llFrand(TOTAL_ADULTSOUNDS)), 1.0);
 }
 
 
@@ -291,7 +286,6 @@ setAlpha(list links, float vis)
 
 setpose(list pose)
 {
-    integer idx=0;
     integer i;
     float scale;
     if (isBaby) 
@@ -386,7 +380,7 @@ refresh(integer ts)
             else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
             else if (water < 0) say( 0, AN_BAAH+", I'm thirsty!");
 
-            str += ""+(integer)days+" days old ";
+            str += ""+(string)((integer)days)+" days old ";
             if (isBaby) str += "(Child)\n";
             else 
             {
@@ -396,13 +390,13 @@ refresh(integer ts)
                 if (p > 100) p = 100;
 
                 if (AN_HASMILK && sex == "Female" && givenBirth>0)
-                    str += "Milk: "+(integer)p+"%\n";
+                    str += "Milk: "+(string)((integer)p)+"%\n";
                     
 
                 p = 100.*(ts - woolTs)/WOOLTIME;
                 if (p > 100) p = 100;
                 if (AN_HASWOOL)
-                    str += "Wool: "+(integer)p+"%\n";
+                    str += "Wool: "+(string)((integer)p)+"%\n";
 
             }
             
@@ -428,18 +422,18 @@ refresh(integer ts)
                         say(0, "I had a baby!");
                     }
                     else
-                        str += "PREGNANT! ("+(integer)(perc*100)+"%)\n";
+                        str += "PREGNANT! ("+(string)((integer)(perc*100))+"%)\n";
                 }
                 vector color = <1,1,1>;
                 if (food>0)
-                    str += "Food: "+(integer)food+"%\n";
+                    str += "Food: "+(string)((integer)food)+"%\n";
                 else
                 {
                     str += "HUNGRY!\n";
                     color = <1,0,0>;
                 }
                 if (water>0)
-                    str += "Water: "+(integer)water+"%\n";
+                    str += "Water: "+(string)((integer)water)+"%\n";
                 else
                 {
                     str += "THIRSTY!\n";
@@ -453,14 +447,14 @@ refresh(integer ts)
             }
      integer scode=0;
      if (sex == "Female") scode=1;
-     llSetObjectDesc("A;"+scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+pregnantTs+";"+name+";");
+     llSetObjectDesc("A;"+(string)scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
 }
 
 
 
-list getNC(string name)
+list getNC(string ncname)
 {
-    list lst = llParseString2List(osGetNotecard(name), ["|"], []);
+    list lst = llParseString2List(osGetNotecard(ncname), ["|"], []);
     return lst; 
 }
 
@@ -673,13 +667,12 @@ default
         }
         else if (m == "Stop")
         {
-                integer i;
-                followUser =NULL_KEY;
-                llStopSound();
-                setpose(rest);
-                initpos = llGetPos();
-                llSetTimerEvent(2);
-                say(0, "OK I'll stick around");
+            followUser =NULL_KEY;
+            llStopSound();
+            setpose(rest);
+            initpos = llGetPos();
+            llSetTimerEvent(2);
+            say(0, "OK I'll stick around");
         }
         else if (m == "Butcher")
         {
@@ -828,60 +821,57 @@ default
                 list kf;
                 vector mypos = llGetPos();
                 vector v = llList2Vector(ud, 1) + <-.3,  .0, 0.3> * llList2Rot(ud,2);
-                float t = llVecDist(mypos, v)/3;
                 
                 rotation trot  =  llList2Rot(ud,2);
-                if (1)
+
+                ///
+                vector vn = llVecNorm(v  - mypos );
+                vn.z=0;
+
+                kf += ZERO_VECTOR;
+                kf += (trot/llGetRot()) ;// llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
+                kf += .4;
+
+                kf += v- mypos;
+                kf += ZERO_ROTATION;
+                kf += 3;
+
+                //kf += ZERO_VECTOR;
+                //kf += (trot/r2)  ;// llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
+                //kf += .4;
+
+                kf += ZERO_VECTOR;
+                kf += llEuler2Rot(<0,-.3,0>);  // llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
+                kf += .4;
+
+                integer k = 7;
+                while (k-->0)
                 {
-    
-                    vector vn = llVecNorm(v  - mypos );
-                    vn.z=0;
-                    rotation r2 = llRotBetween(<1,0,0>,vn);
-    
-                    kf += ZERO_VECTOR;
-                    kf += (trot/llGetRot()) ;// llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
-                    kf += .4;
-    
-                    kf += v- mypos;
+                    kf += <0.2, 0,0>*trot;
                     kf += ZERO_ROTATION;
-                    kf += 3;
+                    kf += .6;
     
-                    //kf += ZERO_VECTOR;
-                    //kf += (trot/r2)  ;// llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
-                    //kf += .4;
-    
-                    kf += ZERO_VECTOR;
-                    kf += llEuler2Rot(<0,-.3,0>);  // llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
-                    kf += .4;
-    
-                    integer k = 7;
-                    while (k-->0)
-                    {
-                        kf += <0.2, 0,0>*trot;
-                        kf += ZERO_ROTATION;
-                        kf += .6;
-        
-                        kf += <-0.2, 0,0>*trot;
-                        kf += ZERO_ROTATION;
-                        kf += .6;
-                    }
-                    
-                    kf += ZERO_VECTOR;
-                    kf += llEuler2Rot(<0, .3, 0>);  // llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
-                    kf += .3;
-    
-                    kf += <-1, 1, -0.3>*trot;
+                    kf += <-0.2, 0,0>*trot;
                     kf += ZERO_ROTATION;
-                    kf += 2.;
-                
-                    llSetKeyframedMotion( kf, [KFM_DATA, KFM_TRANSLATION|KFM_ROTATION, KFM_MODE, KFM_FORWARD]);
-    
-                    llSleep(5);
-                    hearts();
-                    llSleep(8);
-                    llParticleSystem([]);
+                    kf += .6;
                 }
-                osMessageObject(partner, "BABY|"+PASSWORD+"|"+llGetKey() +"|"+ (string)geneA + "|"+ (string)geneB+ "|" +name);  
+                
+                kf += ZERO_VECTOR;
+                kf += llEuler2Rot(<0, .3, 0>);  // llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
+                kf += .3;
+
+                kf += <-1, 1, -0.3>*trot;
+                kf += ZERO_ROTATION;
+                kf += 2.;
+            
+                llSetKeyframedMotion( kf, [KFM_DATA, KFM_TRANSLATION|KFM_ROTATION, KFM_MODE, KFM_FORWARD]);
+
+                llSleep(5);
+                hearts();
+                llSleep(8);
+                llParticleSystem([]);
+                ///
+                osMessageObject(partner, "BABY|"+PASSWORD+"|"+(string)llGetKey() +"|"+ (string)geneA + "|"+ (string)geneB+ "|" +name);  
             }
             else if (cmd  == "BABY")
             {
@@ -941,12 +931,12 @@ default
         {
                 if ( food < 5)
                 {
-                    osMessageObject(id,   "FEEDME|"+PASSWORD+"|"+ llGetKey() + "|" + (string)FEEDAMOUNT);
+                    osMessageObject(id,   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
                 }
     
                 if ( water < 5)
                 {
-                    osMessageObject(id, "WATERME|"+PASSWORD+"|"+ llGetKey() + "|"+ (string)WATERAMOUNT);
+                    osMessageObject(id, "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
                 }
 
         }
