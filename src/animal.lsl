@@ -153,7 +153,7 @@ loadConfig()
                 else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
                 else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
                 else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
-                else if (cmd == "WATERMOUNT") WATERAMOUNT= (float)val;
+                else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
                 else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
                 else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
                 else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
@@ -364,7 +364,7 @@ refresh(integer ts)
 
             string str =""+name+" "+uc+"\n";
                         
-            if (isBaby && days  > (lifeTime*0.15/86400.))
+            if (isBaby && days  > (lifeTime*0.08/86400.))
             {
                 isBaby=0;
                 FEEDAMOUNT  = 2.;
