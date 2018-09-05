@@ -374,7 +374,7 @@ default
         {
            list opts = [];
            if (status == "Ripe")  opts += "Harvest";
-           else if (status == "Dead")  opts += "Cleanup";
+           else if (status == "Dead" || (status == "New" && AUTOREPLANT))  opts += "Cleanup";
            else if (status == "Empty")  opts += "Plant";
         
            if (water < 90) opts += "Water";
