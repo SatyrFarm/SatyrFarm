@@ -477,13 +477,18 @@ refresh(integer ts)
     if (epoch == 1) str += "(Child)\n";
     else 
     {
-        //str += "(Adult)\n";
+        str += "\n";
         float p = 100.*(ts - milkTs)/MILKTIME;
         if (p > 100) p = 100;
 
-        if (AN_HASMILK && sex == "Female" && givenBirth>0)
-            str += "Milk: "+(string)((integer)p)+"%\n";
-
+        if (AN_HASMILK && sex == "Female")
+        {
+            if (LAYS_EGG==1)
+                str += "Eggs: "+(string)((integer)p)+"%\n";
+            else if (givenBirth>0)
+                str += "Milk: "+(string)((integer)p)+"%\n";
+        }
+        
         p = 100.*(ts - woolTs)/WOOLTIME;
         if (p > 100) p = 100;
         if (AN_HASWOOL)
@@ -785,16 +790,15 @@ default
            // llSay(0, "Short label="+(string)labelType);
             refresh(llGetUnixTime());
         }
-        else if (m == "Milk" && AN_HASMILK)
+        else if (m == "Milk" || m == "Get Eggs")
         {
-            if (sex == "Female")
+            if (sex == "Female" && AN_HASMILK)
             {
-                say(0, "Milk time!");
+                say(0, "Here is your "+MILK_OBJECT);
                 llRezObject(MILK_OBJECT, llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
                 milkTs = llGetUnixTime();
             }
         }
-
         else if (m == "Get Manure")
         {
             if (llGetUnixTime() - manureTs > MANURETIME)
@@ -804,9 +808,8 @@ default
                 manureTs = llGetUnixTime();
             }
         }
-        else if (m == "Wool" &&AN_HASWOOL)
+        else if (m == "Wool" && AN_HASWOOL)
         {
-
                 say(0, "Finally! I thought you'd never give me a haircut.");
                 llRezObject("SF Wool", llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
                 woolTs = llGetUnixTime();
@@ -1077,13 +1080,17 @@ default
                    opts +=  "Mate";
            }
            if (epoch == 2)
-           {
-                if (sex == "Female" && AN_HASMILK)
-                {
-                    if (givenBirth>0 &&  ts - milkTs > MILKTIME) opts += "Milk";
-                }
-                if (ts - woolTs > WOOLTIME && AN_HASWOOL >0) opts += "Wool";
-                if (ts - manureTs > MANURETIME && AN_HASMANURE >0) opts += "Get Manure";
+           {   
+               if (sex == "Female" && AN_HASMILK)
+               {
+                    if (  ts - milkTs > MILKTIME) 
+                    {
+                        if (LAYS_EGG==1) opts += "Get Eggs";
+                        else if (givenBirth>0) opts += "Milk";
+                    }
+               }
+               if (ts - woolTs > WOOLTIME && AN_HASWOOL >0) opts += "Wool";
+               if (ts - manureTs > MANURETIME && AN_HASMANURE >0) opts += "Get Manure";
            }
            startListen();
            llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()) );
