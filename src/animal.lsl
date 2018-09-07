@@ -143,7 +143,7 @@ loadConfig()
                 else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
                 else if (cmd == "MILKTIME") MILKTIME= (integer)val;
                 else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
-                else if (cmd == "LAY_EGG") LAYS_EGG = (integer)val;
+                else if (cmd == "LAYS_EGG") LAYS_EGG = (integer)val;
                 else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
                 else if (cmd == "EGG_TIME") EGG_TIME = (integer)val;
                 else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
@@ -291,7 +291,7 @@ setAlpha(list links, float vis)
 setAlphaByName(string name, float opacity)
 {
     integer i;
-    for (i=2; i < llGetNumberOfPrims();i++)
+    for (i=2; i <= llGetNumberOfPrims();i++)
         if (llGetLinkName(i) == name)
             llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, <1,1,1>, opacity]);
 }
@@ -904,9 +904,6 @@ default
                 kf += ZERO_ROTATION;
                 kf += 3;
 
-                //kf += ZERO_VECTOR;
-                //kf += (trot/r2)  ;// llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
-                //kf += .4;
 
                 kf += ZERO_VECTOR;
                 kf += llEuler2Rot(<0,-.3,0>);  // llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
@@ -945,8 +942,7 @@ default
                 if (pregnantTs<=0)
                 {
                     fatherName = llList2String(tk, 5);
-                    fatherGene = (integer)llList2String( tk, 3 + (integer)llFrand(2) ) ; // 3 or 4
-                    
+                    fatherGene = (integer)llList2String( tk, 3 + (integer)llFrand(2) ) ; // 3 or 4                    
                     if (LAYS_EGG)
                     {
                         //Force an egg
