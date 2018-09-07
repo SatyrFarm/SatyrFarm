@@ -751,8 +751,17 @@ default
             
             if (epoch ==2)
                 opts += "Butcher";
-                
+            opts += "Help";
             llDialog(id, "Select", opts, chan(llGetKey()) );
+        }
+        else if (m == "Help")
+        {
+            string str = "I am a "+AN_NAME+" and i eat from "+AN_FEEDER+". ";
+            if (AN_HASMILK) str += "I give "+MILK_OBJECT+" every "+llRound(MILKTIME/3600)+" hours if female. ";
+            if (AN_HASWOOL) str += "I give Wool every "+llRound(WOOLTIME/3600)+" hours when adult. ";
+            if (AN_HASMANURE) str += "I give Manure every "+llRound(MANURETIME/3600)+" hours when adult. ";
+            str += "Visit http://satyrfarm.github.io for more information";
+            say(0, str);
         }
         else if (m == "Range")
         {
