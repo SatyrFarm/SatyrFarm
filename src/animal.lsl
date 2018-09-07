@@ -1,6 +1,8 @@
-/* Part of the  SatyrFarm scripts
-   This code is provided under the CC-BY-NC license
-   */
+/*### animal.lsl
+
+ Part of the  SatyrFarm scripts
+ This code is provided under a CC-BY-NC license
+*/
 
 string AN_NAME = "Animal";
 string AN_FEEDER = "SF Animal Feeder";
@@ -9,19 +11,20 @@ integer AN_HASGENES = 0;
 integer AN_HASMILK = 0;
 integer AN_HASWOOL = 0;
 integer AN_HASMANURE = 0;
+integer LAYS_EGG = 0; //Reproduces with egg
+integer EGG_TIME = 86400; //Reproduces with egg
+integer lastEggTs;
 string name;
+
+float CHILDHOOD_RATIO=0.1; // How much of life to spend as child
 
 integer VERSION = 1;
 
 list ADULT_MALE_PRIMS = [];
-
 list ADULT_FEMALE_PRIMS = []; // link numbers -   Both sexes
-
 list ADULT_RANDOM_PRIMS = []; //  show randomly
-
-list CHILD_PRIMS = [];
-
-list colorable = []; //[2,3,4,9,10,11,12,13,14,15,16,17];
+list CHILD_PRIMS = [];        //children only
+list colorable = []; 
 
 string PASSWORD="*";
 
@@ -53,11 +56,6 @@ checkListen()
         listener = -1;
     }
 }
-
-
-
-/////////////////////////////
-
 
 integer RADIUS=5;
 
@@ -101,14 +99,13 @@ integer woolTs;
 integer manureTs;
 integer labelType = 0; // 1== short
 
-
 float food=4.;
 float water=4.;
 
 string status = "OK";
 
 string sex;
-integer isBaby=1;
+integer epoch = 0; // 0 = Egg, 1= Baby, 2 = Adult
 integer left;
 key followUser=NULL_KEY;
 integer pregnantTs;
@@ -146,9 +143,12 @@ loadConfig()
                 else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
                 else if (cmd == "MILKTIME") MILKTIME= (integer)val;
                 else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
+                else if (cmd == "LAY_EGG") LAYS_EGG = (integer)val;
                 else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
+                else if (cmd == "EGG_TIME") EGG_TIME = (integer)val;
                 else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
                 else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
+                else if (cmd == "CHILDHOOD_RATIO") CHILDHOOD_RATIO = (float)val;
                 else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
                 else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
                 else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
@@ -163,7 +163,7 @@ loadStateByDesc()
     list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
     if (llList2String(desc, 0) == "A")
     {
-        if ((llList2String(desc, 5) != (string)chan(llGetKey())) )
+        if ((llList2String(desc, 5) != (string)chan(llGetKey())) ) //Also resets eggs!
         {
             llSetObjectDesc("");
             llSleep(1.0);
@@ -176,7 +176,7 @@ loadStateByDesc()
             else sex = "Male";
             
             water = llList2Integer(desc, 2);
-            food = llList2Integer(desc, 3);
+            food  = llList2Integer(desc, 3);
             
             createdTs = llList2Integer(desc, 4);
             geneA = llList2Integer(desc, 6);
@@ -186,7 +186,7 @@ loadStateByDesc()
             name = llList2String(desc, 10);
         }
     } 
-// llSetObjectDesc("A;"+scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+geneA+";"+geneB+";"+pregnantTs+";"+name+";");
+
 }
 
 
@@ -235,7 +235,10 @@ say(integer whisper, string str)
 
 baah()
 {
-    if (isBaby)
+    if (epoch ==0)
+    { // Eggs dont talk
+    }
+    else if (epoch ==1)
         llTriggerSound("baby"+(string)(1+(integer)llFrand(TOTAL_BABYSOUNDS)), 1.0);
     else
         llTriggerSound("adult"+(string)(1+(integer)llFrand(TOTAL_ADULTSOUNDS)), 1.0);
@@ -284,16 +287,69 @@ setAlpha(list links, float vis)
     }
 }
 
+
+setAlphaByName(string name, float opacity)
+{
+    integer i;
+    for (i=2; i < llGetNumberOfPrims();i++)
+        if (llGetLinkName(i) == name)
+            llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, <1,1,1>, opacity]);
+}
+
+
+showAlphaSet(integer newEpoch)
+{
+    if (newEpoch == 0)
+    {
+        llSetLinkPrimitiveParamsFast(LINK_SET, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 0.]); // Hide all
+        setAlphaByName("egg_prim", 1.);
+    }
+    else if (newEpoch == 1)
+    {
+        //show all but hide adult
+        llSetLinkPrimitiveParamsFast(LINK_SET, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 1.]);
+        setAlphaByName("egg_prim", 0.);
+        setAlphaByName("adult_male_prim", 0.);
+        setAlphaByName("adult_female_prim", 0.);
+        setAlphaByName("adult_random_prim", 0.);
+        setAlpha(ADULT_FEMALE_PRIMS+ADULT_MALE_PRIMS+ADULT_RANDOM_PRIMS, 0.);// Legacy
+        setAlpha(CHILD_PRIMS, 1.);
+        setAlphaByName("child_prim", 1.);
+    }
+    else if (newEpoch == 2)
+    {
+        setAlpha(CHILD_PRIMS, 0.);
+        setAlphaByName("child_prim", 0.);
+        setAlphaByName("egg_prim", 0.);
+        if (llFrand(1.)<0.5)
+        {
+            setAlpha(ADULT_RANDOM_PRIMS, 1.);
+            setAlphaByName("adult_random_prim", 1.);
+        }
+        if (sex == "Female")
+        {
+            setAlpha(ADULT_FEMALE_PRIMS, 1.);
+            setAlphaByName("adult_female_prim", 1.);
+        }
+        else
+        {
+            setAlpha(ADULT_MALE_PRIMS, 1.);
+            setAlphaByName("adult_male_prim", 1.);
+        }
+    }
+}
+
 setpose(list pose)
 {
     integer i;
     float scale;
-    if (isBaby) 
+    if (epoch == 0) return; // Egg
+    else if (epoch == 1 ) 
     {
-        scale = 0.5 + 0.5*((float)(age)/(float)(0.15*lifeTime))*.9;
+        scale = 0.5 + 0.5*((float)(age)/(float)(CHILDHOOD_RATIO*lifeTime));
         if (scale>1) scale = 1.;
     }
-    else if (sex=="Male") scale=1.1;
+    else if (sex=="Male") scale=1.05;
     else scale = 1.;
     
     for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
@@ -305,6 +361,8 @@ setpose(list pose)
 
 move()
 {
+    if (epoch ==0) return;
+    
         integer i;
         integer rnd = (integer)llFrand(5);
         if (rnd==0)    setpose(rest); 
@@ -341,113 +399,127 @@ move()
 
 refresh(integer ts)
 {
-            food -= (ts - lastTs)  *(100./FEEDTIME); // Food consumption rate
-            water -= (ts - lastTs) * (100./WATERTIME); // water consumption rate
+    age = (ts-createdTs);
+    if (epoch ==0)
+    {
+        integer pc = llFloor((age / EGG_TIME)*100.);
         
-            if (food < 5 || water < 5)
-            {  
-                status ="WaitFood";
-                llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
-            }
-            age = (ts-createdTs);
-            
-            float days = (age/86400.);
-            string uc = "♂";
-            if (sex == "Female")
-                uc = "♀";
+        if (pc >99)
+        {
+            epoch = 1;
+            showAlphaSet(epoch);
+            llSetTimerEvent(2);
+            lastTs = ts;
+            return;
+        }
+        llSetText("Hatching...\n"+(string)pc+"%\n", <1,1,1>, 1.0);
+        llSetObjectDesc("A;EGG;"+(string)pc);
+        return;
+    }
+    
+    food -= (ts - lastTs)  *(100./FEEDTIME); // Food consumption rate
+    water -= (ts - lastTs) * (100./WATERTIME); // water consumption rate
 
-            string str =""+name+" "+uc+"\n";
-                        
-            if (isBaby && days  > (lifeTime*0.08/86400.))
+    if (food < 5 || water < 5)
+    {  
+        status ="WaitFood";
+        llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
+    }
+
+    
+    float days = (age/86400.);
+    string uc = "♂";
+    if (sex == "Female")
+        uc = "♀";
+
+    string str =""+name+" "+uc+"\n";
+    
+    if (epoch ==1 && days  > (lifeTime*CHILDHOOD_RATIO/86400.))
+    {
+        epoch = 2;
+        FEEDAMOUNT  = 2.*FEEDAMOUNT;
+        WATERAMOUNT = 2.*WATERAMOUNT;
+        showAlphaSet(epoch);
+    }
+
+    if (food < 0 && water <0) say(0, AN_BAAH+", I'm hungry and thirsty!");
+    else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
+    else if (water < 0) say( 0, AN_BAAH+", I'm thirsty!");
+
+    str += ""+(string)((integer)days)+" days old ";
+    if (epoch == 1) str += "(Child)\n";
+    else 
+    {
+        //str += "(Adult)\n";
+        float p = 100.*(ts - milkTs)/MILKTIME;
+        if (p > 100) p = 100;
+
+        if (AN_HASMILK && sex == "Female" && givenBirth>0)
+            str += "Milk: "+(string)((integer)p)+"%\n";
+
+        p = 100.*(ts - woolTs)/WOOLTIME;
+        if (p > 100) p = 100;
+        if (AN_HASWOOL)
+            str += "Wool: "+(string)((integer)p)+"%\n";
+
+    }
+    
+    if (age > LIFETIME || food < -20000 || water < -20000)
+    {
+        death(1);
+        return;
+    }
+    else
+    {
+        if (pregnantTs>0)
+        {
+            float perc = (float)(ts - pregnantTs)/PREGNANT_TIME;
+            if (perc >.99)
             {
-                isBaby=0;
-                FEEDAMOUNT  = 2.;
-                WATERAMOUNT = 2.;
-                
-                // Randomly show 
-                if (sex == "Male")
-                    setAlpha(ADULT_MALE_PRIMS, 1.);
-                if (sex == "Female")
-                    setAlpha(ADULT_FEMALE_PRIMS, 1.);
-                setAlpha(CHILD_PRIMS, 0.);
-                if (llFrand(1.)<0.5)
+                llRezObject("SF "+AN_NAME, llGetPos() +<0,2,0>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1 );
+                pregnantTs =0;
+
+                if (LAYS_EGG)
                 {
-                    setAlpha(ADULT_RANDOM_PRIMS, 1.);
+                    say(0, "I laid an egg!");
+                    lastEggTs= ts;
                 }
-            }
-
-            if (food < 0 && water <0) say(0, AN_BAAH+", I'm hungry and thirsty!");
-            else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
-            else if (water < 0) say( 0, AN_BAAH+", I'm thirsty!");
-
-            str += ""+(string)((integer)days)+" days old ";
-            if (isBaby) str += "(Child)\n";
-            else 
-            {
-                str += "(Adult)\n";
-                
-                float p = 100.*(ts - milkTs)/MILKTIME;
-                if (p > 100) p = 100;
-
-                if (AN_HASMILK && sex == "Female" && givenBirth>0)
-                    str += "Milk: "+(string)((integer)p)+"%\n";
-                    
-
-                p = 100.*(ts - woolTs)/WOOLTIME;
-                if (p > 100) p = 100;
-                if (AN_HASWOOL)
-                    str += "Wool: "+(string)((integer)p)+"%\n";
-
-            }
-            
-        
-            if (age > LIFETIME || food < -20000 || water < -20000)
-            {
-                death(1);
-                return;
+                else
+                {
+                    say(0, "I had a baby!");
+                    givenBirth++;
+                }
             }
             else
-            {
-                if (pregnantTs>0)
-                {
-                    float perc = (float)(ts - pregnantTs)/PREGNANT_TIME;
+                str += "PREGNANT! ("+(string)((integer)(perc*100))+"%)\n";
+        }
+        vector color = <1,1,1>;
 
-                    if (perc >.99)
-                    {
-
-                        llRezObject("SF "+AN_NAME, llGetPos() +<0,2,0>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1 );
-
-                        pregnantTs =0;
-                        givenBirth++;
-                        say(0, "I had a baby!");
-                    }
-                    else
-                        str += "PREGNANT! ("+(string)((integer)(perc*100))+"%)\n";
-                }
-                vector color = <1,1,1>;
-                if (food>0)
-                    str += "Food: "+(string)((integer)food)+"%\n";
-                else
-                {
-                    str += "HUNGRY!\n";
-                    color = <1,0,0>;
-                }
-                if (water>0)
-                    str += "Water: "+(string)((integer)water)+"%\n";
-                else
-                {
-                    str += "THIRSTY!\n";
-                    color = <1,0,0>;
-                }
+        if (food<0)
+        {
+            str += "HUNGRY!\n";
+            color = <1,0,0>;
+        }
+        else if (food<50)
+            str += "Food: "+(string)((integer)food)+"%\n";
         
-                if (labelType == 1)
-                    llSetText(name , color, 1.0);
-                else
-                    llSetText(str , color, 1.0);
-            }
-     integer scode=0;
-     if (sex == "Female") scode=1;
-     llSetObjectDesc("A;"+(string)scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
+        if (water<0)
+        {
+            str += "THIRSTY!\n";
+            color = <1,0,0>;
+        }
+        else if (water <50)
+            str += "Water: "+(string)((integer)water)+"%\n";
+        
+        if (labelType == 1)
+            llSetText(name , color, 1.0);
+        else
+            llSetText(str , color, 1.0);
+    }
+
+    integer scode=0;
+    if (sex == "Female") scode=1;
+    llSetObjectDesc("A;"+(string)scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
 }
 
 
@@ -459,8 +531,6 @@ list getNC(string ncname)
 }
 
 
-
-
 default
 {
     state_entry()
@@ -469,12 +539,11 @@ default
         if (llGetObjectName() == "SF Animal Rezzer")
         {
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
+            llSay(0, "Sleeping tight");
             return;
         }
         
-        
-        loadConfig();
-        
+        loadConfig();        
         rest =  getNC("rest");
         down = getNC("down");
         eat = getNC("eat");
@@ -489,36 +558,31 @@ default
         //Reset Everything
         llSetRot(ZERO_ROTATION);
         llSetLinkColor(LINK_ALL_OTHERS, <1, 1,1>, ALL_SIDES);
-
         
         if (llFrand(1.) < 0.5) sex = "Female";
         else sex = "Male";
+        
         geneA = 1+ (integer)llFrand(3);
         geneB = 1+ (integer)llFrand(3);
         
         lastTs = createdTs = llGetUnixTime()-10;
         initpos = llGetPos();
 
-        isBaby=1;
-        setAlpha(ADULT_MALE_PRIMS, 0.);        
-        setAlpha(ADULT_FEMALE_PRIMS, 0.);
-        setAlpha(ADULT_RANDOM_PRIMS, 0.);
-        setAlpha(CHILD_PRIMS, 1.);        
+        if (LAYS_EGG) epoch =0;
+        else epoch = 1;
+        showAlphaSet(epoch);
+        
         lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-        
         loadStateByDesc();
-
+            
         setGenes();
-
         llSetTimerEvent(5);
     }
     
     on_rez(integer n)
     {
-        if (n >0)
-            createdTs = llGetUnixTime()-10;
-        lastTs = llGetUnixTime()-10;
+        loadStateByDesc();
     }
     
     object_rez(key id)
@@ -598,28 +662,30 @@ default
                 }
             }
         }
-        
-
-            
+           
         integer ts = llGetUnixTime();
         if (ts - lastTs>10)
         {
             refresh(ts);
-            if (status == "DEAD") 
-            {
-                llSetTimerEvent(0);
-                return;
-            }
-            else if (followUser == NULL_KEY)
-            {
-                llSetTimerEvent(25+ (integer)llFrand(10));
-                move();
-            }
             
+            if (epoch == 0)
+                llSetTimerEvent(200);
+            else
+            {
+                if (status == "DEAD") 
+                {
+                    llSetTimerEvent(0);
+                    return;
+                }
+                else if (followUser == NULL_KEY)
+                {
+                    llSetTimerEvent(25+ (integer)llFrand(10));
+                    move();
+                }
+            }
+             
             lastTs = ts ;
-        }
-        
-       
+        }    
         checkListen(); 
     } 
     
@@ -652,7 +718,10 @@ default
             else opts += "Short Label";
             
             opts += "Range";
-
+            
+            if (epoch ==2)
+                opts += "Butcher";
+                
             llDialog(id, "Select", opts, chan(llGetKey()) );
         }
         else if (m == "Range")
@@ -740,9 +809,9 @@ default
 
     dataserver(key kk, string m)
     {
-           list tk = llParseStringKeepNulls(m , ["|"], []);
-            if (llList2String(tk,1) != PASSWORD)  { llOwnerSay("Password mismatch '"+llList2String(tk,1)+"'!='"+PASSWORD+"'"); return;  } 
-            
+        list tk = llParseStringKeepNulls(m , ["|"], []);
+        if (llList2String(tk,1) != PASSWORD)  { llSay(0, "Password mismatch"); return;  } 
+        
         string cmd = llList2String(tk,0);
         //for updates
         if (cmd == "VERSION-CHECK")
@@ -799,17 +868,16 @@ default
               llSleep(10.0);
               llResetScript();
         }
-        //
-        else if (cmd == "MATEME" )
+        else if (cmd == "MATEME" ) //Male part
             {
-                if (isBaby)
+                if (epoch != 2)
                 {
                     say(0,  "I am a child, you pervert...");
                     return;
                 }
                 else if (sex != "Male")
                 {
-                    say(0, "Sorry honey, I'm not a lesbian");
+                    say(0, "Sorry, I'm not a lesbian");
                     return;
                 }
                 
@@ -870,16 +938,24 @@ default
                 hearts();
                 llSleep(8);
                 llParticleSystem([]);
-                ///
                 osMessageObject(partner, "BABY|"+PASSWORD+"|"+(string)llGetKey() +"|"+ (string)geneA + "|"+ (string)geneB+ "|" +name);  
             }
-            else if (cmd  == "BABY")
+            else if (cmd  == "BABY") //Female part
             {
                 if (pregnantTs<=0)
                 {
                     fatherName = llList2String(tk, 5);
                     fatherGene = (integer)llList2String( tk, 3 + (integer)llFrand(2) ) ; // 3 or 4
-                    pregnantTs = llGetUnixTime();
+                    
+                    if (LAYS_EGG)
+                    {
+                        //Force an egg
+                        PREGNANT_TIME=0;
+                        pregnantTs = llGetUnixTime()-100;
+                    }
+                    else
+                        pregnantTs = llGetUnixTime();
+                    llSleep(2);
                     refresh(llGetUnixTime());
                 }
             }
@@ -895,7 +971,6 @@ default
                 llRemoveInventory("setpin");                
                 say(0, "Hello!");
                 refresh(llGetUnixTime());
-
             }
             else if (cmd == "WATER")
             {
@@ -971,9 +1046,12 @@ default
            opts += "CLOSE";
            opts +=  "Options";
            
-           if (sex == "Female" && !isBaby && pregnantTs ==0 )
-               opts +=  "Mate";
-           if (!isBaby)
+           if (sex == "Female" && epoch == 2)
+           {
+               if ( (LAYS_EGG==1 && ts> lastEggTs+86400) || (LAYS_EGG==0&& pregnantTs ==0) )
+                   opts +=  "Mate";
+           }
+           if (epoch == 2)
            {
                 if (sex == "Female" && AN_HASMILK)
                 {
@@ -981,11 +1059,9 @@ default
                 }
                 if (ts - woolTs > WOOLTIME && AN_HASWOOL >0) opts += "Wool";
                 if (ts - manureTs > MANURETIME && AN_HASMANURE >0) opts += "Get Manure";
-                opts += "Butcher";
            }
            startListen();
            llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()) );
-         
         }
         else
         {
