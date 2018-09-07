@@ -1,5 +1,4 @@
 /*### animal.lsl
-
  Part of the  SatyrFarm scripts
  This code is provided under a CC-BY-NC license
 */
@@ -11,12 +10,19 @@ integer AN_HASGENES = 0;
 integer AN_HASMILK = 0;
 integer AN_HASWOOL = 0;
 integer AN_HASMANURE = 0;
-integer LAYS_EGG = 0; //Reproduces with egg
-integer EGG_TIME = 86400; //Reproduces with egg
+integer LAYS_EGG = 0;     //Reproduces with egg
+integer EGG_TIME = 86400; //Time until hatching
+integer MATE_INTERVAL= 86400; //how often to be mateable
+float CHILD_SCALE = 0.5; // Initial scale as child 
+float CHILD_MAX_SCALE = 1.0; // Dont let the child grow beyond this scale
+float MALE_SCALE = 1.05;
+string MEAT_OBJECT="SF Meat";
+string SKIN_OBJECT = "SF Skin";
+string MILK_OBJECT="SF Milk";
 integer lastEggTs;
 string name;
 
-float CHILDHOOD_RATIO=0.1; // How much of life to spend as child
+float CHILDHOOD_RATIO=0.15; // How much of life to spend as child
 
 integer VERSION = 1;
 
@@ -122,36 +128,45 @@ loadConfig()
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
     {
-        list tok = llParseString2List(llList2String(lines,i), ["="], []);
-        
-        if (llList2String(tok,1) != "")
+        if (llGetSubString(llList2String(lines,i), 0, 0) !="#")
         {
-                string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
-                string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
-                //llOwnerSay(cmd+"="+val);
-                if (cmd =="NAME") AN_NAME = val;
-                else if (cmd == "FEEDER") AN_FEEDER = val;
-                else if (cmd == "CRY") AN_BAAH = val;
-                else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
-                else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
-                else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
-                else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
-                else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
-                else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);                
-                else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
-                else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
-                else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
-                else if (cmd == "MILKTIME") MILKTIME= (integer)val;
-                else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
-                else if (cmd == "LAYS_EGG") LAYS_EGG = (integer)val;
-                else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
-                else if (cmd == "EGG_TIME") EGG_TIME = (integer)val;
-                else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
-                else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
-                else if (cmd == "CHILDHOOD_RATIO") CHILDHOOD_RATIO = (float)val;
-                else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
-                else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
-                else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
+            list tok = llParseString2List(llList2String(lines,i), ["="], []);
+            if (llList2String(tok,0) != "")
+            {
+                    string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+                    string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+                    //llOwnerSay(cmd+"="+val);
+                    if (cmd =="NAME") AN_NAME = val;
+                    else if (cmd == "FEEDER") AN_FEEDER = val;
+                    else if (cmd == "CRY") AN_BAAH = val;
+                    else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
+                    else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
+                    else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
+                    else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
+                    else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
+                    else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);
+                    else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
+                    else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
+                    else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
+                    else if (cmd == "MILKTIME") MILKTIME= (integer)val;
+                    else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
+                    else if (cmd == "LAYS_EGG") LAYS_EGG = (integer)val;
+                    else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
+                    else if (cmd == "EGG_TIME") EGG_TIME = (integer)val;
+                    else if (cmd == "MATE_INTERVAL") MATE_INTERVAL = (integer)val;
+                    else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
+                    else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
+                    else if (cmd == "CHILDHOOD_RATIO") CHILDHOOD_RATIO = (float)val;
+                    else if (cmd == "CHILD_SCALE") CHILD_SCALE= (float)val;
+                    else if (cmd == "CHILD_MAX_SCALE") CHILD_MAX_SCALE= (float)val;
+                    else if (cmd == "MALE_SCALE") MALE_SCALE= (float)val;                
+                    else if (cmd == "SKIN_OBJECT") SKIN_OBJECT = val;
+                    else if (cmd == "MEAT_OBJECT") MEAT_OBJECT = val;
+                    else if (cmd == "MILK_OBJECT") MILK_OBJECT = val;
+                    else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
+                    else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
+                    else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
+            }
         }
     }
 
@@ -223,12 +238,19 @@ setGenes()
     
 say(integer whisper, string str)
 {
-    string s = llGetObjectName();
-    llSetObjectName(name);
-    if (whisper) llWhisper(0, str);
-    else llSay(0, str);
-    llSetObjectName(s);
-    baah();
+    if (LAYS_EGG && epoch ==0)
+    {
+        llSay(0, str);
+    }
+    else
+    {
+        string s = llGetObjectName();
+        llSetObjectName(name);
+        if (whisper) llWhisper(0, str);
+        else llSay(0, str);
+        llSetObjectName(s);
+        baah();
+    }
 }
 
 
@@ -250,8 +272,10 @@ death(integer keepBody)
     llSetTimerEvent(0);
     //Prepare for death
     deathFlags = keepBody;
-    llRezObject("SF Meat", llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
-    llRezObject("SF Skin", llGetPos() +<1,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
+    if (MEAT_OBJECT!= "")
+        llRezObject(MEAT_OBJECT, llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
+    if (SKIN_OBJECT != "")
+        llRezObject(SKIN_OBJECT, llGetPos() +<1,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
 }
 
 
@@ -301,13 +325,13 @@ showAlphaSet(integer newEpoch)
 {
     if (newEpoch == 0)
     {
-        llSetLinkPrimitiveParamsFast(LINK_SET, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 0.]); // Hide all
+        llSetLinkPrimitiveParamsFast(LINK_ALL_CHILDREN, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 0.]); // Hide all
         setAlphaByName("egg_prim", 1.);
     }
     else if (newEpoch == 1)
     {
         //show all but hide adult
-        llSetLinkPrimitiveParamsFast(LINK_SET, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 1.]);
+        llSetLinkPrimitiveParamsFast(LINK_ALL_CHILDREN, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 1.]);
         setAlphaByName("egg_prim", 0.);
         setAlphaByName("adult_male_prim", 0.);
         setAlphaByName("adult_female_prim", 0.);
@@ -318,7 +342,8 @@ showAlphaSet(integer newEpoch)
     }
     else if (newEpoch == 2)
     {
-        setAlpha(CHILD_PRIMS, 0.);
+        llSetLinkPrimitiveParamsFast(LINK_ALL_CHILDREN, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 1.]);
+        setAlpha(CHILD_PRIMS+ADULT_RANDOM_PRIMS+ADULT_FEMALE_PRIMS+ADULT_MALE_PRIMS, 0.);
         setAlphaByName("child_prim", 0.);
         setAlphaByName("egg_prim", 0.);
         if (llFrand(1.)<0.5)
@@ -330,26 +355,28 @@ showAlphaSet(integer newEpoch)
         {
             setAlpha(ADULT_FEMALE_PRIMS, 1.);
             setAlphaByName("adult_female_prim", 1.);
+            setAlphaByName("adult_male_prim", 0.);
         }
         else
         {
             setAlpha(ADULT_MALE_PRIMS, 1.);
             setAlphaByName("adult_male_prim", 1.);
+            setAlphaByName("adult_female_prim", 0.);
         }
     }
 }
 
-setpose(list pose)
+setPose(list pose)
 {
     integer i;
     float scale;
-    if (epoch == 0) return; // Egg
-    else if (epoch == 1 ) 
+    if (epoch == 1 ) 
     {
-        scale = 0.5 + 0.5*((float)(age)/(float)(CHILDHOOD_RATIO*lifeTime));
+        scale = CHILD_SCALE + (1-CHILD_SCALE) * ((float)(age)/(float)(CHILDHOOD_RATIO*lifeTime));
+        if (scale>CHILD_MAX_SCALE) scale = CHILD_MAX_SCALE; 
         if (scale>1) scale = 1.;
     }
-    else if (sex=="Male") scale=1.05;
+    else if (sex=="Male") scale= MALE_SCALE;
     else scale = 1.;
     
     for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
@@ -365,9 +392,9 @@ move()
     
         integer i;
         integer rnd = (integer)llFrand(5);
-        if (rnd==0)    setpose(rest); 
-        else if (rnd==1)    setpose(down); 
-        else if (rnd==2)    setpose(eat); 
+        if (rnd==0)    setPose(rest); 
+        else if (rnd==1)    setPose(down); 
+        else if (rnd==2)    setPose(eat); 
         else if (IMMOBILE<=0)
         {        
             float rz = .3-llFrand(.6);
@@ -379,9 +406,9 @@ move()
                 if ( llVecDist(v, initpos)< RADIUS)
                 {
                     if (i%2==0)
-                        setpose(walkl);
+                        setPose(walkl);
                     else
-                        setpose(walkr);
+                        setPose(walkr);
                     llSetPrimitiveParams([PRIM_POSITION, v, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,rz>) ]);
                     llSleep(0.4);
                 }
@@ -390,11 +417,10 @@ move()
                     llSetPrimitiveParams([PRIM_POSITION, cp, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,PI/2>) ]);
                 }
             }
-            setpose(rest);     
+            setPose(rest);     
         }
         if (llFrand(1.)< 0.5) baah();
 }
-
 
 
 refresh(integer ts)
@@ -410,9 +436,10 @@ refresh(integer ts)
             showAlphaSet(epoch);
             llSetTimerEvent(2);
             lastTs = ts;
+            createdTs = ts;
             return;
         }
-        llSetText("Hatching...\n"+(string)pc+"%\n", <1,1,1>, 1.0);
+        llSetText(AN_NAME+" Egg\nIncubating..."+(string)pc+"%\n", <1,1,1>, 1.0);
         llSetObjectDesc("A;EGG;"+(string)pc);
         return;
     }
@@ -464,7 +491,7 @@ refresh(integer ts)
 
     }
     
-    if (age > LIFETIME || food < -20000 || water < -20000)
+    if (age > lifeTime || food < -20000 || water < -20000)
     {
         death(1);
         return;
@@ -535,7 +562,7 @@ default
 {
     state_entry()
     {
-
+        llSetText("",<1,1,1>, 1.);
         if (llGetObjectName() == "SF Animal Rezzer")
         {
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
@@ -570,19 +597,19 @@ default
 
         if (LAYS_EGG) epoch =0;
         else epoch = 1;
-        showAlphaSet(epoch);
         
         lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         loadStateByDesc();
-            
         setGenes();
-        llSetTimerEvent(5);
+        setPose(rest);
+        showAlphaSet(epoch);
+        llSetTimerEvent(2);
     }
     
     on_rez(integer n)
     {
-        loadStateByDesc();
+        lastTs = llGetUnixTime();
     }
     
     object_rez(key id)
@@ -596,18 +623,16 @@ default
             llGiveInventory(id, "sfp");
             llRemoteLoadScriptPin(id, "animal", 999, TRUE, 1);
             llSleep(2);
-            osMessageObject(id,   "INIT|"+PASSWORD+"|"+babyParams);
             llGiveInventory(id, "SF "+AN_NAME);
-
+            osMessageObject(id,   "INIT|"+PASSWORD+"|"+babyParams);
         }
         else
         {
 
             osMessageObject(id, "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
-            
-            if (llKey2Name(id) == "SF Meat") deathFlags = deathFlags|2;
-            if (llKey2Name(id) == "SF Skin") deathFlags = deathFlags|4;
-            if ((deathFlags&2) && (deathFlags&4))
+            if (llKey2Name(id) == MEAT_OBJECT) deathFlags = deathFlags|2;
+            if (llKey2Name(id) == SKIN_OBJECT) deathFlags = deathFlags|4;
+            if ((MEAT_OBJECT=="" || (deathFlags&2)) && (SKIN_OBJECT=="" || (deathFlags&4)))
             {
                 llSetTimerEvent(0);
                 if (deathFlags&1) 
@@ -616,7 +641,7 @@ default
                     llSetLinkColor(LINK_ALL_OTHERS, <0.1, 0.1,0.1>, ALL_SIDES);
                     llSetText(name+"\nDEAD", <1,1,1>, 1.0);
                     llRemoveInventory(llGetScriptName());
-                }                
+                }
                 else 
                     llDie();
             }
@@ -653,9 +678,9 @@ default
                     left = !left;
                     llSetPrimitiveParams([PRIM_ROTATION,r2, PRIM_POSITION, fpos]);
                     if (left)
-                        setpose(walkl);
+                        setPose(walkl);
                     else
-                        setpose(walkr);
+                        setPose(walkr);
                     if (llFrand(1.)< 0.1) baah();
                     initpos = fpos;
  
@@ -666,8 +691,7 @@ default
         integer ts = llGetUnixTime();
         if (ts - lastTs>10)
         {
-            refresh(ts);
-            
+            refresh(ts);           
             if (epoch == 0)
                 llSetTimerEvent(200);
             else
@@ -679,11 +703,10 @@ default
                 }
                 else if (followUser == NULL_KEY)
                 {
-                    llSetTimerEvent(25+ (integer)llFrand(10));
+                    llSetTimerEvent(25+ (integer)llFrand(20));
                     move();
                 }
             }
-             
             lastTs = ts ;
         }    
         checkListen(); 
@@ -738,9 +761,9 @@ default
         {
             followUser =NULL_KEY;
             llStopSound();
-            setpose(rest);
+            setPose(down);
             initpos = llGetPos();
-            llSetTimerEvent(2);
+            llSetTimerEvent(5);
             say(0, "OK I'll stick around");
         }
         else if (m == "Butcher")
@@ -764,8 +787,8 @@ default
         {
             if (sex == "Female")
             {
-                say(0, "From my tits and right into your bucket!");
-                llRezObject("SF Milk", llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
+                say(0, "Milk time!");
+                llRezObject(MILK_OBJECT, llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
                 milkTs = llGetUnixTime();
             }
         }
@@ -802,11 +825,11 @@ default
         }
         else
         {
+            
         }
         
     }
     
-
     dataserver(key kk, string m)
     {
         list tk = llParseStringKeepNulls(m , ["|"], []);
@@ -869,7 +892,7 @@ default
               llResetScript();
         }
         else if (cmd == "MATEME" ) //Male part
-            {
+        {
                 if (epoch != 2)
                 {
                     say(0,  "I am a child, you pervert...");
@@ -936,58 +959,59 @@ default
                 llSleep(8);
                 llParticleSystem([]);
                 osMessageObject(partner, "BABY|"+PASSWORD+"|"+(string)llGetKey() +"|"+ (string)geneA + "|"+ (string)geneB+ "|" +name);  
-            }
-            else if (cmd  == "BABY") //Female part
+        }
+        else if (cmd  == "BABY") //Female part
+        {
+            if (pregnantTs<=0)
             {
-                if (pregnantTs<=0)
+                fatherName = llList2String(tk, 5);
+                fatherGene = (integer)llList2String( tk, 3 + (integer)llFrand(2) ) ; // 3 or 4                    
+                if (LAYS_EGG)
                 {
-                    fatherName = llList2String(tk, 5);
-                    fatherGene = (integer)llList2String( tk, 3 + (integer)llFrand(2) ) ; // 3 or 4                    
-                    if (LAYS_EGG)
-                    {
-                        //Force an egg
-                        PREGNANT_TIME=0;
-                        pregnantTs = llGetUnixTime()-100;
-                    }
-                    else
-                        pregnantTs = llGetUnixTime();
-                    llSleep(2);
-                    refresh(llGetUnixTime());
+                    //Force an egg
+                    PREGNANT_TIME=0;
+                    pregnantTs = llGetUnixTime()-100;
                 }
+                else
+                    pregnantTs = llGetUnixTime();
+                llSleep(2);
+                refresh(llGetUnixTime());
             }
-            else if (cmd == "INIT")
-            {
-               // "INIT|REZ|SF Goat| <0,2,0>|A|B|Goat "+fatherName+" y "+name );
-                name = llList2String(tk, 4);
-                geneA =  llList2Integer(tk, 2);
-                geneB = llList2Integer(tk, 3);
-                setGenes();
-                //Delete pin
-                llSetRemoteScriptAccessPin(0);
-                llRemoveInventory("setpin");                
+        }
+        else if (cmd == "INIT")
+        {
+           // "INIT|REZ|SF Goat| <0,2,0>|A|B|Goat "+fatherName+" y "+name );
+            name = llList2String(tk, 4);
+            geneA =  llList2Integer(tk, 2);
+            geneB = llList2Integer(tk, 3);
+            setGenes();
+            //Delete pin
+            llSetRemoteScriptAccessPin(0);
+            llRemoveInventory("setpin");
+            if (LAYS_EGG==0)
                 say(0, "Hello!");
-                refresh(llGetUnixTime());
-            }
-            else if (cmd == "WATER")
-            {
-                say(1, "Aaah! Refreshing!");
-                water = 100.;
-                refresh(llGetUnixTime());
-            }
-            else if (cmd == "FOOD")
-            {
-                say(1, "Yummy yummy food");
-                food = 100.;
-                refresh(llGetUnixTime());
-    
-            }
-            else if (cmd == "ADDDAY")
-            {
-               createdTs -= 86400;
-               refresh(llGetUnixTime());
-               llOwnerSay("CreatedTs="+(string)createdTs);
-            }
-            
+            llSetTimerEvent(2);
+        }
+        else if (cmd == "WATER")
+        {
+            say(1, "Aaah! Refreshing!");
+            water = 100.;
+            refresh(llGetUnixTime());
+        }
+        else if (cmd == "FOOD")
+        {
+            say(1, "Yummy yummy food");
+            food = 100.;
+            refresh(llGetUnixTime());
+
+        }
+        else if (cmd == "ADDDAY")
+        {
+           createdTs -= 86400;
+           refresh(llGetUnixTime());
+           llOwnerSay("CreatedTs="+(string)createdTs);
+        }
+        
     }
 
 
@@ -996,6 +1020,7 @@ default
         key id = llDetectedKey(0);
         if (status == "WaitMate")
         {
+            llSetTimerEvent(15);// dont move
             osMessageObject(id,  "MATEME|"+PASSWORD+"|"+(string)llGetKey());
         }
         else //feeder
@@ -1029,11 +1054,13 @@ default
 
     touch_start(integer n)
     {
-        //llOwnerSay((string)llDetectedLinkNumber(0));
-        
         integer ts = llGetUnixTime();
         refresh(ts);
-        if (llSameGroup(llDetectedKey(0) ) || osIsNpc(llDetectedKey(0)) )
+        if (epoch ==0)
+        {
+            llSay(0, "Hello! I 'm just an egg");
+        }
+        else if (llSameGroup(llDetectedKey(0) ) || osIsNpc(llDetectedKey(0)) )
         {
          
            list opts = [];
@@ -1044,7 +1071,7 @@ default
            
            if (sex == "Female" && epoch == 2)
            {
-               if ( (LAYS_EGG==1 && ts> lastEggTs+86400) || (LAYS_EGG==0&& pregnantTs ==0) )
+               if ( (LAYS_EGG==1 && ts> lastEggTs+MATE_INTERVAL) || (LAYS_EGG==0&& pregnantTs ==0) )
                    opts +=  "Mate";
            }
            if (epoch == 2)
