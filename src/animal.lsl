@@ -169,7 +169,6 @@ loadConfig()
             }
         }
     }
-
 }
 
 loadStateByDesc()
@@ -187,12 +186,13 @@ loadStateByDesc()
         else
         {
             //PRODUCT_NAME = llList2String(desc, 1);
+
             if (llList2Integer(desc,1) == 1) sex = "Female";
             else sex = "Male";
             
             water = llList2Integer(desc, 2);
             food  = llList2Integer(desc, 3);
-            
+            epoch = 1; // Assume child         
             createdTs = llList2Integer(desc, 4);
             geneA = llList2Integer(desc, 6);
             geneB = llList2Integer(desc, 7);
@@ -600,7 +600,9 @@ default
         
         lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        
         loadStateByDesc();
+        
         setGenes();
         setPose(rest);
         showAlphaSet(epoch);
