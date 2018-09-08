@@ -343,7 +343,7 @@ default
     
     no_sensor()
     {
-        if (status == "WaitWater" || status == "WaitFood")
+        if (status == "WaitAutoWater" || status == "WaitAutoFood")
             llSay(0, "Error! "+lookFor+" not found with in 96m! Auto mode not working!");
         else 
             llSay(0, "Error! "+lookFor+" not found nearby! You must bring it near me!");
