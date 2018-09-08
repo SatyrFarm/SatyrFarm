@@ -276,6 +276,7 @@ state rezz
                     }
                 }
             }
+            llSay(0, "Prepared: \n    " + llList2String(cmd,4));
             state ready;
         }
     }

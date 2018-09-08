@@ -10,6 +10,7 @@ itemignore = List of items in own inventory that will not be shared while updati
 uuidignore = List of ignored UUIDs that won't get updated
 additions = List of additionally items to add (per line: upgradeable:item1,item2,...)
 **/
+integer VERSION = 1;
 
 string PASSWORD;
 list UPGRADEABLES = [];
