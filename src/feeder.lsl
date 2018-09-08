@@ -216,7 +216,12 @@ default
                     food -= f;
                     if (food<0) food=0;
                     osMessageObject(u,  "FOOD|"+PASSWORD);
-                    psys(u);
+                    key o = llList2Key(tk, 4);
+                    if (o != NULL_KEY)
+                        psys(o);
+                    else
+                        psys(u);
+
                 }
             }
             else if (cmd == "WATERME")
@@ -228,7 +233,11 @@ default
                     water -= f;
                     if (water<0) water=0;
                     osMessageObject(u,  "WATER|"+PASSWORD);
-                    psys(u);
+                    key o = llList2Key(tk, 4);
+                    if (o != NULL_KEY)
+                        psys(o);
+                    else
+                        psys(u);
                 }
             }
             else if (cmd == "HAVEWATER")
@@ -353,4 +362,3 @@ default
         llResetScript();
     }
 }
-
