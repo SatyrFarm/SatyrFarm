@@ -195,7 +195,7 @@ default
 
     touch_start(integer n)
     {
-        if (llSameGroup(llDetectedKey(0)))
+        if (llSameGroup(llDetectedKey(0)) || osIsNpc(llDetectedKey(0)))
         {
 
            list opts = [];
@@ -322,7 +322,7 @@ default
     
     no_sensor()
     {
-       if (sense == "AutoWater")
+        if (sense == "AutoWaterDrink" || sense =="AutoWaterGrass")
            llSay(0, "Error! Water tower not found within 96m. Auto-watering NOT working!");
         else
              llSay(0, "Error! Water bucket not found! You must bring a water bucket near me!");
@@ -331,4 +331,3 @@ default
 
     
 }
-
