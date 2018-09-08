@@ -112,7 +112,7 @@ default
     {
         llSleep(2.0);
         //for updates
-        if (osRegexIsMatch(llGetObjectName(), "(Update|Rezz)+"))
+        if (llSubStringIndex(llGetObjectName(), "Rezz") != -1)
         {
             string me = llGetScriptName();
             llOwnerSay("Script " + me + " went to sleep inside Updater.");
