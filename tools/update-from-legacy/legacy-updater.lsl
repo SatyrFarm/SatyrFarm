@@ -110,6 +110,18 @@ default
 {
     state_entry()
     {
+        llSleep(2.0);
+        //for updates
+        if (osRegexIsMatch(llGetObjectName(), "(Update|Rezz)+"))
+        {
+            string me = llGetScriptName();
+            llOwnerSay("Script " + me + " went to sleep inside Updater.");
+            llSetScriptState(me, FALSE);
+            llSleep(0.5);
+            return;
+        }
+        llSetRemoteScriptAccessPin(0);
+        //
         llSetText("==Legacy Updater==\nClick to Update!", <1.0,0.0,0.0>, 1.0);
         loadConfig();
     }
@@ -132,6 +144,72 @@ default
         llSetTimerEvent(60.0);
         llDialog(llDetectedKey(0), text, ["CLOSE", "Plant DropIn", "Storage DropIn", "UPDATE", "Help"], chan(llGetKey()));
         listener = llListen(chan(llGetKey()), "", "", "");
+    }
+
+    dataserver(key k, string m)
+    {
+        //for updates
+        list cmd = llParseStringKeepNulls(m, ["|"], []);
+        if (llList2String(cmd,1) != PASSWORD)
+        {
+            return;
+        }
+        string command = llList2String(cmd, 0);
+        if (command == "VERSION-CHECK")
+        {
+            string answer = "VERSION-REPLY|" + PASSWORD + "|";
+            answer += (string)llGetKey() + "|" + (string)VERSION + "|";
+            integer len = llGetInventoryNumber(INVENTORY_OBJECT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
+            }
+            len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+            }
+            answer += "|";
+            len = llGetInventoryNumber(INVENTORY_NOTECARD);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
+            }
+            osMessageObject(llList2Key(cmd, 2), answer);
+        }
+        else if (command == "DO-UPDATE")
+        {
+            if (llGetOwnerKey(k) != llGetOwner())
+            {
+                llSay(0, "Reject Update, because you are not my Owner.");
+                return;
+            }
+            string me = llGetScriptName();
+            string sRemoveItems = llList2String(cmd, 3);
+            list lRemoveItems = llParseString2List(sRemoveItems, [","], []);
+            integer delSelf = FALSE;
+            integer d = llGetListLength(lRemoveItems);
+            while (d--)
+            {
+                string item = llList2String(lRemoveItems, d);
+                if (item == me) delSelf = TRUE;
+                else if (llGetInventoryType(item) != INVENTORY_NONE)
+                {
+                    llRemoveInventory(item);
+                }
+            }
+            integer pin = llRound(llFrand(1000.0));
+            llSetRemoteScriptAccessPin(pin);
+            osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
+            if (delSelf)
+            {
+                llSay(0, "Removing myself for update.");
+                llRemoveInventory(me);
+            }
+            llSleep(10.0);
+            llResetScript();
+        }
+        //
     }
 
     listen(integer c, string n ,key id , string m)
