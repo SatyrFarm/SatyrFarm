@@ -303,6 +303,16 @@ default
             }
             return;
         }
+        else if (m == "Check")
+        {
+            integer i;
+            string str="Levels:\n";
+            for (i=0;  i < llGetListLength(products); i++)
+            {
+                str += llList2String(products, i)+": "+(string)((integer)llList2Float(levels,  i))+"%\n";
+            }
+            llSay(0, str);
+        }
         else if (status  == "Sell")
         {
             if (m == ">>")
@@ -444,7 +454,7 @@ default
     touch_start(integer n)
     {
         status = "";
-        list opts = ["CLOSE", "Add Product", "Get Product"] + customOptions;
+        list opts = ["CLOSE", "Add Product", "Get Product", "Check"] + customOptions;
         startListen();
         llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
         llSetTimerEvent(300);
