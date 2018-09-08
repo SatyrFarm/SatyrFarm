@@ -1051,10 +1051,9 @@ default
                     desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
                     level = llList2Integer(llParseString2List(desc, [";"], []), 3);
                 }
-                if (i != n)
-                {
-                    osMessageObject(llDetectedKey(i),   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
-                }
+                --i;
+                if (i == n) i = 0;
+                osMessageObject(llDetectedKey(i),   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
             }
 
             if ( water < 5)
@@ -1066,10 +1065,9 @@ default
                     desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
                     level = llList2Integer(llParseString2List(desc, [";"], []), 2);
                 }
-                if (i != n)
-                {
-                    osMessageObject(llDetectedKey(i), "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
-                }
+                --i;
+                if (i == n) i = 0;
+                osMessageObject(llDetectedKey(i), "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
             }
 
         }
