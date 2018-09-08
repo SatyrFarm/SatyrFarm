@@ -143,7 +143,7 @@ refresh(integer ts)
     }
 
 
-    llSetObjectDesc("F;Water;"+(string)llRound(grassLevel)+";"+(string)llRound(drinkWater));
+    llSetObjectDesc("F;Water;"+(string)llRound(drinkWater)+";"+(string)llRound(grassLevel) + ";" + (string)llRound(grassWater));
     string str = progress  + "\nDrinkable Water: " + (integer)(drinkWater)+ "%\nGrass Level: "+(integer)grassLevel + "%\nGrass watered: "+(integer)grassWater+"%\n";
     if (progress != "")
         llSetText(str, <1,.1,.1>, 1.0);

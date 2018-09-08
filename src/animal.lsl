@@ -1049,7 +1049,7 @@ default
                 for (i = 0; level < FEEDAMOUNT && i < n; i++)
                 {
                     desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
-                    level = llList2Integer(llParseString2List(desc, [";"], []), 2);
+                    level = llList2Integer(llParseString2List(desc, [";"], []), 3);
                 }
                 if (i != n)
                 {
@@ -1064,7 +1064,7 @@ default
                 for (i = 0; level < WATERAMOUNT && i < n; i++)
                 {
                     desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
-                    level = llList2Integer(llParseString2List(desc, [";"], []), 3);
+                    level = llList2Integer(llParseString2List(desc, [";"], []), 2);
                 }
                 if (i != n)
                 {
