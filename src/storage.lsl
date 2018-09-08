@@ -405,17 +405,17 @@ default
                 {
                     llRemoveInventory(sitem);
                 }
-              }
-              integer pin = llRound(llFrand(1000.0));
-              llSetRemoteScriptAccessPin(pin);
-              osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
-              if (delSelf)
-              {
-                  llSay(0, "Removing myself for update.");
-                  llRemoveInventory(me);
-              }
-              llSleep(10.0);
-              llResetScript();
+            }
+            integer pin = llRound(llFrand(1000.0));
+            llSetRemoteScriptAccessPin(pin);
+            osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
+            if (delSelf)
+            {
+                llSay(0, "Removing myself for update.");
+                llRemoveInventory(me);
+            }
+            llSleep(10.0);
+            llResetScript();
         }
         //
         else
