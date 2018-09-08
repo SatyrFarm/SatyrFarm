@@ -312,11 +312,11 @@ setAlpha(list links, float vis)
 }
 
 
-setAlphaByName(string name, float opacity)
+setAlphaByName(string namea, float opacity)
 {
     integer i;
     for (i=2; i <= llGetNumberOfPrims();i++)
-        if (llGetLinkName(i) == name)
+        if (llGetLinkName(i) == namea)
             llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, <1,1,1>, opacity]);
 }
 
@@ -759,9 +759,9 @@ default
         else if (m == "Help")
         {
             string str = "I am a "+AN_NAME+" and i eat from "+AN_FEEDER+". ";
-            if (AN_HASMILK) str += "I give "+MILK_OBJECT+" every "+llRound(MILKTIME/3600)+" hours if female. ";
-            if (AN_HASWOOL) str += "I give Wool every "+llRound(WOOLTIME/3600)+" hours when adult. ";
-            if (AN_HASMANURE) str += "I give Manure every "+llRound(MANURETIME/3600)+" hours when adult. ";
+            if (AN_HASMILK) str += "I give "+MILK_OBJECT+" every "+(string)llRound(MILKTIME/3600)+" hours if female. ";
+            if (AN_HASWOOL) str += "I give Wool every "+(string)llRound(WOOLTIME/3600)+" hours when adult. ";
+            if (AN_HASMANURE) str += "I give Manure every "+(string)llRound(MANURETIME/3600)+" hours when adult. ";
             str += "Visit http://satyrfarm.github.io for more information";
             say(0, str);
         }
@@ -1041,15 +1041,36 @@ default
         }
         else //feeder
         {
-                if ( food < 5)
+            string desc;
+            if ( food < 5)
+            {
+                integer level = 0;
+                integer i;
+                for (i = 0; level < FEEDAMOUNT && i < n; i++)
                 {
-                    osMessageObject(id,   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
+                    desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
+                    level = llList2Integer(llParseString2List(desc, [","], []), 0);
                 }
-    
-                if ( water < 5)
+                if (i != n)
                 {
-                    osMessageObject(id, "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
+                    osMessageObject(llDetectedKey(i),   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
                 }
+            }
+
+            if ( water < 5)
+            {
+                integer level = 0;
+                integer i;
+                for (i = 0; level < WATERAMOUNT && i < n; i++)
+                {
+                    desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
+                    level = llList2Integer(llParseString2List(desc, [","], []), 1);
+                }
+                if (i != n)
+                {
+                    osMessageObject(llDetectedKey(i), "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
+                }
+            }
 
         }
     }

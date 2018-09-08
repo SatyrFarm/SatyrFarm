@@ -129,6 +129,7 @@ refresh()
 {
 
     llSetText(TITLE+"\nFood: "+(integer)food+"%\nWater: "+(integer)water+"%\n" , <1,1,1>, 1.0);
+    llSetObjectDesc((string)((integer)food) + "," + (string)((integer)water));
     if (water <=5 && autoWater)
     {
         status = "WaitAutoWater";
