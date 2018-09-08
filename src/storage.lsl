@@ -373,16 +373,16 @@ default
                 answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
             }
             len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            string me = llGetScriptName();
             while (len--)
             {
-                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+                string item = llGetInventoryName(INVENTORY_SCRIPT, len);
+                if (item != me)
+                {
+                    answer += item + ",";
+                }
             }
-            answer += "|";
-            len = llGetInventoryNumber(INVENTORY_NOTECARD);
-            while (len--)
-            {
-                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
-            }
+            answer += me;
             osMessageObject(llList2Key(cmd, 2), answer);
         }
         else if (item == "DO-UPDATE")

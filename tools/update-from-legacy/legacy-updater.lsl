@@ -94,8 +94,9 @@ string itemsToReplace(string sItems, key kObject)
         lReplace += llParseString2List(llList2String(ADDITIONS, found_add), [","], []);
     }
     list lItems = llParseString2List(sItems, [","], []);
-    integer c = llGetListLength(lItems);
-    while (c--)
+    integer i = llGetListLength(lItems);
+    integer c;
+    for (c = 0; c < i; c++)
     {
         string item = llList2String(lItems, c);
         if (llListFindList(myItems, [item]) != -1 && llListFindList(ITEMIGNORE, [item]) == -1 && llListFindList(lReplace, [item]) == -1)
@@ -166,16 +167,16 @@ default
                 answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
             }
             len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            string me = llGetScriptName();
             while (len--)
             {
-                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+                string item = llGetInventoryName(INVENTORY_SCRIPT, len);
+                if (item != me)
+                {
+                    answer += item + ",";
+                }
             }
-            answer += "|";
-            len = llGetInventoryNumber(INVENTORY_NOTECARD);
-            while (len--)
-            {
-                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
-            }
+            answer += me;
             osMessageObject(llList2Key(cmd, 2), answer);
         }
         else if (command == "DO-UPDATE")

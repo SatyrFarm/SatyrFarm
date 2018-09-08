@@ -90,8 +90,9 @@ string itemsToReplace(string sItems, key kObject)
         lReplace += llParseString2List(llList2String(ADDITIONS, found_add), [","], []);
     }
     list lItems = llParseString2List(sItems, [","], []);
-    integer c = llGetListLength(lItems);
-    while (c--)
+    integer i = llGetListLength(lItems);
+    integer c;
+    for (c = 0; c < i;  c++)
     {
         string item = llList2String(lItems, c);
         if (llListFindList(myItems, [item]) != -1 && llListFindList(ITEMIGNORE, [item]) == -1 && llListFindList(lReplace, [item]) == -1)
