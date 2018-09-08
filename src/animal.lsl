@@ -333,6 +333,7 @@ showAlphaSet(integer newEpoch)
         //show all but hide adult
         llSetLinkPrimitiveParamsFast(LINK_ALL_CHILDREN, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 1.]);
         setAlphaByName("egg_prim", 0.);
+        setAlphaByName("adult_prim", 0.);
         setAlphaByName("adult_male_prim", 0.);
         setAlphaByName("adult_female_prim", 0.);
         setAlphaByName("adult_random_prim", 0.);
@@ -351,6 +352,7 @@ showAlphaSet(integer newEpoch)
             setAlpha(ADULT_RANDOM_PRIMS, 1.);
             setAlphaByName("adult_random_prim", 1.);
         }
+        setAlphaByName("adult_prim", 1.);
         if (sex == "Female")
         {
             setAlpha(ADULT_FEMALE_PRIMS, 1.);
