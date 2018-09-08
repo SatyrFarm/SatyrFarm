@@ -220,7 +220,7 @@ state update
                 if (llListFindList(ITEMIGNORE, [sitem]) == -1)
                 {
                     integer type = llGetInventoryType(sitem);
-                    else if (type == INVENTORY_SCRIPT)
+                    if (type == INVENTORY_SCRIPT)
                     {
                         llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
                     }
