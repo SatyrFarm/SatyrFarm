@@ -388,40 +388,23 @@ setPose(list pose)
 }
 
 
+float moveAngle =0;
+integer isMoving=0;
 move()
 {
     if (epoch ==0) return;
-    
-        integer i;
-        integer rnd = (integer)llFrand(5);
-        if (rnd==0)    setPose(rest); 
-        else if (rnd==1)    setPose(down); 
-        else if (rnd==2)    setPose(eat); 
-        else if (IMMOBILE<=0)
-        {        
-            float rz = .3-llFrand(.6);
-            for (i=0; i < 6; i++)
-            {
-                vector cp = llGetPos();
-                vector v = cp + <.4, 0, 0>*(llGetRot()*llEuler2Rot(<0,0,rz>));
-                v.z = cp.z;
-                if ( llVecDist(v, initpos)< RADIUS)
-                {
-                    if (i%2==0)
-                        setPose(walkl);
-                    else
-                        setPose(walkr);
-                    llSetPrimitiveParams([PRIM_POSITION, v, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,rz>) ]);
-                    llSleep(0.4);
-                }
-                else
-                {
-                    llSetPrimitiveParams([PRIM_POSITION, cp, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,PI/2>) ]);
-                }
-            }
-            setPose(rest);     
-        }
-        if (llFrand(1.)< 0.5) baah();
+    integer i;
+    integer rnd = (integer)llFrand(5);
+    if (rnd==0)    setPose(rest); 
+    else if (rnd==1)    setPose(down); 
+    else if (rnd==2)    setPose(eat); 
+    else if (IMMOBILE<=0)
+    {
+        isMoving=7;
+        moveAngle = .3-llFrand(.6);
+        llSetTimerEvent(.5);
+    }
+    if (llFrand(1.)< 0.5) baah();
 }
 
 
@@ -430,7 +413,7 @@ refresh(integer ts)
     age = (ts-createdTs);
     if (epoch ==0)
     {
-        integer pc = llFloor((age / EGG_TIME)*100.);
+        integer pc = llFloor(((float)age / (float)EGG_TIME)*100.);
         
         if (pc >99)
         {
@@ -618,6 +601,7 @@ default
     
     on_rez(integer n)
     {
+        listener = -1;
         lastTs = llGetUnixTime();
     }
     
@@ -659,6 +643,33 @@ default
     
     timer()
     {
+        
+        if (isMoving>0)
+        {
+            if (isMoving==1)
+            {
+                    setPose(rest);
+                    llSetTimerEvent(2);
+            }
+            else
+            {
+                vector cp = llGetPos();
+                vector v = cp + <.4, 0, 0>*(llGetRot()*llEuler2Rot(<0,0,moveAngle>));
+                v.z = cp.z;
+                if ( llVecDist(v, initpos)< RADIUS)
+                {
+                    if (isMoving%2==0) setPose(walkl);
+                    else setPose(walkr);
+                    llSetPrimitiveParams([PRIM_POSITION, v, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,moveAngle>) ]);
+                }
+                else
+                    llSetPrimitiveParams([PRIM_POSITION, cp, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,PI/2>) ]);
+            }
+            isMoving--;
+            return;
+        }
+        
+        
         if (followUser!= NULL_KEY)
         {
             list userData=llGetObjectDetails((key)followUser, [OBJECT_NAME,OBJECT_POS, OBJECT_ROT]);
@@ -696,6 +707,8 @@ default
                 }
             }
         }
+        
+
            
         integer ts = llGetUnixTime();
         if (ts - lastTs>10)
@@ -759,9 +772,10 @@ default
         else if (m == "Help")
         {
             string str = "I am a "+AN_NAME+" and i eat from "+AN_FEEDER+". ";
-            if (AN_HASMILK) str += "I give "+MILK_OBJECT+" every "+(string)llRound(MILKTIME/3600)+" hours if female. ";
-            if (AN_HASWOOL) str += "I give Wool every "+(string)llRound(WOOLTIME/3600)+" hours when adult. ";
-            if (AN_HASMANURE) str += "I give Manure every "+(string)llRound(MANURETIME/3600)+" hours when adult. ";
+            if (AN_HASMILK) str += "The females of my species give "+MILK_OBJECT+" every "+(string)llRound(MILKTIME/3600)+" hours. ";
+            if (AN_HASWOOL) str += "Adults give Wool every "+(string)llRound(WOOLTIME/3600)+" hours. ";
+            if (AN_HASMANURE) str += "Adults give Manure every "+(string)llRound(MANURETIME/3600)+" hours. ";
+            str += "Pregnancy lasts "+(string)(PREGNANT_TIME/86400)+" days. On average, we live "+(string)(LIFETIME/86400)+" days. ";
             str += "Visit http://satyrfarm.github.io for more information";
             say(0, str);
         }
@@ -863,16 +877,16 @@ default
                 answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
             }
             len = llGetInventoryNumber(INVENTORY_SCRIPT);
-            string me = llGetScriptName();
             while (len--)
             {
-                string item = llGetInventoryName(INVENTORY_SCRIPT, len);
-                if (item != me)
-                {
-                    answer += item + ",";
-                }
+                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
             }
-            answer += me;
+            answer += "|";
+            len = llGetInventoryNumber(INVENTORY_NOTECARD);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
+            }
             osMessageObject(llList2Key(tk, 2), answer);
         }
         else if (cmd == "DO-UPDATE")
