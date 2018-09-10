@@ -14,14 +14,13 @@ Insert sound files for the animal as baby and adult. They should be named baby1,
 
 Change the an_config notecard to match your animal's properties. 
 
-To show some prims only as adults, enter their link numbers in this format:
+You can hide/show prims in animals according to these conventions:
 
-ADULT_MALE_PRIMS=12,13,15
-ADULT_FEMALE_PRIMS=12,13
-
-To show some prims only as child enter this:
-
-CHILD_PRIMS=16,19
+Prims named adult_prim are only shown in adult animals
+Prims named child_prim are only shown in child animals
+Prims named egg_prim are only shown if the animal is in Egg state
+Prims named adult_male_prim are only shown in adult male animals. Similarly for adult_female_prim
+Prims named adult_random_prim will be visible with 50% probability when the animal becomes adult(for non-standard features like horns)
 
 Make sure your animals contains SF Wool, SF Milk, SF Skin, SF Manure and all are full perm
 
