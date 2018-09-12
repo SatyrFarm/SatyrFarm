@@ -33,7 +33,6 @@ list CHILD_PRIMS = [];        //children only
 list colorable = []; 
 
 string PASSWORD="*";
-
 integer deathFlags=0;
 
 integer chan(key u)
@@ -95,7 +94,6 @@ list walkr;
 list eat;
 list down;
 list link_scales;
-
 vector initpos;
 
 integer lastTs;
@@ -119,56 +117,57 @@ integer givenBirth =0;
 string fatherName;
 integer age;
 
+setConfig(string str)
+{
+    list tok = llParseString2List(str, ["="], []);
+    if (llList2String(tok,0) != "")
+    {
+            string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+            string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+            //llOwnerSay(cmd+"="+val);
+            if (cmd =="NAME") AN_NAME = val;
+            else if (cmd == "FEEDER") AN_FEEDER = val;
+            else if (cmd == "CRY") AN_BAAH = val;
+            else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
+            else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
+            else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
+            else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
+            else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
+            else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);
+            else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
+            else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
+            else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
+            else if (cmd == "MILKTIME") MILKTIME= (integer)val;
+            else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
+            else if (cmd == "LAYS_EGG") LAYS_EGG = (integer)val;
+            else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
+            else if (cmd == "EGG_TIME") EGG_TIME = (integer)val;
+            else if (cmd == "MATE_INTERVAL") MATE_INTERVAL = (integer)val;
+            else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
+            else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
+            else if (cmd == "WATERTIME") WATERTIME= (float)val;
+            else if (cmd == "FEEDTIME") FEEDTIME= (float)val;
+            else if (cmd == "CHILDHOOD_RATIO") CHILDHOOD_RATIO = (float)val;
+            else if (cmd == "CHILD_SCALE") CHILD_SCALE= (float)val;
+            else if (cmd == "CHILD_MAX_SCALE") CHILD_MAX_SCALE= (float)val;
+            else if (cmd == "MALE_SCALE") MALE_SCALE= (float)val;                
+            else if (cmd == "SKIN_OBJECT") SKIN_OBJECT = val;
+            else if (cmd == "MEAT_OBJECT") MEAT_OBJECT = val;
+            else if (cmd == "MILK_OBJECT") MILK_OBJECT = val;
+            else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
+            else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
+            else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
+    }
+}
 
 
 loadConfig()
 {
-    
     list lines = llParseString2List(osGetNotecard("an_config"), ["\n"], []);
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
-    {
         if (llGetSubString(llList2String(lines,i), 0, 0) !="#")
-        {
-            list tok = llParseString2List(llList2String(lines,i), ["="], []);
-            if (llList2String(tok,0) != "")
-            {
-                    string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
-                    string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
-                    //llOwnerSay(cmd+"="+val);
-                    if (cmd =="NAME") AN_NAME = val;
-                    else if (cmd == "FEEDER") AN_FEEDER = val;
-                    else if (cmd == "CRY") AN_BAAH = val;
-                    else if (cmd == "HASGENES") AN_HASGENES = (integer)val;
-                    else if (cmd == "HASMILK") AN_HASMILK= (integer)val;
-                    else if (cmd == "HASWOOL") AN_HASWOOL= (integer)val;
-                    else if (cmd == "HASMANURE") AN_HASMANURE = (integer)val;
-                    else if (cmd == "ADULT_MALE_PRIMS") ADULT_MALE_PRIMS = llParseString2List(val, [","] , []);
-                    else if (cmd == "ADULT_FEMALE_PRIMS") ADULT_FEMALE_PRIMS = llParseString2List(val, [","] , []);
-                    else if (cmd == "CHILD_PRIMS") CHILD_PRIMS = llParseString2List(val, [","] , []);                
-                    else if (cmd == "SKINABLE_PRIMS") colorable = llParseString2List(val, [","] , []);
-                    else if (cmd == "WOOLTIME") WOOLTIME= (integer)val;
-                    else if (cmd == "MILKTIME") MILKTIME= (integer)val;
-                    else if (cmd == "IMMOBILE") IMMOBILE = (integer)val;
-                    else if (cmd == "LAYS_EGG") LAYS_EGG = (integer)val;
-                    else if (cmd == "PREGNANT_TIME") PREGNANT_TIME= (integer)val;
-                    else if (cmd == "EGG_TIME") EGG_TIME = (integer)val;
-                    else if (cmd == "MATE_INTERVAL") MATE_INTERVAL = (integer)val;
-                    else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
-                    else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
-                    else if (cmd == "CHILDHOOD_RATIO") CHILDHOOD_RATIO = (float)val;
-                    else if (cmd == "CHILD_SCALE") CHILD_SCALE= (float)val;
-                    else if (cmd == "CHILD_MAX_SCALE") CHILD_MAX_SCALE= (float)val;
-                    else if (cmd == "MALE_SCALE") MALE_SCALE= (float)val;                
-                    else if (cmd == "SKIN_OBJECT") SKIN_OBJECT = val;
-                    else if (cmd == "MEAT_OBJECT") MEAT_OBJECT = val;
-                    else if (cmd == "MILK_OBJECT") MILK_OBJECT = val;
-                    else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
-                    else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
-                    else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
-            }
-        }
-    }
+            setConfig(llList2String(lines,i));
 }
 
 loadStateByDesc()
@@ -200,13 +199,8 @@ loadStateByDesc()
             pregnantTs = llList2Integer(desc, 9);
             name = llList2String(desc, 10);
         }
-    } 
-
+    }
 }
-
-
-
-
 
 
 setGenes()
@@ -215,18 +209,12 @@ setGenes()
     string tex;
     
     if (!AN_HASGENES) return;
-    
-    
     if (geneA == geneB)
-    {
         tex = "goat"+(string)geneA;
-    }
     else if (geneA<geneB)
         tex = "goat"+(string)geneA+(string)geneB;
-        
     else if (geneB<geneA)
         tex = "goat"+(string)geneB+(string)geneA;
-
     for (i=0; i < llGetListLength(colorable); i++)
     {
         integer lnk = llList2Integer(colorable, i);
@@ -234,14 +222,10 @@ setGenes()
     }
 }
 
-
-    
 say(integer whisper, string str)
 {
     if (LAYS_EGG && epoch ==0)
-    {
         llSay(0, str);
-    }
     else
     {
         string s = llGetObjectName();
@@ -253,64 +237,49 @@ say(integer whisper, string str)
     }
 }
 
-
-
 baah()
 {
-    if (epoch ==0)
-    { // Eggs dont talk
-    }
-    else if (epoch ==1)
-        llTriggerSound("baby"+(string)(1+(integer)llFrand(TOTAL_BABYSOUNDS)), 1.0);
-    else
-        llTriggerSound("adult"+(string)(1+(integer)llFrand(TOTAL_ADULTSOUNDS)), 1.0);
+    if (epoch ==1)        llTriggerSound("baby"+(string)(1+(integer)llFrand(TOTAL_BABYSOUNDS)), 1.0);
+    else if (epoch == 2)  llTriggerSound("adult"+(string)(1+(integer)llFrand(TOTAL_ADULTSOUNDS)), 1.0);
 }
-
 
 death(integer keepBody)
 {
     llSetTimerEvent(0);
     //Prepare for death
-    deathFlags = keepBody;
+    deathFlags = keepBody; //Whether to keep the dead body or die()
     if (MEAT_OBJECT!= "")
         llRezObject(MEAT_OBJECT, llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
     if (SKIN_OBJECT != "")
         llRezObject(SKIN_OBJECT, llGetPos() +<1,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
 }
 
-
 hearts()
 {
-     llParticleSystem(
-                    [
-                    PSYS_PART_FLAGS,                            
-                    PSYS_PART_FOLLOW_VELOCITY_MASK|
-                    PSYS_PART_EMISSIVE_MASK,
-                    PSYS_SRC_PATTERN,       PSYS_SRC_PATTERN_EXPLODE,
-                    PSYS_PART_START_SCALE,      <.1,.1,0.1>,
-                    PSYS_PART_START_ALPHA,      1.0,
-                    PSYS_PART_START_COLOR,      <1.0,1.0,1.>,
-                    PSYS_SRC_ACCEL,             <0,0,.1>,                    
-                    PSYS_SRC_TEXTURE ,          "heart",
-                    PSYS_PART_MAX_AGE,          8.0,
-                    PSYS_SRC_MAX_AGE,          3.0,
-                    PSYS_SRC_ANGLE_BEGIN,       0.0,
-                    PSYS_SRC_ANGLE_END,         0.2,
-                    PSYS_SRC_BURST_PART_COUNT,  36,
-                    PSYS_SRC_BURST_RATE,        .1, 
-                    PSYS_SRC_BURST_SPEED_MIN,   0.5, 
-                    PSYS_SRC_BURST_SPEED_MAX,   1.5]);
+     llParticleSystem([
+        PSYS_PART_FLAGS, PSYS_PART_FOLLOW_VELOCITY_MASK|PSYS_PART_EMISSIVE_MASK,
+        PSYS_SRC_PATTERN,       PSYS_SRC_PATTERN_EXPLODE,
+        PSYS_PART_START_SCALE,      <.1,.1,0.1>,
+        PSYS_PART_START_ALPHA,      1.0,
+        PSYS_PART_START_COLOR,      <1.0,1.0,1.>,
+        PSYS_SRC_ACCEL,             <0,0,.1>,                    
+        PSYS_SRC_TEXTURE ,          "heart",
+        PSYS_PART_MAX_AGE,          8.0,
+        PSYS_SRC_MAX_AGE,          3.0,
+        PSYS_SRC_ANGLE_BEGIN,       0.0,
+        PSYS_SRC_ANGLE_END,         0.2,
+        PSYS_SRC_BURST_PART_COUNT,  36,
+        PSYS_SRC_BURST_RATE,        .1, 
+        PSYS_SRC_BURST_SPEED_MIN,   0.5, 
+        PSYS_SRC_BURST_SPEED_MAX,   1.5]);
 }
 
 setAlpha(list links, float vis)
 {
     integer i;
     for (i=0; i < llGetListLength(links);i++)
-    {
         llSetLinkPrimitiveParamsFast(llList2Integer(links,i), [PRIM_COLOR, ALL_SIDES, <1,1,1>, vis]);
-    }
 }
-
 
 setAlphaByName(string namea, float opacity)
 {
@@ -319,7 +288,6 @@ setAlphaByName(string namea, float opacity)
         if (llGetLinkName(i) == namea)
             llSetLinkPrimitiveParamsFast(i, [PRIM_COLOR, ALL_SIDES, <1,1,1>, opacity]);
 }
-
 
 showAlphaSet(integer newEpoch)
 {
@@ -380,7 +348,6 @@ setPose(list pose)
     }
     else if (sex=="Male") scale= MALE_SCALE;
     else scale = 1.;
-    
     for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
     {
         llSetLinkPrimitiveParamsFast(i, [PRIM_POS_LOCAL, llList2Vector(pose, (i-1)*2-2)*scale, PRIM_ROT_LOCAL, llList2Rot(pose, (i-1)*2-1), PRIM_SIZE, llList2Vector(link_scales, i-2)*scale]);
@@ -414,10 +381,9 @@ refresh(integer ts)
     if (epoch ==0)
     {
         integer pc = llFloor(((float)age / (float)EGG_TIME)*100.);
-        
         if (pc >99)
         {
-            epoch = 1;
+            epoch = 1; //Egg --> child
             showAlphaSet(epoch);
             llSetTimerEvent(2);
             lastTs = ts;
@@ -429,7 +395,7 @@ refresh(integer ts)
         return;
     }
     
-    food -= (ts - lastTs)  *(100./FEEDTIME); // Food consumption rate
+    food -= (ts - lastTs)  *(100./FEEDTIME); 
     water -= (ts - lastTs) * (100./WATERTIME); // water consumption rate
 
     if (food < 5 || water < 5)
@@ -438,17 +404,14 @@ refresh(integer ts)
         llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
     }
 
-    
     float days = (age/86400.);
     string uc = "♂";
-    if (sex == "Female")
-        uc = "♀";
+    if (sex == "Female") uc = "♀";
 
     string str =""+name+" "+uc+"\n";
-    
     if (epoch ==1 && days  > (lifeTime*CHILDHOOD_RATIO/86400.))
     {
-        epoch = 2;
+        epoch = 2; // Child --> adult
         FEEDAMOUNT  = 2.*FEEDAMOUNT;
         WATERAMOUNT = 2.*WATERAMOUNT;
         showAlphaSet(epoch);
@@ -480,7 +443,7 @@ refresh(integer ts)
             str += "Wool: "+(string)((integer)p)+"%\n";
 
     }
-    
+
     if (age > lifeTime || food < -20000 || water < -20000)
     {
         death(1);
@@ -495,7 +458,6 @@ refresh(integer ts)
             {
                 llRezObject("SF "+AN_NAME, llGetPos() +<0,2,0>*llGetRot() , ZERO_VECTOR, ZERO_ROTATION, 1 );
                 pregnantTs =0;
-
                 if (LAYS_EGG)
                 {
                     say(0, "I laid an egg!");
@@ -507,11 +469,9 @@ refresh(integer ts)
                     givenBirth++;
                 }
             }
-            else
-                str += "PREGNANT! ("+(string)((integer)(perc*100))+"%)\n";
+            else str += "PREGNANT! ("+(string)((integer)(perc*100))+"%)\n";
         }
         vector color = <1,1,1>;
-
         if (food<0)
         {
             str += "HUNGRY!\n";
@@ -519,7 +479,7 @@ refresh(integer ts)
         }
         else if (food<50)
             str += "Food: "+(string)((integer)food)+"%\n";
-        
+
         if (water<0)
         {
             str += "THIRSTY!\n";
@@ -539,8 +499,6 @@ refresh(integer ts)
     llSetObjectDesc("A;"+(string)scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
 }
 
-
-
 list getNC(string ncname)
 {
     list lst = llParseString2List(osGetNotecard(ncname), ["|"], []);
@@ -553,46 +511,39 @@ default
     state_entry()
     {
         llSetText("",<1,1,1>, 1.);
-        if (llGetObjectName() == "SF Animal Rezzer")
+        if (osRegexIsMatch(llGetObjectName(), "(Update|Rezz)"))
         {
+            llSay(0, "Sleeping");
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
-            llSay(0, "Sleeping tight");
             return;
         }
-        
-        loadConfig();        
         rest =  getNC("rest");
         down = getNC("down");
         eat = getNC("eat");
         walkl = getNC("walkl");
         walkr = getNC("walkr");
         link_scales = getNC("scales");
-        
-        name = AN_NAME;
-        
-        llSetObjectName("SF "+AN_NAME);
-         
-        //Reset Everything
-        llSetRot(ZERO_ROTATION);
-        llSetLinkColor(LINK_ALL_OTHERS, <1, 1,1>, ALL_SIDES);
-        
-        if (llFrand(1.) < 0.5) sex = "Female";
-        else sex = "Male";
-        
-        geneA = 1+ (integer)llFrand(3);
-        geneB = 1+ (integer)llFrand(3);
-        
-        lastTs = createdTs = llGetUnixTime()-10;
-        initpos = llGetPos();
-
-        if (LAYS_EGG) epoch =0;
-        else epoch = 1;
-        
-        lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         
-        loadStateByDesc();
+        loadConfig();
+        name = AN_NAME;
+        llSetObjectName("SF "+AN_NAME);
+         
+        //Set Defaults
+        llSetRot(ZERO_ROTATION);
+        llSetLinkColor(LINK_ALL_OTHERS, <1, 1,1>, ALL_SIDES);
+        if (llFrand(1.) < 0.5) sex = "Female";
+        else sex = "Male";
+        geneA = 1+ (integer)llFrand(3);
+        geneB = 1+ (integer)llFrand(3);
+        lastTs = createdTs = llGetUnixTime()-10;
+        initpos = llGetPos();
+        if (LAYS_EGG) epoch =0;
+        else epoch = 1;
+        lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         
+        //Load state after defaults
+        loadStateByDesc();
         setGenes();
         setPose(rest);
         showAlphaSet(epoch);
@@ -621,7 +572,6 @@ default
         }
         else
         {
-
             osMessageObject(id, "INIT|"+PASSWORD+"|10|-1|<1.000, 0.965, 0.773>|");
             if (llKey2Name(id) == MEAT_OBJECT) deathFlags = deathFlags|2;
             if (llKey2Name(id) == SKIN_OBJECT) deathFlags = deathFlags|4;
@@ -643,13 +593,12 @@ default
     
     timer()
     {
-        
         if (isMoving>0)
         {
             if (isMoving==1)
             {
-                    setPose(rest);
-                    llSetTimerEvent(2);
+                setPose(rest);
+                llSetTimerEvent(11);
             }
             else
             {
@@ -694,28 +643,21 @@ default
                     else fpos = mypos + .7*vn;
                     vn.z =0;
                     rotation r2 = llRotBetween(<1,0,0>,vn);
-                    
                     left = !left;
                     llSetPrimitiveParams([PRIM_ROTATION,r2, PRIM_POSITION, fpos]);
-                    if (left)
-                        setPose(walkl);
-                    else
-                        setPose(walkr);
+                    if (left)   setPose(walkl);
+                    else    setPose(walkr);
                     if (llFrand(1.)< 0.1) baah();
                     initpos = fpos;
- 
                 }
             }
         }
         
-
-           
         integer ts = llGetUnixTime();
         if (ts - lastTs>10)
         {
             refresh(ts);           
-            if (epoch == 0)
-                llSetTimerEvent(200);
+            if (epoch == 0)  llSetTimerEvent(200);
             else
             {
                 if (status == "DEAD") 
@@ -730,13 +672,12 @@ default
                 }
             }
             lastTs = ts ;
-        }    
+        }
         checkListen(); 
     } 
     
     listen(integer c, string n ,key id , string m)
     {
-        
         if (m == "Mate" && sex == "Female")
         {
             status = "WaitMate";
@@ -748,7 +689,6 @@ default
             if (followUser != NULL_KEY)
             {
                 llSetTimerEvent(.5);
-                llStopSound();
             }
         }
         else if (m =="Options")
@@ -812,7 +752,6 @@ default
         else if (m == "Short Label" || m == "Long Label")
         {
             labelType = (m == "Short Label");
-           // llSay(0, "Short label="+(string)labelType);
             refresh(llGetUnixTime());
         }
         else if (m == "Milk" || m == "Get Eggs")
@@ -853,11 +792,6 @@ default
             status ="OK";
             refresh(llGetUnixTime());
         }
-        else
-        {
-            
-        }
-        
     }
     
     dataserver(key kk, string m)
@@ -877,16 +811,16 @@ default
                 answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
             }
             len = llGetInventoryNumber(INVENTORY_SCRIPT);
-            string me = llGetScriptName();
             while (len--)
             {
-                string item = llGetInventoryName(INVENTORY_SCRIPT, len);
-                if (item != me)
-                {
-                    answer += item + ",";
-                }
+                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
             }
-            answer += me;
+            answer += "|";
+            len = llGetInventoryNumber(INVENTORY_NOTECARD);
+            while (len--)
+            {
+                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
+            }
             osMessageObject(llList2Key(tk, 2), answer);
         }
         else if (cmd == "DO-UPDATE")
@@ -915,11 +849,16 @@ default
             osMessageObject(llList2Key(tk, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
             if (delSelf)
             {
-                llSay(0, "Removing myself for update.");
-                llRemoveInventory(me);
+              llSay(0, "Removing myself for update.");
+              llRemoveInventory(me);
             }
             llSleep(10.0);
             llResetScript();
+        }
+        else if (cmd =="SETCONFIG")
+        {
+            if (llGetOwnerKey(kk) == llGetOwner())
+                setConfig(llList2String(tk,2));
         }
         else if (cmd == "MATEME" ) //Male part
         {
@@ -944,22 +883,17 @@ default
                 vector v = llList2Vector(ud, 1) + <-.3,  .0, 0.3> * llList2Rot(ud,2);
                 
                 rotation trot  =  llList2Rot(ud,2);
-
-                ///
                 vector vn = llVecNorm(v  - mypos );
                 vn.z=0;
 
                 kf += ZERO_VECTOR;
-                kf += (trot/llGetRot()) ;// llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
+                kf += (trot/llGetRot()) ;
                 kf += .4;
-
                 kf += v- mypos;
                 kf += ZERO_ROTATION;
                 kf += 3;
-
-
                 kf += ZERO_VECTOR;
-                kf += llEuler2Rot(<0,-.3,0>);  // llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
+                kf += llEuler2Rot(<0,-.3,0>);
                 kf += .4;
 
                 integer k = 7;
@@ -973,17 +907,14 @@ default
                     kf += ZERO_ROTATION;
                     kf += .6;
                 }
-                
                 kf += ZERO_VECTOR;
-                kf += llEuler2Rot(<0, .3, 0>);  // llRotBetween(<1,0,0>*llGetRot(),  <1,0,0);
+                kf += llEuler2Rot(<0, .3, 0>);
                 kf += .3;
-
                 kf += <-1, 1, -0.3>*trot;
                 kf += ZERO_ROTATION;
                 kf += 2.;
             
                 llSetKeyframedMotion( kf, [KFM_DATA, KFM_TRANSLATION|KFM_ROTATION, KFM_MODE, KFM_FORWARD]);
-
                 llSleep(5);
                 hearts();
                 llSleep(8);
@@ -1010,7 +941,7 @@ default
         }
         else if (cmd == "INIT")
         {
-           // "INIT|REZ|SF Goat| <0,2,0>|A|B|Goat "+fatherName+" y "+name );
+            // "INIT|REZ|SF Goat| <0,2,0>|A|B|Goat "+fatherName+" y "+name );
             name = llList2String(tk, 4);
             geneA =  llList2Integer(tk, 2);
             geneB = llList2Integer(tk, 3);
@@ -1024,13 +955,13 @@ default
         }
         else if (cmd == "WATER")
         {
-            say(1, "Aaah! Refreshing!");
+            say(1, "Aaah, refreshing!");
             water = 100.;
             refresh(llGetUnixTime());
         }
         else if (cmd == "FOOD")
         {
-            say(1, "Yummy yummy food");
+            say(1, "Yum yum, food!");
             food = 100.;
             refresh(llGetUnixTime());
 
@@ -1050,7 +981,7 @@ default
         key id = llDetectedKey(0);
         if (status == "WaitMate")
         {
-            llSetTimerEvent(15);// dont move
+            llSetTimerEvent(15); // dont move
             osMessageObject(id,  "MATEME|"+PASSWORD+"|"+(string)llGetKey());
         }
         else //feeder
@@ -1083,11 +1014,8 @@ default
                 if (i == n) i = 0;
                 osMessageObject(llDetectedKey(i), "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
             }
-
         }
     }
-
-
     
     no_sensor()
     {
@@ -1099,16 +1027,12 @@ default
     }
     
 
-
-
     touch_start(integer n)
     {
         integer ts = llGetUnixTime();
         refresh(ts);
         if (epoch ==0)
-        {
             llSay(0, "Hello! I 'm just an egg");
-        }
         else if (llSameGroup(llDetectedKey(0) ) || osIsNpc(llDetectedKey(0)) )
         {
          
@@ -1145,3 +1069,4 @@ default
         }
     }
 }
+
