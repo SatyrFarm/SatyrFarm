@@ -811,16 +811,16 @@ default
                 answer += llGetInventoryName(INVENTORY_OBJECT, len) + ",";
             }
             len = llGetInventoryNumber(INVENTORY_SCRIPT);
+            string me = llGetScriptName();
             while (len--)
             {
-                answer += llGetInventoryName(INVENTORY_SCRIPT, len) + ",";
+                string item = llGetInventoryName(INVENTORY_SCRIPT, len);
+                if (item != me)
+                {
+                    answer += item + ",";
+                }
             }
-            answer += "|";
-            len = llGetInventoryNumber(INVENTORY_NOTECARD);
-            while (len--)
-            {
-                answer += llGetInventoryName(INVENTORY_NOTECARD, len) + ",";
-            }
+            answer += me;
             osMessageObject(llList2Key(tk, 2), answer);
         }
         else if (cmd == "DO-UPDATE")
@@ -849,8 +849,8 @@ default
             osMessageObject(llList2Key(tk, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
             if (delSelf)
             {
-              llSay(0, "Removing myself for update.");
-              llRemoveInventory(me);
+                llSay(0, "Removing myself for update.");
+                llRemoveInventory(me);
             }
             llSleep(10.0);
             llResetScript();
