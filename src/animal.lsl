@@ -16,9 +16,11 @@ integer MATE_INTERVAL= 86400; //how often to be mateable
 float CHILD_SCALE = 0.5; // Initial scale as child 
 float CHILD_MAX_SCALE = 1.0; // Dont let the child grow beyond this scale
 float MALE_SCALE = 1.05;
+float STEP_SIZE = 0.4;
 string MEAT_OBJECT="SF Meat";
 string SKIN_OBJECT = "SF Skin";
 string MILK_OBJECT="SF Milk";
+
 integer lastEggTs;
 string name;
 
@@ -146,6 +148,7 @@ setConfig(string str)
             else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
             else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
             else if (cmd == "WATERTIME") WATERTIME= (float)val;
+            else if (cmd == "STEP_SIZE") STEP_SIZE= (float)val;
             else if (cmd == "FEEDTIME") FEEDTIME= (float)val;
             else if (cmd == "CHILDHOOD_RATIO") CHILDHOOD_RATIO = (float)val;
             else if (cmd == "CHILD_SCALE") CHILD_SCALE= (float)val;
@@ -603,7 +606,7 @@ default
             else
             {
                 vector cp = llGetPos();
-                vector v = cp + <.4, 0, 0>*(llGetRot()*llEuler2Rot(<0,0,moveAngle>));
+                vector v = cp + <STEP_SIZE, 0, 0>*(llGetRot()*llEuler2Rot(<0,0,moveAngle>));
                 v.z = cp.z;
                 if ( llVecDist(v, initpos)< RADIUS)
                 {
