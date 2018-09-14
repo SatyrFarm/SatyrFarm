@@ -511,7 +511,7 @@ default
     state_entry()
     {
         llSetText("",<1,1,1>, 1.);
-        if (osRegexIsMatch(llGetObjectName(), "(Update|Rezz)"))
+        if (llSubStringIndex(llGetObjectName(), "Update")>=0 || llSubStringIndex(llGetObjectName(), "Rezz")>=0)
         {
             llSay(0, "Sleeping");
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
