@@ -350,7 +350,7 @@ default
         llSay(0, "Getting ready for you :)");
         llSleep(2.0);
         //for updates
-        if (osRegexIsMatch(llGetObjectName(), "(Update|Rezz)+"))
+        if (llSubStringIndex(llGetObjectName(), "Update")>=0 || llSubStringIndex(llGetObjectName(), "Rezz")>=0)
         {
             string me = llGetScriptName();
             llOwnerSay("Script " + me + " went to sleep inside Updater.");
