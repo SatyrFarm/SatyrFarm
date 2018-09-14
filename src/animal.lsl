@@ -520,6 +520,7 @@ default
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
             return;
         }
+        llSetRemoteScriptAccessPin(0);
         rest =  getNC("rest");
         down = getNC("down");
         eat = getNC("eat");
@@ -953,8 +954,6 @@ default
             geneA =  llList2Integer(tk, 2);
             geneB = llList2Integer(tk, 3);
             setGenes();
-            //Delete pin
-            llSetRemoteScriptAccessPin(0);
             llRemoveInventory("setpin");
             if (LAYS_EGG==0)
                 say(0, "Hello!");
