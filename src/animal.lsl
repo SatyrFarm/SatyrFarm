@@ -555,6 +555,10 @@ default
     
     on_rez(integer n)
     {
+        if (llGetObjectDesc() == "")
+        {
+            llResetScript();
+        }
         listener = -1;
         lastTs = llGetUnixTime();
     }
