@@ -453,6 +453,10 @@ default
 
     touch_start(integer n)
     {
+        if (!llSameGroup(llDetectedKey(0)) && !osIsNpc(llDetectedKey(0)))
+        {
+            return;
+        }
         status = "";
         list opts = ["CLOSE", "Add Product", "Get Product", "Check"] + customOptions;
         startListen();
