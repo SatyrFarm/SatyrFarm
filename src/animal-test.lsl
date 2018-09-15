@@ -553,6 +553,9 @@ default
         setPose(rest);
         showAlphaSet(epoch);
         llSetTimerEvent(2);
+        integer i;
+        for(i = 2; i <= llGetNumberOfPrims(); ++i)
+            llSetLinkPrimitiveParamsFast(i, [PRIM_PHYSICS_SHAPE_TYPE, PRIM_PHYSICS_SHAPE_NONE]); // Apparently this slightly reduces physics lag
     }
     
     on_rez(integer n)
@@ -582,7 +585,7 @@ default
                 }
             }
             rep += me;
-            osMessageObject(llList2Key(cmd, 2), "DO-UPDATE|"+PASSWORD+"|"+(string)llGetKey()+"|"+rep);
+            osMessageObject(id, "DO-UPDATE|"+PASSWORD+"|"+(string)llGetKey()+"|"+rep);
         }
         else
         {
@@ -883,24 +886,21 @@ default
             for (c = 0; c < d; c++)
             {
                 string sitem = llList2String(litems, c);
-                if (llListFindList(ITEMIGNORE, [sitem]) == -1)
+                integer type = llGetInventoryType(sitem);
+                if (type == INVENTORY_SCRIPT)
                 {
-                    integer type = llGetInventoryType(sitem);
-                    if (type == INVENTORY_SCRIPT)
-                    {
-                        llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
-                    }
-                    else if (type != INVENTORY_NONE)
-                    {
-                        llGiveInventory(kobject, sitem);
-                    }
+                    llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
+                }
+                else if (type != INVENTORY_NONE)
+                {
+                    llGiveInventory(kobject, sitem);
                 }
             }
             llSleep(2.0);
             string genes = (string)geneA+"|"+(string)fatherGene; 
             if (llFrand(1.)<0.5) genes =  (string)geneB+"|"+(string)fatherGene;
             string babyParams = genes+"|Baby "+fatherName+" y "+name;
-            osMessageObject(id,   "INIT|"+PASSWORD+"|"+babyParams);
+            osMessageObject(kobject,   "INIT|"+PASSWORD+"|"+babyParams);
         }
         else if (cmd =="SETCONFIG")
         {
@@ -993,10 +993,9 @@ default
             geneA =  llList2Integer(tk, 2);
             geneB = llList2Integer(tk, 3);
             setGenes();
-            llRemoveInventory("setpin");
             if (LAYS_EGG==0)
                 say(0, "Hello!");
-            llSetTimerEvent(2);
+            refresh();
         }
         else if (cmd == "WATER")
         {
