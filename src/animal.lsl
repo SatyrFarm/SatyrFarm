@@ -553,6 +553,10 @@ default
         setPose(rest);
         showAlphaSet(epoch);
         llSetTimerEvent(2);
+        integer i;
+        for(i = 2; i <= llGetNumberOfPrims(); ++i)
+            llSetLinkPrimitiveParamsFast(i, [PRIM_PHYSICS_SHAPE_TYPE, PRIM_PHYSICS_SHAPE_NONE]); // Apparently this slightly reduces physics lag
+        
     }
     
     on_rez(integer n)
