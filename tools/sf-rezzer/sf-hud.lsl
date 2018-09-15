@@ -1,22 +1,74 @@
 //### sf-hud.lsl
-//HUD for Rezzing Satyr Farm Items
-integer gi_buttonOffset = 6;
+//HUD for Rezzing Satyr Farm Itemsd
+integer gi_buttonOffset = 8;
 integer gi_frontFace = 4;
-integer gi_linkBack = 4;
-integer gi_linkForward = 5;
-integer gi_linkApply = 3;
+integer gi_linkBack = 6;
+integer gi_linkForward = 7;
+integer gi_linkBuy = 3;
+integer gi_linkSell = 4;
+integer gi_linkTab = 5;
 integer gi_linkDesc = 2;
 integer gi_itemCount;
 integer gi_curPage;
 string gs_selectedItem;
+integer gi_selectedPrice;
+integer gi_balance = 200;
+list gl_sellprices;
 //Item Button List
 list gl_ident;
+list gl_prices;
 //Variables for Updater
 integer VERSION;
 string PASSWORD;
 list ADDITIONS = [];
 list ITEMIGNORE = [];
 list myItems;
+//Sell Menu
+integer listener = -1;
+integer startOffset = 0;
+list gl_selitems = [];
+string gs_lookingFor;
+
+
+integer chan(key u)
+{
+    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
+}
+
+updateBalance()
+{
+    llSetLinkPrimitiveParamsFast(gi_linkSell, [PRIM_TEXT, "Balance: \n" + (string)gi_balance, <0.0, 0.0, 0.0>, 1.0]);
+    llSetObjectDesc((string)gi_balance);
+}
+
+multiPageMenu(key id)
+{
+    list buttons = llList2ListStrided(gl_sellprices, 0, -1, 2);
+    integer ch = chan(llGetKey());
+    integer l = llGetListLength(buttons);
+    if (startOffset >= l)
+    {
+        startOffset = 0;
+    }
+    list its = llList2List(buttons, startOffset, startOffset + 9);
+    if (l >= 12)
+    {
+        l = llGetListLength(its);
+        its += [">>"];
+    }
+    string message = "Select item to sell:\n";
+    while (l--)
+    {
+        integer pos = (startOffset + l)*2;
+        message += llList2String(gl_sellprices, pos) + ": " + llList2String(gl_sellprices, pos + 1) + "\n";
+    }
+    if (listener == -1)
+    {
+        listener = llListen(chan(llGetKey()), "", llGetOwner(), "");
+    }
+    llSetTimerEvent(300);
+    llDialog(id, message, ["CLOSE"] + its, ch);
+}
 
 drawButtons()
 {
@@ -57,6 +109,19 @@ drawButtons()
     }
 }
 
+loadItemList(string ncname)
+{
+    gs_selectedItem = "";
+    llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5]);
+    llSetLinkPrimitiveParamsFast(gi_linkDesc, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.5, 1.0, 0.0>, <-0.25, 0.0, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
+    llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXT, "", ZERO_VECTOR, 0.0]);
+    list items = llParseString2List(osGetNotecard(ncname), ["\n", ":"] ,[]);
+    gl_ident = llList2ListStrided(items, 0, -1, 2);
+    gl_prices = llList2ListStrided(llDeleteSubList(items,0,0), 0, -1, 2);
+    gi_itemCount = llGetListLength(gl_ident);
+    drawButtons();
+}
+
 string itemsToReplace(string sItems, key kObject)
 {
     list lReplace = [];
@@ -85,12 +150,13 @@ default
     state_entry()
     {
         //config notecards
-        if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("version") == INVENTORY_NONE)
+        if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("version") == INVENTORY_NONE || llGetInventoryType("sellprices") == INVENTORY_NONE)
         {
-            llSay(0, "No verion or password notecard in inventory! Can't work like that.");
+            llSay(0, "No verion or password or sellprices notecard in inventory! Can't work like that.");
         }
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         VERSION = (integer)llStringTrim(osGetNotecard("version"), STRING_TRIM);
+        gl_sellprices = llParseString2List(osGetNotecard("sellprices"), ["\n", "="], [""]);
         if (llGetInventoryType("additions") != INVENTORY_NONE)
         {
             ADDITIONS = [];
@@ -112,6 +178,9 @@ default
         {
             myItems += [llGetInventoryName(INVENTORY_ALL, len)];
         }
+        //get Balance
+        gi_balance = (integer)llGetObjectDesc();
+        updateBalance();
         //check textures in inventory and populate lists
         integer i_itemCount = llGetInventoryNumber(INVENTORY_TEXTURE);
         gl_ident = [];
@@ -134,13 +203,12 @@ default
         }
         gi_curPage = 0;
         gi_itemCount = llGetListLength(gl_ident);
-        //draw item selection buttons
-        drawButtons();
+        //load items from notecards
+        loadItemList("farmitems");
         //done
         state ready;
     }
 }
-
 
 state ready
 {
@@ -148,10 +216,95 @@ state ready
     {
         //draw main buttons
         gs_selectedItem = "";
-        llSetLinkPrimitiveParamsFast(gi_linkForward, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.128, 0.128, 0.0>, <0.435, 0.375, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
-        llSetLinkPrimitiveParamsFast(gi_linkBack, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.128, 0.128, 0.0>, <0.3125, 0.375, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
-        llSetLinkPrimitiveParamsFast(gi_linkApply, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.128, 0.0>, <0.125, 0.4, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkForward, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.0625, 0.125, 0.0>, <0.46875, 0.4375, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkBack, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.0625, 0.125, 0.0>, <0.40625, 0.4375, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.125, 0.0>, <0.125, 0.4375, 0.0>, 0.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkSell, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.125, 0.0>, <0.125, -0.4375, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkTab, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.500, 0.25, 0.0>, <0.250, 0.00, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
         llSetLinkPrimitiveParamsFast(gi_linkDesc, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.5, 1.0, 0.0>, <-0.25, 0.0, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5]);
+        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXT, "", ZERO_VECTOR, 0.0]);
+    }
+
+    listen(integer c, string nm, key id, string m)
+    {
+        if (m == ">>")
+        {
+            startOffset += 10;
+            multiPageMenu(id);
+        }
+        else if (m == "CLOSE")
+        {
+            llListenRemove(listener);
+            gl_selitems = [];
+            listener = -1;
+        }
+        else if (llListFindList(gl_sellprices, [m]) != -1)
+        {
+            gs_lookingFor = m;
+            llSensor("SF " + m, "", SCRIPTED, 10, PI);
+        }
+    }
+
+    sensor(integer n)
+    {
+        //get first product that isn't already selected and has enough percentage
+        integer c;
+        key ready_obj = NULL_KEY;
+        for (c = 0; ready_obj == NULL_KEY && c < n; c++)
+        {
+            key obj = llDetectedKey(c);
+            list stats = llParseString2List(llList2String(llGetObjectDetails(obj,[OBJECT_DESC]),0), [";"], []);
+            integer have_percent = llList2Integer(stats, 1);
+            // have_percent == 0 for backwards compatibility with old items
+            if (llListFindList(gl_selitems, [obj]) == -1 && (have_percent == 100 || have_percent == 0))
+            {
+                ready_obj = llDetectedKey(c);
+            }
+        }
+        //--
+        if (ready_obj == NULL_KEY)
+        {
+            llSay(0, "Error! Full "+gs_lookingFor+" not found nearby. You must bring it near me!");
+            return;
+        }
+        gl_selitems += [ready_obj];
+        llSay(0, "Found "+gs_lookingFor+", emptying...");
+        osMessageObject(ready_obj, "DIE|"+(string)llGetKey());
+    }
+
+    dataserver(key k, string m)
+    {
+        list cmd = llParseStringKeepNulls(m, ["|"] , []);
+        if (llList2String(cmd,1) != PASSWORD ) { llSay(0, "Bad password"); return; } 
+        string item = llList2String(cmd,0);
+
+        integer i;
+        for (i=0; i < llGetListLength(gl_sellprices); i++)
+        {
+            if (llToUpper(llList2String(gl_sellprices, i)) ==  item)
+            {
+                gi_balance += llList2Integer(gl_sellprices, i + 1);
+                updateBalance();
+                return;
+            }
+        }
+    }
+
+    no_sensor()
+    {
+        llOwnerSay(gs_lookingFor+" not found nearby!");
+    }
+
+    timer()
+    {
+        llSetTimerEvent(0.0);
+        if(listener != -1)
+        {
+            llListenRemove(listener);
+            listener = -1;
+            gl_selitems = [];
+        }
     }
 
     touch_start(integer num)
@@ -167,17 +320,49 @@ state ready
             ++gi_curPage;
             drawButtons();
         }
+        else if (link == gi_linkTab)
+        {
+            vector touched = llDetectedTouchST(0);
+            if (touched.x < 0.5)
+            {
+                llSetLinkPrimitiveParamsFast(gi_linkTab, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.500, 0.25, 0.0>, <0.250, 0.00, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
+                loadItemList("farmitems");
+            }
+            else
+            {
+                llSetLinkPrimitiveParamsFast(gi_linkTab, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.500, 0.25, 0.0>, <0.250, 0.25, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
+                loadItemList("animalitems");
+            }
+        }
+        else if (link == gi_linkSell)
+        {
+            multiPageMenu(llDetectedKey(0));
+        }
         else if (link >= gi_buttonOffset && link < gi_buttonOffset + 8)
         {
             integer i_item = gi_curPage * 8 + link - gi_buttonOffset;
             if (i_item >= gi_itemCount)
             {
                 llSetLinkPrimitiveParamsFast(gi_linkDesc, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.5, 1.0, 0.0>, <-0.25, 0.0, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
+                llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5]);
+                llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXT, "", ZERO_VECTOR, 0.0]);
                 gs_selectedItem = "";
                 return;
             }
             gs_selectedItem = llList2String(gl_ident, i_item);
-            //do something here
+            gi_selectedPrice = llList2Integer(gl_prices, i_item);
+            vector color;
+            if (gi_balance >= gi_selectedPrice)
+            {
+                color = <0.180, 0.800, 0.251>;
+                llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
+            }
+            else
+            {
+                color = <1.0, 0.0, 0.0>;
+                llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5]);
+            }
+            llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXT, gs_selectedItem + "\nPrice: " + (string)gi_selectedPrice, color, 1.0]);
             string button = "btnb-" + gs_selectedItem;
             if (llGetInventoryType(button) == INVENTORY_NONE)
             {
@@ -185,8 +370,10 @@ state ready
             }
             llSetLinkPrimitiveParamsFast(gi_linkDesc, [PRIM_TEXTURE, gi_frontFace, button, <1.0, 1.0, 0.0>, <0.0, 0.0, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
         }
-        else if (link == gi_linkApply && gs_selectedItem != "")
+        else if (link == gi_linkBuy && gs_selectedItem != "" && gi_selectedPrice <= gi_balance)
         {
+            gi_balance -= gi_selectedPrice;
+            updateBalance();
             state rezz;
         }
     }
@@ -198,6 +385,11 @@ state ready
            llResetScript();
        }
    }
+
+   on_rez(integer num)
+   {
+       llResetScript();
+   }
 }
 
 
@@ -205,7 +397,7 @@ state rezz
 {
     state_entry()
     {
-        llSetLinkPrimitiveParamsFast(gi_linkApply, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.128, 0.0>, <0.125, 0.4, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 0.0>, 1.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.128, 0.0>, <0.125, 0.4, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 0.0>, 1.0]);
         llSay(0, "Rezzing " + gs_selectedItem);
         llRezObject(gs_selectedItem, llGetPos() + <2.5,0.0,1.0>*llGetRot(), <0.0,0.0,0.0>, <0.0,0.0,0.0,1.0>, 0);
     }
