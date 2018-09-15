@@ -378,8 +378,9 @@ move()
 }
 
 
-refresh(integer ts)
+refresh()
 {
+    integer ts = llGetUnixTime();
     age = (ts-createdTs);
     if (epoch ==0)
     {
@@ -398,7 +399,7 @@ refresh(integer ts)
         return;
     }
     
-    food -= (ts - lastTs)  *(100./FEEDTIME); 
+    food  -= (ts - lastTs)  *(100./FEEDTIME); 
     water -= (ts - lastTs) * (100./WATERTIME); // water consumption rate
 
     if (food < 5 || water < 5)
@@ -540,7 +541,7 @@ default
         else sex = "Male";
         geneA = 1+ (integer)llFrand(3);
         geneB = 1+ (integer)llFrand(3);
-        lastTs = createdTs = llGetUnixTime()-10;
+        lastTs = createdTs = llGetUnixTime()-200;
         initpos = llGetPos();
         if (LAYS_EGG) epoch =0;
         else epoch = 1;
@@ -662,27 +663,28 @@ default
         }
         
         integer ts = llGetUnixTime();
-        if (ts - lastTs>10)
+        if (ts > lastTs + 100)
         {
-            refresh(ts);           
-            if (epoch == 0)  llSetTimerEvent(200);
-            else
+            refresh();
+            lastTs = ts;
+        }
+        
+        if (epoch == 0)  llSetTimerEvent(300);
+        else
+        {
+            if (status == "DEAD") 
             {
-                if (status == "DEAD") 
-                {
-                    llSetTimerEvent(0);
-                    return;
-                }
-                else if (followUser == NULL_KEY)
-                {
-                    llSetTimerEvent(25+ (integer)llFrand(20));
-                    move();
-                }
+                llSetTimerEvent(0);
+                return;
             }
-            lastTs = ts ;
+            else if (followUser == NULL_KEY)
+            {
+                llSetTimerEvent(25+ (integer)llFrand(20));
+                move();
+            }
         }
         checkListen(); 
-    } 
+    }
     
     listen(integer c, string n ,key id , string m)
     {
@@ -723,7 +725,9 @@ default
             if (AN_HASMILK) str += "The females of my species give "+MILK_OBJECT+" every "+(string)llRound(MILKTIME/3600)+" hours. ";
             if (AN_HASWOOL) str += "Adults give Wool every "+(string)llRound(WOOLTIME/3600)+" hours. ";
             if (AN_HASMANURE) str += "Adults give Manure every "+(string)llRound(MANURETIME/3600)+" hours. ";
-            str += "Pregnancy lasts "+(string)(PREGNANT_TIME/86400)+" days. On average, we live "+(string)(LIFETIME/86400)+" days. ";
+            if (LAYS_EGG==0)
+                str += "Pregnancy lasts "+(string)(PREGNANT_TIME/86400)+" days. ";
+            str += "On average, we live "+(string)(LIFETIME/86400)+" days. ";
             str += "Visit http://satyrfarm.github.io for more information";
             say(0, str);
         }
@@ -760,7 +764,7 @@ default
         else if (m == "Short Label" || m == "Long Label")
         {
             labelType = (m == "Short Label");
-            refresh(llGetUnixTime());
+            refresh();
         }
         else if (m == "Milk" || m == "Get Eggs")
         {
@@ -798,7 +802,7 @@ default
             name = m;
             say(0, "Hello! My name is "+name+"!");
             status ="OK";
-            refresh(llGetUnixTime());
+            refresh();
         }
     }
     
@@ -944,7 +948,7 @@ default
                 else
                     pregnantTs = llGetUnixTime();
                 llSleep(2);
-                refresh(llGetUnixTime());
+                refresh();
             }
         }
         else if (cmd == "INIT")
@@ -963,19 +967,19 @@ default
         {
             say(1, "Aaah, refreshing!");
             water = 100.;
-            refresh(llGetUnixTime());
+            refresh();
         }
         else if (cmd == "FOOD")
         {
             say(1, "Yum yum, food!");
             food = 100.;
-            refresh(llGetUnixTime());
+            refresh();
 
         }
         else if (cmd == "ADDDAY")
         {
            createdTs -= 86400;
-           refresh(llGetUnixTime());
+           refresh();
            llOwnerSay("CreatedTs="+(string)createdTs);
         }
         
@@ -1035,8 +1039,6 @@ default
 
     touch_start(integer n)
     {
-        integer ts = llGetUnixTime();
-        refresh(ts);
         if (epoch ==0)
             llSay(0, "Hello! I 'm just an egg");
         else if (llSameGroup(llDetectedKey(0) ) || osIsNpc(llDetectedKey(0)) )
@@ -1048,6 +1050,7 @@ default
            opts += "CLOSE";
            opts +=  "Options";
            
+           integer ts = llGetUnixTime();
            if (sex == "Female" && epoch == 2)
            {
                if ( (LAYS_EGG==1 && ts> lastEggTs+MATE_INTERVAL) || (LAYS_EGG==0&& pregnantTs ==0) )
@@ -1063,8 +1066,8 @@ default
                         else if (givenBirth>0) opts += "Milk";
                     }
                }
-               if (ts - woolTs > WOOLTIME && AN_HASWOOL >0) opts += "Wool";
-               if (ts - manureTs > MANURETIME && AN_HASMANURE >0) opts += "Get Manure";
+               if ((ts - woolTs > WOOLTIME) && AN_HASWOOL >0) opts += "Wool";
+               if ((ts - manureTs > MANURETIME) && AN_HASMANURE >0) opts += "Get Manure";
            }
            startListen();
            llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()) );
@@ -1075,4 +1078,3 @@ default
         }
     }
 }
-
