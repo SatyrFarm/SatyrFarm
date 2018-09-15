@@ -63,7 +63,7 @@ multiPageMenu(key id)
     }
     if (listener == -1)
     {
-        listener = llListen(chan(llGetKey()), "", llGetOwner(), "");
+        listener = llListen(chan(llGetKey()), "", "", "");
     }
     llSetTimerEvent(300);
     llDialog(id, message, ["CLOSE"] + its, ch);
