@@ -375,10 +375,10 @@ default
             string me = llGetScriptName();
             while (len--)
             {
-                string item = llGetInventoryName(INVENTORY_SCRIPT, len);
-                if (item != me)
+                string sitem = llGetInventoryName(INVENTORY_SCRIPT, len);
+                if (sitem != me)
                 {
-                    answer += item + ",";
+                    answer += sitem + ",";
                 }
             }
             answer += me;
