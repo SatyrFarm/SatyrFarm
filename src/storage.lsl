@@ -75,7 +75,6 @@ multiPageMenu(key id, string message, list buttons)
     }
     if (startOffset >= l) startOffset = 0;
     list its = llList2List(buttons, startOffset, startOffset + 9);
-    startListen();
     llDialog(id, message, ["CLOSE"]+its+[">>"], ch);
 }
 
