@@ -517,7 +517,6 @@ default
         llSetText("",<1,1,1>, 1.);
         if (llSubStringIndex(llGetObjectName(), "Update")>=0 || llSubStringIndex(llGetObjectName(), "Rezz")>=0)
         {
-            llSay(0, "Sleeping");
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
             return;
         }
@@ -869,7 +868,6 @@ default
             osMessageObject(llList2Key(tk, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
             if (delSelf)
             {
-                llSay(0, "Removing myself for update.");
                 llRemoveInventory(me);
             }
             llSleep(10.0);

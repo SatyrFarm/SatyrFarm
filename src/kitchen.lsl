@@ -619,7 +619,6 @@ default
             osMessageObject(llList2Key(tk, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
             if (delSelf)
             {
-                llSay(0, "Removing myself for update.");
                 llRemoveInventory(me);
             }
             llSleep(10.0);
@@ -719,13 +718,11 @@ default
  
     state_entry()
     {
-        llSay(0, "Getting ready for you :)");
         llSleep(2.0);
         //for updates
         if (llSubStringIndex(llGetObjectName(), "Update")>=0 || llSubStringIndex(llGetObjectName(), "Rezz")>=0)
         {
             string me = llGetScriptName();
-            llOwnerSay("Script " + me + " went to sleep inside Updater.");
             llSetScriptState(me, FALSE);
             llSleep(0.5);
             return;
@@ -736,7 +733,6 @@ default
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
         getRecipeNames();
         loadConfig();
-        llSay(0, "Ready");
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
     } 
 

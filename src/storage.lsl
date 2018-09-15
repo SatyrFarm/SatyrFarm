@@ -410,7 +410,6 @@ default
             osMessageObject(llList2Key(cmd, 2), "DO-UPDATE-REPLY|"+PASSWORD+"|"+(string)llGetKey()+"|"+(string)pin+"|"+sRemoveItems);
             if (delSelf)
             {
-                llSay(0, "Removing myself for update.");
                 llRemoveInventory(me);
             }
             llSleep(10.0);
@@ -499,14 +498,12 @@ default
  
     state_entry()
     {
-        llSay(0, "Getting ready for you :)");
         //give it some time to load inventory items
         llSleep(2.0);
         //for updates
         if (osRegexIsMatch(llGetObjectName(), "(Update|Rezz)+"))
         {
             string me = llGetScriptName();
-            llOwnerSay("Script " + me + " went to sleep inside Updater.");
             llSetScriptState(me, FALSE);
             llSleep(0.5);
             return;
@@ -517,7 +514,6 @@ default
         lastTs = llGetUnixTime();
         loadConfig();
         llMessageLinked(LINK_SET, 99, "RESET", NULL_KEY);
-        llSay(0, "Ready");
         llSetTimerEvent(1);
     } 
 
