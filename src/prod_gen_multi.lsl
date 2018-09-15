@@ -230,11 +230,6 @@ default
 
     dataserver(key id, string msg)
     {
-        if (!llSameGroup(id))
-        {
-            return;
-        }
-
         list tk = llParseStringKeepNulls(msg, ["|"], []);
         string cmd = llList2String(tk, 0);
         if (cmd == "DIE")
