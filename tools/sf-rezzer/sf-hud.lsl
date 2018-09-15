@@ -18,7 +18,6 @@ list gl_sellprices;
 list gl_ident;
 list gl_prices;
 //Variables for Updater
-integer VERSION;
 string PASSWORD;
 list ADDITIONS = [];
 list ITEMIGNORE = [];
@@ -150,12 +149,11 @@ default
     state_entry()
     {
         //config notecards
-        if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("version") == INVENTORY_NONE || llGetInventoryType("sellprices") == INVENTORY_NONE)
+        if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("sellprices") == INVENTORY_NONE)
         {
             llSay(0, "No verion or password or sellprices notecard in inventory! Can't work like that.");
         }
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-        VERSION = (integer)llStringTrim(osGetNotecard("version"), STRING_TRIM);
         gl_sellprices = llParseString2List(osGetNotecard("sellprices"), ["\n", "="], [""]);
         if (llGetInventoryType("additions") != INVENTORY_NONE)
         {
@@ -397,7 +395,7 @@ state rezz
 {
     state_entry()
     {
-        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.128, 0.0>, <0.125, 0.4, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 0.0>, 1.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <1.0, 1.0, 0.0>, 1.0]);
         llSay(0, "Rezzing " + gs_selectedItem);
         llRezObject(gs_selectedItem, llGetPos() + <2.5,0.0,1.0>*llGetRot(), <0.0,0.0,0.0>, <0.0,0.0,0.0,1.0>, 0);
     }
@@ -432,16 +430,13 @@ state rezz
         if (command == "VERSION-REPLY")
         {
             integer iVersion = llList2Integer(cmd,3);
-            if(iVersion != VERSION)
+            string repstr = itemsToReplace(llList2String(cmd,4), llList2Key(cmd, 2));
+            if (repstr != "")
             {
-                string repstr = itemsToReplace(llList2String(cmd,4), llList2Key(cmd, 2));
-                if (repstr != "")
-                {
-                    llSay(0, "Preparing rezzed item.");
-                    osMessageObject(llList2Key(cmd, 2), "DO-UPDATE|"+PASSWORD+"|"+(string)llGetKey()+"|"+repstr);
-                    llSetTimerEvent(20.0);
-                    return;
-                }
+                llSay(0, "Preparing rezzed item.");
+                osMessageObject(llList2Key(cmd, 2), "DO-UPDATE|"+PASSWORD+"|"+(string)llGetKey()+"|"+repstr);
+                llSetTimerEvent(20.0);
+                return;
             }
             state ready;
         }
