@@ -570,14 +570,19 @@ default
         llSleep(.5);
         if (llKey2Name(id) == llGetObjectName()) //Child
         {
-            string genes = (string)geneA+"|"+(string)fatherGene; 
-            if (llFrand(1.)<0.5) genes =  (string)geneB+"|"+(string)fatherGene;
-            string babyParams = genes+"|Baby "+fatherName+" y "+name;
-            llGiveInventory(id, "sfp");
-            llRemoteLoadScriptPin(id, "animal", 999, TRUE, 1);
-            llSleep(2);
-            llGiveInventory(id, "SF "+AN_NAME);
-            osMessageObject(id,   "INIT|"+PASSWORD+"|"+babyParams);
+            string rep;
+            string me = llGetScriptName();
+            integer len = llGetInventoryNumber(INVENTORY_ALL);
+            while (len--)
+            {
+                string item = llGetInventoryName(INVENTORY_ALL, len);
+                if (item != me)
+                {
+                    rep += item + ",";
+                }
+            }
+            rep += me;
+            osMessageObject(llList2Key(cmd, 2), "DO-UPDATE|"+PASSWORD+"|"+(string)llGetKey()+"|"+rep);
         }
         else
         {
@@ -866,6 +871,36 @@ default
             }
             llSleep(10.0);
             llResetScript();
+        }
+        else if (cmd == "DO-UPDATE-REPLY")
+        {
+            llSleep(1.0);
+            key kobject = llList2Key(tk, 2);
+            integer ipin = llList2Integer(tk, 3);
+            list litems = llParseString2List(llList2String(tk, 4), [","], []);
+            integer d = llGetListLength(litems);
+            integer c;
+            for (c = 0; c < d; c++)
+            {
+                string sitem = llList2String(litems, c);
+                if (llListFindList(ITEMIGNORE, [sitem]) == -1)
+                {
+                    integer type = llGetInventoryType(sitem);
+                    if (type == INVENTORY_SCRIPT)
+                    {
+                        llRemoteLoadScriptPin(kobject, sitem, ipin, TRUE, 0);
+                    }
+                    else if (type != INVENTORY_NONE)
+                    {
+                        llGiveInventory(kobject, sitem);
+                    }
+                }
+            }
+            llSleep(2.0);
+            string genes = (string)geneA+"|"+(string)fatherGene; 
+            if (llFrand(1.)<0.5) genes =  (string)geneB+"|"+(string)fatherGene;
+            string babyParams = genes+"|Baby "+fatherName+" y "+name;
+            osMessageObject(id,   "INIT|"+PASSWORD+"|"+babyParams);
         }
         else if (cmd =="SETCONFIG")
         {
