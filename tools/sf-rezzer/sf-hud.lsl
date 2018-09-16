@@ -284,6 +284,7 @@ state ready
             if (llListFindList(gl_selitems, [obj]) == -1 && (have_percent == 100 || have_percent == 0))
             {
                 ready_obj = llDetectedKey(c);
+                gl_selitems += [obj];
             }
         }
         //--
