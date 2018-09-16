@@ -35,6 +35,7 @@ list CHILD_PRIMS = [];        //children only
 list colorable = []; 
 
 string PASSWORD="*";
+integer doReset;
 integer deathFlags=0;
 
 integer chan(key u)
@@ -173,17 +174,23 @@ loadConfig()
             setConfig(llList2String(lines,i));
 }
 
-loadStateByDesc()
+loadStateByDesc(integer checkForReset)
 {
     //state by description
     list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
     if (llList2String(desc, 0) == "A")
     {
-        if ((llList2String(desc, 5) != (string)chan(llGetKey())) ) //Also resets eggs!
+        if ((llList2String(desc, 5) != (string)chan(llGetKey())) && doReset && checkForReset) //Also resets eggs!
         {
-            llSetObjectDesc("");
-            llSleep(1.0);
-            //llResetScript();
+            if (doReset == 1)
+            {
+                llSetObjectDesc("");
+                llSleep(1.0);
+            }
+            else
+            {
+                doReset = -1;
+            }
         }
         else
         {
@@ -363,7 +370,6 @@ integer isMoving=0;
 move()
 {
     if (epoch ==0) return;
-    integer i;
     integer rnd = (integer)llFrand(5);
     if (rnd==0)    setPose(rest); 
     else if (rnd==1)    setPose(down); 
@@ -527,7 +533,8 @@ default
         walkl = getNC("walkl");
         walkr = getNC("walkr");
         link_scales = getNC("scales");
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = osGetNotecardLine("sfp", 0);
+        doReset = (integer)osGetNotecardLine("sfp", 1);
         
         loadConfig();
         name = AN_NAME;
@@ -547,7 +554,7 @@ default
         lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         
         //Load state after defaults
-        loadStateByDesc();
+        loadStateByDesc(TRUE);
         setGenes();
         setPose(rest);
         showAlphaSet(epoch);
@@ -559,12 +566,7 @@ default
     
     on_rez(integer n)
     {
-        if (llGetObjectDesc() == "")
-        {
-            llResetScript();
-        }
-        listener = -1;
-        lastTs = llGetUnixTime();
+        llResetScript();
     }
     
     object_rez(key id)
@@ -609,6 +611,12 @@ default
     
     timer()
     {
+        if (doReset == -1)
+        {
+            llSetTimerEvent(100);
+            return;
+        }
+
         if (isMoving>0)
         {
             if (isMoving==1)
@@ -819,8 +827,17 @@ default
         if (llList2String(tk,1) != PASSWORD)  { llSay(0, "Password mismatch"); return;  } 
         
         string cmd = llList2String(tk,0);
+        if (cmd == "INIT")
+        {
+            doReset = 2;
+            loadStateByDesc(FALSE);
+            setGenes();
+            setPose(rest);
+            showAlphaSet(epoch);
+            llSetTimerEvent(1.0);
+        }
         //for updates
-        if (cmd == "VERSION-CHECK")
+        else if (cmd == "VERSION-CHECK")
         {
             string answer = "VERSION-REPLY|" + PASSWORD + "|";
             answer += (string)llGetKey() + "|" + (string)VERSION + "|";
@@ -898,7 +915,7 @@ default
             string genes = (string)geneA+"|"+(string)fatherGene; 
             if (llFrand(1.)<0.5) genes =  (string)geneB+"|"+(string)fatherGene;
             string babyParams = genes+"|Baby "+fatherName+" y "+name;
-            osMessageObject(kobject,   "INIT|"+PASSWORD+"|"+babyParams);
+            osMessageObject(kobject,   "INITG|"+PASSWORD+"|"+babyParams);
         }
         else if (cmd =="SETCONFIG")
         {
@@ -984,9 +1001,9 @@ default
                 refresh();
             }
         }
-        else if (cmd == "INIT")
+        else if (cmd == "INITG")
         {
-            // "INIT|REZ|SF Goat| <0,2,0>|A|B|Goat "+fatherName+" y "+name );
+            // "INITG|REZ|SF Goat| <0,2,0>|A|B|Goat "+fatherName+" y "+name );
             name = llList2String(tk, 4);
             geneA =  llList2Integer(tk, 2);
             geneB = llList2Integer(tk, 3);
@@ -1071,42 +1088,48 @@ default
 
     touch_start(integer n)
     {
-        if (epoch ==0)
+        if (!llSameGroup(llDetectedKey(0)) && !osIsNpc(llDetectedKey(0)))
+        {
+            llSay(0, "Hello, we are not in the same group.");
+            return;
+        }
+        if (doReset == -1)
+        {
+            llSay(0, "I am locked, did you try to copy me? No cheating plz!\nYou can still unlock me, without losing any progress, just ask some trustworthy farm people :)");
+            return;
+        }
+        if (epoch == 0)
+        {
             llSay(0, "Hello! I 'm just an egg");
-        else if (llSameGroup(llDetectedKey(0) ) || osIsNpc(llDetectedKey(0)) )
-        {
-         
-           list opts = [];
-           opts += "Follow Me";
-           opts += "Stop";
-           opts += "CLOSE";
-           opts +=  "Options";
-           
-           integer ts = llGetUnixTime();
-           if (sex == "Female" && epoch == 2)
-           {
-               if ( (LAYS_EGG==1 && ts> lastEggTs+MATE_INTERVAL) || (LAYS_EGG==0&& pregnantTs ==0) )
-                   opts +=  "Mate";
-           }
-           if (epoch == 2)
-           {   
-               if (sex == "Female" && AN_HASMILK)
-               {
-                    if (  ts - milkTs > MILKTIME) 
-                    {
-                        if (LAYS_EGG==1) opts += "Get Eggs";
-                        else if (givenBirth>0) opts += "Milk";
-                    }
-               }
-               if ((ts - woolTs > WOOLTIME) && AN_HASWOOL >0) opts += "Wool";
-               if ((ts - manureTs > MANURETIME) && AN_HASMANURE >0) opts += "Get Manure";
-           }
-           startListen();
-           llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()) );
+            return;
         }
-        else
+     
+        list opts = [];
+        opts += "Follow Me";
+        opts += "Stop";
+        opts += "CLOSE";
+        opts +=  "Options";
+       
+        integer ts = llGetUnixTime();
+        if (sex == "Female" && epoch == 2)
         {
-            say(0, "Hello! We are not in the same group");
+            if ( (LAYS_EGG==1 && ts> lastEggTs+MATE_INTERVAL) || (LAYS_EGG==0&& pregnantTs ==0) )
+                opts +=  "Mate";
         }
+        if (epoch == 2)
+        {   
+            if (sex == "Female" && AN_HASMILK)
+            {
+                 if (  ts - milkTs > MILKTIME) 
+                 {
+                     if (LAYS_EGG==1) opts += "Get Eggs";
+                     else if (givenBirth>0) opts += "Milk";
+                 }
+            }
+            if ((ts - woolTs > WOOLTIME) && AN_HASWOOL >0) opts += "Wool";
+            if ((ts - manureTs > MANURETIME) && AN_HASMANURE >0) opts += "Get Manure";
+        }
+        startListen();
+        llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()) );
     }
 }
