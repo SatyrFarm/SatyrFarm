@@ -384,6 +384,7 @@ default
             return;
         }
 
+        list opts = [];
         if (status == "Ripe")  opts += "Harvest";
         else if (status == "Dead" || (status == "New" && AUTOREPLANT))  opts += "Cleanup";
         else if (status == "Empty")  opts += "Plant";
