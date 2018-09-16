@@ -154,9 +154,9 @@ default
         //config notecards
         if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("sellprices") == INVENTORY_NONE)
         {
-            llSay(0, "No verion or password or sellprices notecard in inventory! Can't work like that.");
+            llSay(0, "No version or password or sellprices notecard in inventory! Can't work like that.");
         }
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = osGetNotecardLine("sfp", 0);
         gl_sellprices = llParseString2List(osGetNotecard("sellprices"), ["\n", "="], [""]);
         if (llGetInventoryType("additions") != INVENTORY_NONE)
         {
@@ -493,6 +493,8 @@ state rezz
                 }
             }
             llSay(0, "Prepared: \n    " + llList2String(cmd,4));
+            llSleep(3.5);
+            osMessageObject(kobject, "INIT|" + PASSWORD);
             state ready;
         }
     }

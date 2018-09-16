@@ -32,12 +32,12 @@ default
     {
         llSetText("Click to unlock items!", <1.0,0.0,0.0>, 1.0);
         //config notecards
-        if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("upgradeables") == INVENTORY_NONE)
+        if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("unlockables") == INVENTORY_NONE)
         {
-            llSay(0, "No verion or upgradeables notecard in inventory! Can't work like that.");
+            llSay(0, "No version or unlockables notecard in inventory! Can't work like that.");
         }
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-        UNLOCKABLES = llParseString2List(osGetNotecard("upgradeables"), ["\n"], []);
+        PASSWORD = osGetNotecardLine("sfp", 0);
+        UNLOCKABLES = llParseString2List(osGetNotecard("unlockables"), ["\n"], []);
     }
 
     touch_start(integer n)
@@ -80,6 +80,7 @@ state unlock
             {
                 llSay(0, "\nSend INIT to " + llKey2Name(det) + "\n" + (string)det);
                 osMessageObject(det, "INIT|" + PASSWORD);
+                counter++;
             }
         }
         llSetTimerEvent(3.0);
