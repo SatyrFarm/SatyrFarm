@@ -25,6 +25,8 @@ list myItems;
 //Sell Menu
 integer listener = -1;
 integer startOffset = 0;
+key gk_user;
+list gl_buttons = [];
 list gl_selitems = [];
 string gs_lookingFor;
 
@@ -40,16 +42,15 @@ updateBalance()
     llSetObjectDesc((string)gi_balance);
 }
 
-multiPageMenu(key id)
+multiPageSellMenu()
 {
-    list buttons = llList2ListStrided(gl_sellprices, 0, -1, 2);
     integer ch = chan(llGetKey());
-    integer l = llGetListLength(buttons);
+    integer l = llGetListLength(gl_buttons);
     if (startOffset >= l)
     {
         startOffset = 0;
     }
-    list its = llList2List(buttons, startOffset, startOffset + 9);
+    list its = llList2List(gl_buttons, startOffset, startOffset + 9);
     if (l >= 12)
     {
         l = llGetListLength(its);
@@ -58,15 +59,16 @@ multiPageMenu(key id)
     string message = "Select item to sell:\n";
     while (l--)
     {
-        integer pos = (startOffset + l)*2;
-        message += llList2String(gl_sellprices, pos) + ": " + llList2String(gl_sellprices, pos + 1) + "\n";
+        string name = llList2String(its, l);
+        integer pos = llListFindList(gl_sellprices, [name]) + 1;
+        message += name + ": " + llList2String(gl_sellprices, pos) + "\n";
     }
     if (listener == -1)
     {
         listener = llListen(chan(llGetKey()), "", "", "");
     }
     llSetTimerEvent(300);
-    llDialog(id, message, ["CLOSE"] + its, ch);
+    llDialog(gk_user, message, ["CLOSE"] + its, ch);
 }
 
 drawButtons()
@@ -129,6 +131,7 @@ string itemsToReplace(string sItems, key kObject)
     {
         lReplace += llParseString2List(llList2String(ADDITIONS, found_add), [","], []);
     }
+    lReplace += ["sfp"];
     list lItems = llParseString2List(sItems, [","], []);
     integer i = llGetListLength(lItems);
     integer c;
@@ -229,23 +232,46 @@ state ready
         if (m == ">>")
         {
             startOffset += 10;
-            multiPageMenu(id);
+            multiPageSellMenu();
         }
         else if (m == "CLOSE")
         {
             llListenRemove(listener);
             gl_selitems = [];
+            gl_buttons = [];
             listener = -1;
         }
-        else if (llListFindList(gl_sellprices, [m]) != -1)
+        else if (llListFindList(gl_buttons, [m]) != -1)
         {
             gs_lookingFor = m;
             llSensor("SF " + m, "", SCRIPTED, 10, PI);
+            multiPageSellMenu();
         }
     }
 
     sensor(integer n)
     {
+        if (gs_lookingFor == "all")
+        {
+            gl_buttons = [];
+            while (n--)
+            {
+                string name = llGetSubString(llKey2Name(llDetectedKey(n)), 3, -1);
+                if (llListFindList(gl_sellprices, [name]) != -1 && llListFindList(gl_buttons, [name]) == -1)
+                {
+                    gl_buttons += [name];
+                }
+            }
+            if (gl_buttons == [])
+            {
+                llSay(0, "No sellable items found nearby");
+            }
+            else
+            {
+                multiPageSellMenu();
+            }
+            return;
+        }
         //get first product that isn't already selected and has enough percentage
         integer c;
         key ready_obj = NULL_KEY;
@@ -302,6 +328,7 @@ state ready
             llListenRemove(listener);
             listener = -1;
             gl_selitems = [];
+            gl_buttons = [];
         }
     }
 
@@ -334,7 +361,9 @@ state ready
         }
         else if (link == gi_linkSell)
         {
-            multiPageMenu(llDetectedKey(0));
+            gk_user = llDetectedKey(0);
+            gs_lookingFor = "all";
+            llSensor("", "", SCRIPTED, 10, PI);
         }
         else if (link >= gi_buttonOffset && link < gi_buttonOffset + 8)
         {
@@ -429,7 +458,6 @@ state rezz
 
         if (command == "VERSION-REPLY")
         {
-            integer iVersion = llList2Integer(cmd,3);
             string repstr = itemsToReplace(llList2String(cmd,4), llList2Key(cmd, 2));
             if (repstr != "")
             {
