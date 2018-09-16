@@ -14,6 +14,7 @@ MUST_SIT=1
 integer VERSION = 1;
 
 string PASSWORD="*";
+integer doReset;
 //for listener and menus
 integer listener=-1;
 integer listenTs;
@@ -92,6 +93,11 @@ loadConfig()
             else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
             else if (tkey == "MUST_SIT") mustSit = (integer)tval;
         }
+    }
+
+    if (llGetObjectDesc() != chan(llGetKey()) && doReset == 2)
+    {
+        doReset = -1;
     }
 }
 
@@ -570,8 +576,13 @@ default
             return;
         } 
         string cmd = llList2Key(tk,0);
+        if (cmd == "INIT")
+        {
+            llSetObjectDesc((string)chan(llGetKey()));
+            doReset = 2;
+        }
         //for updates
-        if (cmd == "VERSION-CHECK")
+        else if (cmd == "VERSION-CHECK")
         {
             string answer = "VERSION-REPLY|" + PASSWORD + "|";
             answer += (string)llGetKey() + "|" + (string)VERSION + "|";
@@ -649,6 +660,11 @@ default
         if (!(llSameGroup(llDetectedKey(0))  || osIsNpc(llDetectedKey(0))) )
         {
             llSay(0, "We are not in the same group!");
+            return;
+        }
+        if (doReset == -1)
+        {
+            llSay(0, "I am locked, did you try to copy me? No cheating plz!\nYou can still unlock me, without losing any progress, just ask some trustworthy farm people :)")
             return;
         }
         
@@ -730,7 +746,8 @@ default
         llSetRemoteScriptAccessPin(0);
         //
         refresh();
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = osGetNotecardLine("sfp", 0);
+        doReset = (integer)osGetNotecardLine("sfp", 1);
         getRecipeNames();
         loadConfig();
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);

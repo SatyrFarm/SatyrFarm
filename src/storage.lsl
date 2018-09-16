@@ -14,6 +14,7 @@ SENSOR_DISTANCE=10
 integer VERSION=1;
 
 string PASSWORD="*";
+integer doReset;
 integer chan(key u)
 {
     return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
@@ -37,7 +38,6 @@ vector rezzPosition = <0,1.5,2>;
 integer initialLevel = 5;
 integer dropTime = 86400;
 integer singleLevel = 10;
-integer doReset = 1;
 integer SENSOR_DISTANCE=10;
 //temp 
 string lookingFor;
@@ -78,11 +78,12 @@ multiPageMenu(key id, string message, list buttons)
     llDialog(id, message, ["CLOSE"]+its+[">>"], ch);
 }
 
-loadConfig()
+loadConfig(integer checkForReset)
 { 
     integer i;
     //sfp Notecard
-    PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+    PASSWORD = osGetNotecardLine("sfp", 0);
+    doReset = (integer)osGetNotecardLine("sfp", 1);
     //config Notecard
     if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
@@ -99,16 +100,15 @@ loadConfig()
                 else if (tkey == "INITIAL_LEVEL") initialLevel = (integer)tval;
                 else if (tkey == "DROP_TIME") dropTime = (integer)tval * 86400;
                 else if (tkey == "ONE_PART") singleLevel = (integer)tval;
-                else if (tkey == "RESET_ON_REZ") doReset = (integer)tval;
                 else if (tkey == "SENSOR_DISTANCE") SENSOR_DISTANCE = (integer)tval;   // How far to look for items
             }
         }
     }
     //storagenc Notecard
-    if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
+    list storageNC = llParseString2List(llStringTrim(osGetNotecard("storagenc"), STRING_TRIM), [";"], []);
+    if ((llGetListLength(storageNC) < 3 || (llList2Key(storageNC, 0) != ownkey && llList2String(storageNC, 0) != "null")) && doReset && checkForReset)
     {
-        list storageNC = llParseString2List(llStringTrim(osGetNotecard("storagenc"), STRING_TRIM), [";"], []);
-        if ((llGetListLength(storageNC) < 3 || (llList2Key(storageNC, 0) != ownkey && llList2String(storageNC, 0) != "null")) && doReset)
+        if (doReset == 1)
         {
             llSay(0, "Reset");
             saveNC = 2;
@@ -124,9 +124,13 @@ loadConfig()
         }
         else
         {
-            products = llParseString2List(llList2String(storageNC,1), [","], []);
-            levels = llParseString2List(llList2String(storageNC,2), [","], []);
+            doReset = -1;
         }
+    }
+    else
+    {
+        products = llParseString2List(llList2String(storageNC,1), [","], []);
+        levels = llParseString2List(llList2String(storageNC,2), [","], []);
     }
     //objects in inventory
     for (i=0; i < llGetInventoryNumber(INVENTORY_OBJECT); i++)
@@ -343,23 +347,12 @@ default
         if (llList2String(cmd,1) != PASSWORD ) { llSay(0, "Bad password"); return; } 
         string item = llList2String(cmd,0);
         
-        if (item == "GIVE")
+        if (item == "INIT")
         {
-            string productName = llList2String(cmd,2);
-            key u = llList2Key(cmd,3);
-          //  if (!llSameGroup((u))) return;
-            integer idx = llListFindList(products, [productName]);
-            if (idx>=0 && llList2Float(levels, idx) > singleLevel )
-            {
-                integer l = llList2Integer(levels,idx);
-                l-= singleLevel; 
-                if (l <0) l =0;
-                levels = [] + llListReplaceList(levels, [l], idx, idx);;
-                osMessageObject(u, "HAVE|"+PASSWORD+"|"+productName+"|"+(string)llGetKey());
-                saveConfig();
-                refresh();
-            }
-            else llSay(0, "Not enough "+productName);
+            doReset = 2;
+            loadConfig(FALSE);
+            saveConfig();
+            llSetTimerEvent(1);
         }
         //for updates
         else if (item == "VERSION-CHECK")
@@ -416,6 +409,28 @@ default
             llResetScript();
         }
         //
+        else if (doReset == -1)
+        {
+            return;
+        }
+        else if (item == "GIVE")
+        {
+            string productName = llList2String(cmd,2);
+            key u = llList2Key(cmd,3);
+          //  if (!llSameGroup((u))) return;
+            integer idx = llListFindList(products, [productName]);
+            if (idx>=0 && llList2Float(levels, idx) > singleLevel )
+            {
+                integer l = llList2Integer(levels,idx);
+                l-= singleLevel; 
+                if (l <0) l =0;
+                levels = [] + llListReplaceList(levels, [l], idx, idx);;
+                osMessageObject(u, "HAVE|"+PASSWORD+"|"+productName+"|"+(string)llGetKey());
+                saveConfig();
+                refresh();
+            }
+            else llSay(0, "Not enough "+productName);
+        }
         else
         {
             // Add something to the jars
@@ -455,6 +470,12 @@ default
         {
             return;
         }
+        if (doReset == -1)
+        {
+            llSay(0, "I am locked, did you try to copy me? No cheating plz!\nYou can still unlock me, without losing any progress, just ask some trustworthy farm people :)")
+            return;
+        }
+
         status = "";
         list opts = ["CLOSE", "Add Product", "Get Product", "Check"] + customOptions;
         startListen();
