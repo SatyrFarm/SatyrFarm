@@ -76,26 +76,26 @@ checkListen(integer force)
 
 loadConfig()
 {
-    if (llGetInventoryType("config") != INVENTORY_NOTECARD) return;
-
-    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
-    integer i;
-    for (i=0; i < llGetListLength(lines); i++)
+    if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
-        string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
-        if (llGetSubString(line, 0, 0) != "#")
+        list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+        integer i;
+        for (i=0; i < llGetListLength(lines); i++)
         {
-            list tok = llParseStringKeepNulls(line, ["="], []);
-            string tkey = llList2String(tok, 0);
-            string tval = llList2String(tok, 1);
-            if (tkey == "SENSOR_DISTANCE") default_sensorRadius = (integer)tval;
-            else if (tkey == "REZ_POSITION") default_rezzPosition = (vector)tval;
-            else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
-            else if (tkey == "MUST_SIT") mustSit = (integer)tval;
+            string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
+            if (llGetSubString(line, 0, 0) != "#")
+            {
+                list tok = llParseStringKeepNulls(line, ["="], []);
+                string tkey = llList2String(tok, 0);
+                string tval = llList2String(tok, 1);
+                if (tkey == "SENSOR_DISTANCE") default_sensorRadius = (integer)tval;
+                else if (tkey == "REZ_POSITION") default_rezzPosition = (vector)tval;
+                else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
+                else if (tkey == "MUST_SIT") mustSit = (integer)tval;
+            }
         }
     }
-
-    if (llGetObjectDesc() != chan(llGetKey()) && doReset == 2)
+    if ((integer)llGetObjectDesc() != chan(llGetKey()) && doReset == 2)
     {
         doReset = -1;
     }
@@ -748,8 +748,8 @@ default
         refresh();
         PASSWORD = osGetNotecardLine("sfp", 0);
         doReset = (integer)osGetNotecardLine("sfp", 1);
-        getRecipeNames();
         loadConfig();
+        getRecipeNames();
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
     } 
 
