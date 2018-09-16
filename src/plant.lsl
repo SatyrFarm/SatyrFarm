@@ -380,7 +380,7 @@ default
         }
         if (doReset == -1)
         {
-            llSay(0, "I am locked, did you try to copy me? No cheating plz!\nYou can still unlock me, without losing any progress, just ask some trustworthy farm people :)")
+            llSay(0, "I am locked, did you try to copy me? No cheating plz!\nYou can still unlock me, without losing any progress, just ask some trustworthy farm people :)");
             return;
         }
 
