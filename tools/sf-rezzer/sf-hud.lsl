@@ -131,7 +131,7 @@ string itemsToReplace(string sItems, key kObject)
     {
         lReplace += llParseString2List(llList2String(ADDITIONS, found_add), [","], []);
     }
-    lReplace += ["sfp"];
+    lReplace += ["sfp", "mover"];
     list lItems = llParseString2List(sItems, [","], []);
     integer i = llGetListLength(lItems);
     integer c;
@@ -494,7 +494,7 @@ state rezz
                 }
             }
             llSay(0, "Prepared: \n    " + llList2String(cmd,4));
-            llSleep(3.5);
+            llSleep(2.5);
             osMessageObject(kobject, "INIT|" + PASSWORD);
             state ready;
         }
