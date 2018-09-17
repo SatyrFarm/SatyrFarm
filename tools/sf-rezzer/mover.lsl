@@ -6,6 +6,8 @@ Provides interface to move item to position, then deletes itself and starts othe
 key followUser = NULL_KEY;
 float uHeight;
 integer listener;
+float scale = 0.1;
+integer phantom;
 string MESSAGE;
 list scripts = [];
 
@@ -26,6 +28,7 @@ default
             llSleep(0.5);
             return;
         }
+        phantom = llGetStatus(STATUS_PHANTOM);
         //stop all other scripts
         integer len = llGetInventoryNumber(INVENTORY_SCRIPT);
         while (len--)
@@ -33,6 +36,7 @@ default
             string name = llGetInventoryName(INVENTORY_SCRIPT, len);
             if (name != me)
             {
+                llResetOtherScript(name);
                 llSetScriptState(name, FALSE);
                 scripts += [name];
             }
@@ -97,6 +101,26 @@ default
             llSleep(.2);
             llSetPos( llGetPos()- <0,0, uHeight-.2> );
         }
+        else if (m == "↑")
+        {
+            llSetPos(llGetPos() + <0,0,1>*scale);
+        }
+        else if (m == "→")
+        {
+            llSetPos(llGetPos() + <-1,0,0>*scale);
+        }
+        else if (m == "←")
+        {
+            llSetPos(llGetPos() + <1,0,0>*scale);
+        }
+        else if (m == "↓")
+        {
+            llSetPos(llGetPos() + <0,0,-1>*scale);
+        }
+        else if (m == "0.01" || m == "1.0" || m == "0.1" || m == "0.001")
+        {
+            scale = (float)m;
+        }
         else if (m == "DONE")
         {
             llSetText("", ZERO_VECTOR, 0.0);
@@ -112,6 +136,7 @@ default
             }
             llSleep(2.5);
             osMessageObject(llGetKey(), MESSAGE);
+            llSetStatus(STATUS_PHANTOM, phantom);
             llRemoveInventory(me);
         }
         llListenRemove(listener);
@@ -130,11 +155,16 @@ default
         if (llSameGroup(llDetectedKey(0))|| osIsNpc(llDetectedKey(0)))
         {
             listener = llListen(chan(llGetKey()), "", "", "");
-            list btns = ["CLOSE", "Follow", "DONE"];
+            list btns = ["CLOSE", " "];
             if (followUser != NULL_KEY)
             {
-                btns = ["CLOSE", "Stop Follow", "DONE"];
+                btns += ["Stop Follow"];
             }
+            else
+            {
+                btns += ["Follow"];
+            }
+            btns += [" ", "↓", " ", "←", "DONE", "→", "RotL", "↑", "RotL"];
             llDialog(llDetectedKey(0), "Move me to my final position, then press DONE", btns, chan(llGetKey()));
         }
     }
@@ -150,6 +180,7 @@ default
                 string name = llGetInventoryName(INVENTORY_SCRIPT, len);
                 if (name != me && llListFindList(scripts, [name]) == -1)
                 {
+                    llResetOtherScript(name);
                     llSetScriptState(name, FALSE);
                     scripts += [name];
                 }
