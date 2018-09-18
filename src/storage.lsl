@@ -352,6 +352,7 @@ default
             doReset = 2;
             loadConfig(FALSE);
             saveConfig();
+            llSetRemoteScriptAccessPin(0);
             llSetTimerEvent(1);
         }
         //for updates
@@ -529,7 +530,6 @@ default
             llSleep(0.5);
             return;
         }
-        llSetRemoteScriptAccessPin(0);
         //
         ownkey = llGetKey();
         lastTs = llGetUnixTime();

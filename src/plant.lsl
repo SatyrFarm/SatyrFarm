@@ -363,7 +363,6 @@ default
             llSleep(0.5);
             return;
         }
-        llSetRemoteScriptAccessPin(0);
         //
         status = "Empty";
         loadConfig(TRUE);
@@ -487,6 +486,7 @@ default
         {
             doReset = 2;
             loadConfig(FALSE);
+            llSetRemoteScriptAccessPin(0);
             refresh();
         }
         else if (command == "WATER")

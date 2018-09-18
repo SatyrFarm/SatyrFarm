@@ -526,7 +526,6 @@ default
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
             return;
         }
-        llSetRemoteScriptAccessPin(0);
         rest =  getNC("rest");
         down = getNC("down");
         eat = getNC("eat");
@@ -834,6 +833,7 @@ default
             setGenes();
             setPose(rest);
             showAlphaSet(epoch);
+            llSetRemoteScriptAccessPin(0);
             llSetTimerEvent(1.0);
         }
         //for updates
