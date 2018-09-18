@@ -29,6 +29,7 @@ default
             return;
         }
         phantom = llGetStatus(STATUS_PHANTOM);
+        llSetStatus(STATUS_PHANTOM, 1);
         //stop all other scripts
         integer len = llGetInventoryNumber(INVENTORY_SCRIPT);
         while (len--)
