@@ -111,7 +111,7 @@ float water=4.;
 
 string status = "OK";
 
-string sex;
+integer sex;
 integer epoch = 0; // 0 = Egg, 1= Baby, 2 = Adult
 integer left;
 key followUser=NULL_KEY;
@@ -195,13 +195,10 @@ loadStateByDesc(integer checkForReset)
         else
         {
             //PRODUCT_NAME = llList2String(desc, 1);
-
-            if (llList2Integer(desc,1) == 1) sex = "Female";
-            else sex = "Male";
-            
+            sex = llList2Integer(desc,1);
             water = llList2Integer(desc, 2);
             food  = llList2Integer(desc, 3);
-            epoch = 1; // Assume child         
+            epoch = 0; // Assume egg 
             createdTs = llList2Integer(desc, 4);
             geneA = llList2Integer(desc, 6);
             geneB = llList2Integer(desc, 7);
@@ -301,6 +298,7 @@ setAlphaByName(string namea, float opacity)
 
 showAlphaSet(integer newEpoch)
 {
+    epoch = newEpoch;
     if (newEpoch == 0)
     {
         llSetLinkPrimitiveParamsFast(LINK_ALL_CHILDREN, [PRIM_COLOR, ALL_SIDES, <1,1,1>, 0.]); // Hide all
@@ -331,7 +329,7 @@ showAlphaSet(integer newEpoch)
             setAlphaByName("adult_random_prim", 1.);
         }
         setAlphaByName("adult_prim", 1.);
-        if (sex == "Female")
+        if (sex)
         {
             setAlpha(ADULT_FEMALE_PRIMS, 1.);
             setAlphaByName("adult_female_prim", 1.);
@@ -356,7 +354,7 @@ setPose(list pose)
         if (scale>CHILD_MAX_SCALE) scale = CHILD_MAX_SCALE; 
         if (scale>1) scale = 1.;
     }
-    else if (sex=="Male") scale= MALE_SCALE;
+    else if (!sex) scale= MALE_SCALE;
     else scale = 1.;
     for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
     {
@@ -388,79 +386,71 @@ refresh()
 {
     integer ts = llGetUnixTime();
     age = (ts-createdTs);
-    if (epoch ==0)
-    {
-        integer pc = llFloor(((float)age / (float)EGG_TIME)*100.);
-        if (pc >99)
-        {
-            epoch = 1; //Egg --> child
-            showAlphaSet(epoch);
-            llSetTimerEvent(2);
-            lastTs = ts;
-            createdTs = ts;
-            return;
-        }
-        llSetText(AN_NAME+" Egg\nIncubating..."+(string)pc+"%\n", <1,1,1>, 1.0);
-        llSetObjectDesc("A;EGG;"+(string)pc);
-        return;
-    }
-    
-    food  -= (ts - lastTs)  *(100./FEEDTIME); 
-    water -= (ts - lastTs) * (100./WATERTIME); // water consumption rate
-
-    if (food < 5 || water < 5)
-    {  
-        status ="WaitFood";
-        llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
-    }
-
     float days = (age/86400.);
+    integer epochcur;
+
+    if (LAYS_EGG)
+    {
+        age -= EGG_TIME;
+    }
+
     string uc = "♂";
-    if (sex == "Female") uc = "♀";
+    if (sex) uc = "♀";
 
-    string str =""+name+" "+uc+"\n";
-    if (epoch ==1 && days  > (lifeTime*CHILDHOOD_RATIO/86400.))
+    if (age < 0)
     {
-        epoch = 2; // Child --> adult
-        FEEDAMOUNT  = 2.*FEEDAMOUNT;
-        WATERAMOUNT = 2.*WATERAMOUNT;
-        showAlphaSet(epoch);
-    }
-
-    if (food < 0 && water <0) say(0, AN_BAAH+", I'm hungry and thirsty!");
-    else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
-    else if (water < 0) say( 0, AN_BAAH+", I'm thirsty!");
-
-    str += ""+(string)((integer)days)+" days old ";
-    if (epoch == 1) str += "(Child)\n";
-    else 
-    {
-        str += "\n";
-        float p = 100.*(ts - milkTs)/MILKTIME;
-        if (p > 100) p = 100;
-
-        if (AN_HASMILK && sex == "Female")
-        {
-            if (LAYS_EGG==1)
-                str += "Eggs: "+(string)((integer)p)+"%\n";
-            else if (givenBirth>0)
-                str += "Milk: "+(string)((integer)p)+"%\n";
-        }
-        
-        p = 100.*(ts - woolTs)/WOOLTIME;
-        if (p > 100) p = 100;
-        if (AN_HASWOOL)
-            str += "Wool: "+(string)((integer)p)+"%\n";
-
-    }
-
-    if (age > lifeTime || food < -20000 || water < -20000)
-    {
-        death(1);
-        return;
+        epochcur = 0;
+        integer pc = llFloor((1 + (float)age / (float)EGG_TIME) * 100.);
+        llSetText(AN_NAME+" Egg "+uc+"\nIncubating..."+(string)pc+"%\n", <1,1,1>, 1.0);
     }
     else
     {
+        food  -= (ts - lastTs)  *(100./FEEDTIME); 
+        water -= (ts - lastTs) * (100./WATERTIME); // water consumption rate
+        if (food < 5 || water < 5)
+        {  
+            status ="WaitFood";
+            llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
+        }
+        if (food < 0 && water <0) say(0, AN_BAAH+", I'm hungry and thirsty!");
+        else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
+        else if (water < 0) say( 0, AN_BAAH+", I'm thirsty!");
+
+        string str =""+name+" "+uc+"\n"+""+(string)((integer)days)+" days old ";
+        if (days  > (lifeTime*CHILDHOOD_RATIO/86400.))
+        {
+            //Adult
+            epochcur = 2;
+            str += "\n";
+            float p = 100.*(ts - milkTs)/MILKTIME;
+            if (p > 100) p = 100;
+
+            if (AN_HASMILK && sex)
+            {
+                if (LAYS_EGG==1)
+                    str += "Eggs: "+(string)((integer)p)+"%\n";
+                else if (givenBirth>0)
+                    str += "Milk: "+(string)((integer)p)+"%\n";
+            }
+            
+            p = 100.*(ts - woolTs)/WOOLTIME;
+            if (p > 100) p = 100;
+            if (AN_HASWOOL)
+                str += "Wool: "+(string)((integer)p)+"%\n";
+        }
+        else
+        {
+            //Child
+            epochcur = 1;
+            str += "(Child)\n";
+        }
+
+        if (age > lifeTime || food < -20000 || water < -20000)
+        {
+            death(1);
+            return;
+        }
+
         if (pregnantTs>0)
         {
             float perc = (float)(ts - pregnantTs)/PREGNANT_TIME;
@@ -504,9 +494,8 @@ refresh()
             llSetText(str , color, 1.0);
     }
 
-    integer scode=0;
-    if (sex == "Female") scode=1;
-    llSetObjectDesc("A;"+(string)scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
+    showAlphaSet(epochcur);
+    llSetObjectDesc("A;"+(string)sex+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
 }
 
 list getNC(string ncname)
@@ -542,21 +531,16 @@ default
         //Set Defaults
         llSetRot(ZERO_ROTATION);
         llSetLinkColor(LINK_ALL_OTHERS, <1, 1,1>, ALL_SIDES);
-        if (llFrand(1.) < 0.5) sex = "Female";
-        else sex = "Male";
+        sex = (integer)llRound(llFrand(1.0));
         geneA = 1+ (integer)llFrand(3);
         geneB = 1+ (integer)llFrand(3);
         lastTs = createdTs = llGetUnixTime()-200;
         initpos = llGetPos();
-        if (LAYS_EGG) epoch =0;
-        else epoch = 1;
         lifeTime = (integer) ( (float)LIFETIME*( 1.+llFrand(.1)) );
         
         //Load state after defaults
         loadStateByDesc(TRUE);
         setGenes();
-        setPose(rest);
-        showAlphaSet(epoch);
         llSetTimerEvent(2);
         integer i;
         for(i = 2; i <= llGetNumberOfPrims(); ++i)
@@ -615,6 +599,14 @@ default
             llSetTimerEvent(100);
             return;
         }
+
+        integer ts = llGetUnixTime();
+        if (ts > lastTs + 100)
+        {
+            refresh();
+            lastTs = ts;
+        }
+        
 
         if (isMoving>0)
         {
@@ -676,13 +668,6 @@ default
             }
         }
         
-        integer ts = llGetUnixTime();
-        if (ts > lastTs + 100)
-        {
-            refresh();
-            lastTs = ts;
-        }
-        
         if (epoch == 0)  llSetTimerEvent(300);
         else
         {
@@ -702,7 +687,7 @@ default
     
     listen(integer c, string n ,key id , string m)
     {
-        if (m == "Mate" && sex == "Female")
+        if (m == "Mate" && sex)
         {
             status = "WaitMate";
             llSensor(llGetObjectName(), "", SCRIPTED, 5, PI);            
@@ -782,7 +767,7 @@ default
         }
         else if (m == "Milk" || m == "Get Eggs")
         {
-            if (sex == "Female" && AN_HASMILK)
+            if (sex && AN_HASMILK)
             {
                 say(0, "Here is your "+MILK_OBJECT);
                 llRezObject(MILK_OBJECT, llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
@@ -831,8 +816,6 @@ default
             doReset = 2;
             loadStateByDesc(FALSE);
             setGenes();
-            setPose(rest);
-            showAlphaSet(epoch);
             llSetRemoteScriptAccessPin(0);
             llSetTimerEvent(1.0);
         }
@@ -929,7 +912,7 @@ default
                     say(0,  "I am a child, you pervert...");
                     return;
                 }
-                else if (sex != "Male")
+                else if (sex)
                 {
                     say(0, "Sorry, I'm not a lesbian");
                     return;
@@ -1050,14 +1033,14 @@ default
             {
                 integer level = 0;
                 integer i;
-                for (i = 0; level < FEEDAMOUNT && i < n; i++)
+                for (i = 0; level < (FEEDAMOUNT * epoch) && i < n; i++)
                 {
                     desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
                     level = llList2Integer(llParseString2List(desc, [";"], []), 3);
                 }
                 --i;
                 if (i == n) i = 0;
-                osMessageObject(llDetectedKey(i),   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
+                osMessageObject(llDetectedKey(i),   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)(FEEDAMOUNT * epoch));
             }
 
             if ( water < 5)
@@ -1111,14 +1094,14 @@ default
         opts +=  "Options";
        
         integer ts = llGetUnixTime();
-        if (sex == "Female" && epoch == 2)
+        if (sex && epoch == 2)
         {
             if ( (LAYS_EGG==1 && ts> lastEggTs+MATE_INTERVAL) || (LAYS_EGG==0&& pregnantTs ==0) )
                 opts +=  "Mate";
         }
         if (epoch == 2)
         {   
-            if (sex == "Female" && AN_HASMILK)
+            if (sex && AN_HASMILK)
             {
                  if (  ts - milkTs > MILKTIME) 
                  {
