@@ -336,6 +336,11 @@ state ready
 
     touch_start(integer num)
     {
+        if (!llSameGroup(llDetectedKey(0)) && !osIsNpc(llDetectedKey(0)))
+        {
+            llSay(0, "We are not in the same group");
+            return;
+        }
         integer link = llDetectedLinkNumber(0);
         if (link == gi_linkBack)
         {
