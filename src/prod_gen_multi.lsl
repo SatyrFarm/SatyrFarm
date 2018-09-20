@@ -14,10 +14,9 @@ FLOWCOLOR=<1.000, 0.805, 0.609>
 MATURATION=10
 #
 #(Optional)Extra parameter that will be passed to the consumer of this
-EXTRAPARAM=Nutrition:1,10,1,2
+EXTRAPARAM=Hungry:-10,Coins:20
 
 # end config
-
 
 (optional) Drop a sound inside the product object that will be played when using the object
 (optional) Drop a texture inside the product for the particles rezzed when used
@@ -35,10 +34,48 @@ vector FLOWCOLOR=<1.000, 0.805, 0.609>;
 string extraParam; // Params to be passed from config notecard to the target object
 
 
-
 string myName()
 {
     return llGetSubString(llGetObjectName(), 3, -1);
+}
+
+/*
+EncodeList: 
+
+string encodeList(list lst)
+{
+    list aux;
+    integer i;
+    for (i=0; i < llGetListLength(lst); i++)
+    {
+        integer tp = llGetListEntryType(lst,i);
+        if (tp== TYPE_INTEGER)  aux += "I"; 
+        else if (tp== TYPE_VECTOR)  aux += "V"; 
+        else if (tp== TYPE_ROTATION)  aux += "R"; 
+        else if (tp== TYPE_KEY)  aux += "K"; 
+        else if (tp== TYPE_FLOAT)  aux += "F"; 
+        else aux += "S"; 
+        aux += llList2String(lst, i);
+    }
+    return llDumpList2String(aux, "|"); 
+}
+
+*/
+list decodeList(list tokens)
+{
+    integer i;
+    list out =[];
+    for (i=0; i < llGetListLength(tokens); i+=2)
+    {
+        string tp = llList2String(tokens, i);
+        if (tp =="I") out += llList2Integer(tokens, i+1);
+        else if (tp =="V") out += llList2Vector(tokens, i+1);
+        else if (tp =="R") out += llList2Rot(tokens, i+1);
+        else if (tp =="K") out += llList2Key(tokens, i+1);
+        else if (tp =="F") out += llList2Float(tokens, i+1);
+        else if (tp =="S") out += llList2String(tokens, i+1);
+    }
+    return out;
 }
 
 refresh()
@@ -124,6 +161,20 @@ reset()
     refresh();
 }
 
+setConfig(string line)
+{
+    list tok = llParseString2List(line, ["="], []);
+    if (llList2String(tok,1) != "")
+    {
+        string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
+        string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
+        if (cmd =="EXPIRES") EXPIRES = (integer)val;
+        else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
+        else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
+        else if (cmd == "EXTRAPARAM")     extraParam = val;
+    }
+}
+
 
 loadConfig()
 {   
@@ -133,18 +184,7 @@ loadConfig()
     {
         if (llGetSubString(llList2String(lines,i), 0, 0) != "#")
         {
-            list tok = llParseString2List(llList2String(lines,i), ["="], []);
-            if (llList2String(tok,1) != "")
-            {
-                    string cmd=llStringTrim(llList2String(tok, 0), STRING_TRIM);
-                    string val=llStringTrim(llList2String(tok, 1), STRING_TRIM);
-                    if (cmd =="EXPIRES") EXPIRES = (integer)val;
-                    //else if (cmd == "PARTS")     PARTS = (integer)val;
-                    else if (cmd == "FLOWCOLOR")     FLOWCOLOR = (vector) val;
-                    else if (cmd == "MATURATION")     DRINKABLE = (integer)val;
-                    else if (cmd == "EXTRAPARAM")     extraParam = val;
-            }
-
+            setConfig(llList2String(lines,i));
         }
     }
 }
@@ -265,7 +305,6 @@ default
             
             osMessageObject(u, llToUpper(myName())+"|"+PASSWORD +"|"+(string)percent+"|"+extraParam);
             
-            
             if (percent <= 0)
             {
                 llDie();
@@ -289,7 +328,7 @@ default
             return;
         }
         integer dayse = llFloor((llGetUnixTime()- lastTs)/86400);
-        if (cmd == "SET")
+        if (cmd == "SET") // To be deprecated
         {
             integer found_expire = llListFindList(tk, ["EXPIRE"]) + 1;
             integer found_drinkable = llListFindList(tk, ["MATURATION"]) + 1;
@@ -299,7 +338,7 @@ default
             else if (found_percent) percent = llList2Integer(tk, found_percent);
             refresh();
         }
-        else if (cmd == "GETSTATUS")
+        else if (cmd == "GETSTATUS") // Can also get this from description
         {
             key idr = llList2Key(tk, 2);
             osMessageObject(idr, "PRODSTATUS|USES|" + (string)percent + "|EXPIRE|" + (string)(EXPIRES-dayse) + "|READY|" + (string)(DRINKABLE-dayse));
@@ -308,14 +347,32 @@ default
         {
             llSetObjectName( llList2String(tk, 2) );
         }
-        else if (cmd == "SETLINKTEXTURE")
+
+        else if (cmd == "SETCONFIG")
+        {
+            setConfig(llList2String(tk, 2));
+        }
+        else if (cmd == "SETLINKPRIMITIVEPARAMS")
+        {
+            integer lnk = llList2Integer(tk, 2);
+            list l = decodeList(llList2List(tk, 3, -1) );
+            llSetLinkPrimitiveParamsFast(lnk, l);
+        }
+        else if (cmd == "SETLINKPARTICLESYSTEM")
+        {
+            integer lnk = llList2Integer(tk, 2);
+            list l = decodeList(llList2List(tk, 3, -1) );
+            llLinkParticleSystem(lnk, l);
+        }
+        else if (cmd == "SETLINKTEXTURE") // To be deprecated
         {
             llSetLinkTexture( llList2Integer(tk, 2), llList2String(tk, 3), llList2Integer(tk, 4));
         }
-        else if (cmd == "SETLINKCOLOR")
+        else if (cmd == "SETLINKCOLOR") // To be deprecated
         {
             llSetLinkColor( llList2Integer(tk, 2), llList2Vector(tk, 3), llList2Integer(tk, 4) ) ;
         }
         refresh();
     }
 }
+
