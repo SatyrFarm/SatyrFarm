@@ -112,7 +112,7 @@ float water=4.;
 string status = "OK";
 
 integer sex;
-integer epoch = 0; // 0 = Egg, 1= Baby, 2 = Adult
+integer epoch = -1;
 integer left;
 key followUser=NULL_KEY;
 integer pregnantTs;
@@ -180,7 +180,7 @@ loadStateByDesc(integer checkForReset)
     list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
     if (llList2String(desc, 0) == "A")
     {
-        if ((llList2String(desc, 5) != (string)chan(llGetKey())) && doReset && checkForReset) //Also resets eggs!
+        if (llList2String(desc, 5) != (string)chan(llGetKey()) && doReset && checkForReset) //Also resets eggs!
         {
             if (doReset == 1)
             {
@@ -198,7 +198,6 @@ loadStateByDesc(integer checkForReset)
             sex = llList2Integer(desc,1);
             water = llList2Integer(desc, 2);
             food  = llList2Integer(desc, 3);
-            epoch = 0; // Assume egg 
             createdTs = llList2Integer(desc, 4);
             geneA = llList2Integer(desc, 6);
             geneB = llList2Integer(desc, 7);
