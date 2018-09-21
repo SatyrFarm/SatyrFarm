@@ -297,6 +297,11 @@ setAlphaByName(string namea, float opacity)
 
 showAlphaSet(integer newEpoch)
 {
+    if (epoch == newEpoch)
+    {
+        return;
+    }
+
     epoch = newEpoch;
     if (newEpoch == 0)
     {
@@ -400,7 +405,7 @@ refresh()
     {
         epochcur = 0;
         integer pc = llFloor((1 + (float)age / (float)EGG_TIME) * 100.);
-        llSetText(AN_NAME+" Egg "+uc+"\nIncubating..."+(string)pc+"%\n", <1,1,1>, 1.0);
+        llSetText(AN_NAME+" Egg \nIncubating..."+(string)pc+"%\n", <1,1,1>, 1.0);
     }
     else
     {
@@ -415,7 +420,7 @@ refresh()
         else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
         else if (water < 0) say( 0, AN_BAAH+", I'm thirsty!");
 
-        string str =""+name+" "+uc+"\n"+""+(string)((integer)days)+" days old ";
+        string str = name+" "+uc+"\n"+""+(string)((integer)days)+" days old ";
         if (days  > (lifeTime*CHILDHOOD_RATIO/86400.))
         {
             //Adult
