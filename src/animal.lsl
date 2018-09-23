@@ -819,7 +819,10 @@ default
         {
             doReset = 2;
             loadStateByDesc(FALSE);
-            sex = llList2Integer(tk, 2);
+            if (llGetListLength(tk) >= 3)
+            {
+                sex = llList2Integer(tk, 2);
+            }
             setGenes();
             refresh();
             llSetRemoteScriptAccessPin(0);
