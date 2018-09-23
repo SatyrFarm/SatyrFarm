@@ -819,7 +819,9 @@ default
         {
             doReset = 2;
             loadStateByDesc(FALSE);
+            sex = llList2Integer(tk, 2);
             setGenes();
+            refresh();
             llSetRemoteScriptAccessPin(0);
             llSetTimerEvent(1.0);
         }

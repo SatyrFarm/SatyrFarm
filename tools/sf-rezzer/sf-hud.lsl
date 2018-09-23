@@ -1,19 +1,21 @@
 //### sf-hud.lsl
 //HUD for Rezzing Satyr Farm Itemsd
-integer gi_buttonOffset = 8;
 integer gi_frontFace = 4;
-integer gi_linkBack = 6;
-integer gi_linkForward = 7;
-integer gi_linkBuy = 3;
-integer gi_linkSell = 4;
-integer gi_linkTab = 5;
 integer gi_linkDesc = 2;
+integer gi_linkSex = 3;
+integer gi_linkBuy = 4;
+integer gi_linkSell = 5;
+integer gi_linkTab = 6;
+integer gi_linkBack = 7;
+integer gi_linkForward = 8;
+integer gi_buttonOffset = 9;
 integer gi_itemCount;
 integer gi_curPage;
 string gs_selectedItem;
 integer gi_selectedPrice;
 integer gi_balance = 200;
 list gl_sellprices;
+integer gb_sex;
 //Item Button List
 list gl_ident;
 list gl_prices;
@@ -120,6 +122,15 @@ loadItemList(string ncname)
     gl_ident = llList2ListStrided(items, 0, -1, 2);
     gl_prices = llList2ListStrided(llDeleteSubList(items,0,0), 0, -1, 2);
     gi_itemCount = llGetListLength(gl_ident);
+    if (ncname == "animalitems")
+    {
+        gb_sex = 0;
+        llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.080, 0.0>, <0.125, -0.300, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 0.8]);
+    }
+    else
+    {
+        llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.0]);
+    }
     drawButtons();
 }
 
@@ -224,8 +235,7 @@ state ready
         llSetLinkPrimitiveParamsFast(gi_linkSell, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.125, 0.0>, <0.125, -0.4375, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
         llSetLinkPrimitiveParamsFast(gi_linkTab, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.500, 0.25, 0.0>, <0.250, 0.00, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
         llSetLinkPrimitiveParamsFast(gi_linkDesc, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.5, 1.0, 0.0>, <-0.25, 0.0, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
-        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5]);
-        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXT, "", ZERO_VECTOR, 0.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5, PRIM_TEXT, "", ZERO_VECTOR, 0.0]);
     }
 
     listen(integer c, string nm, key id, string m)
@@ -351,6 +361,18 @@ state ready
         {
             ++gi_curPage;
             drawButtons();
+        }
+        else if (link == gi_linkSex)
+        {
+          gb_sex = !gb_sex;
+          if (gb_sex)
+          {
+              llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.080, 0.0>, <0.375, -0.300, 0.0>, 0.0]);
+          }
+          else
+          {
+              llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.080, 0.0>, <0.125, -0.300, 0.0>, 0.0]);
+          }
         }
         else if (link == gi_linkTab)
         {
@@ -500,7 +522,7 @@ state rezz
                 }
             }
             llSay(0, "Prepared: \n    " + llList2String(cmd,4));
-            osMessageObject(kobject, "INIT|" + PASSWORD);
+            osMessageObject(kobject, "INIT|" + PASSWORD + "|" + gb_sex);
             state ready;
         }
     }
