@@ -16,6 +16,21 @@ integer chan(key u)
     return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
 }
 
+list getButtons()
+{
+    list btns = ["CLOSE", " "];
+    if (followUser != NULL_KEY)
+    {
+        btns += ["Stop Follow"];
+    }
+    else
+    {
+        btns += ["Follow"];
+    }
+    btns += [" ", "↓", " ", "←", "DONE", "→", "RotL", "↑", "RotR"];
+    return btns;
+}
+
 default
 {
     state_entry()
@@ -156,16 +171,6 @@ default
         if (llSameGroup(llDetectedKey(0))|| osIsNpc(llDetectedKey(0)))
         {
             listener = llListen(chan(llGetKey()), "", "", "");
-            list btns = ["CLOSE", " "];
-            if (followUser != NULL_KEY)
-            {
-                btns += ["Stop Follow"];
-            }
-            else
-            {
-                btns += ["Follow"];
-            }
-            btns += [" ", "↓", " ", "←", "DONE", "→", "RotL", "↑", "RotL"];
             llDialog(llDetectedKey(0), "Move me to my final position, then press DONE", btns, chan(llGetKey()));
         }
     }
