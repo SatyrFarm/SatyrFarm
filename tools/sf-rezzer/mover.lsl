@@ -6,7 +6,7 @@ Provides interface to move item to position, then deletes itself and starts othe
 key followUser = NULL_KEY;
 float uHeight;
 integer listener;
-float scale = 0.1;
+string scales = "0.1";
 integer phantom;
 string MESSAGE;
 list scripts = [];
@@ -16,19 +16,15 @@ integer chan(key u)
     return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
 }
 
-list getButtons()
+launchMenu(key id)
 {
-    list btns = ["CLOSE", " "];
+    list btns = ["CLOSE", scales];
     if (followUser != NULL_KEY)
-    {
         btns += ["Stop Follow"];
-    }
     else
-    {
         btns += ["Follow"];
-    }
-    btns += [" ", "↓", " ", "←", "DONE", "→", "RotL", "↑", "RotR"];
-    return btns;
+    btns += ["↺", "↓", "↻", "←", "DONE", "→", "↖", "↑", "↘"];
+    llDialog(id, "Move me to my final position, then press DONE", btns, chan(llGetKey()));
 }
 
 default
@@ -70,7 +66,7 @@ default
                 followUser = NULL_KEY;
             }
             else
-            {                
+            { 
                 llSetKeyframedMotion( [], []);
                 llSleep(.2);
                 list kf;
@@ -104,7 +100,15 @@ default
     
     listen(integer c, string nm, key id, string m)
     {
-        if (m == "Follow")
+        llSetKeyframedMotion( [], []);
+        followUser = NULL_KEY;
+        float scale = (float)scales;
+        if (m == "CLOSE")
+        {
+            llListenRemove(listener);
+            return;
+        }
+        else if (m == "Follow")
         {
             llSay(0, "I am following you now.");
             followUser = id; 
@@ -112,8 +116,6 @@ default
         }
         else if (m == "Stop Follow")
         {
-            llSetKeyframedMotion( [], []);
-            followUser = NULL_KEY;
             llSleep(.2);
             llSetPos( llGetPos()- <0,0, uHeight-.2> );
         }
@@ -123,19 +125,38 @@ default
         }
         else if (m == "→")
         {
-            llSetPos(llGetPos() + <-1,0,0>*scale);
+            llSetPos(llGetPos() + <1,0,0>*scale);
         }
         else if (m == "←")
         {
-            llSetPos(llGetPos() + <1,0,0>*scale);
+            llSetPos(llGetPos() + <-1,0,0>*scale);
         }
         else if (m == "↓")
         {
             llSetPos(llGetPos() + <0,0,-1>*scale);
         }
+        else if (m == "↖")
+        {
+            llSetPos(llGetPos() + <0,1,0>*scale);
+        }
+        else if (m == "↘")
+        {
+            llSetPos(llGetPos() + <0,-1,0>*scale);
+        }
+        else if (m == "↺")
+        {
+            llSetRot(llGetRot()*llEuler2Rot(<0, 0, 3 * DEG_TO_RAD >));
+        }
+        else if (m == "↻")
+        {
+            llSetRot(llGetRot()*llEuler2Rot(<0, 0, -3 * DEG_TO_RAD >));
+        }
         else if (m == "0.01" || m == "1.0" || m == "0.1" || m == "0.001")
         {
-            scale = (float)m;
+            if (m == "1.0") scales = "0.1";
+            if (m == "0.1") scales = "0.01";
+            if (m == "0.01") scales = "0.001";
+            if (m == "0.001") scales = "1.0";
         }
         else if (m == "DONE")
         {
@@ -155,7 +176,7 @@ default
             llSetStatus(STATUS_PHANTOM, phantom);
             llRemoveInventory(me);
         }
-        llListenRemove(listener);
+        launchMenu(id);
     }
 
     dataserver(key k, string m)
@@ -171,7 +192,7 @@ default
         if (llSameGroup(llDetectedKey(0))|| osIsNpc(llDetectedKey(0)))
         {
             listener = llListen(chan(llGetKey()), "", "", "");
-            llDialog(llDetectedKey(0), "Move me to my final position, then press DONE", btns, chan(llGetKey()));
+            launchMenu(llDetectedKey(0));
         }
     }
 
