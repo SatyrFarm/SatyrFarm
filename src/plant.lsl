@@ -30,7 +30,7 @@ WOOD_TIMES=1
 
 For scripting plugins, check the code below for the emitted link_messages
 **/
-integer VERSION=1;
+integer VERSION=2;
 
 string PASSWORD="*";
 integer doReset;

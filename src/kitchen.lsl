@@ -11,7 +11,7 @@ SENSOR_DISTANCE=10
 MUST_SIT=1
 
 **/
-integer VERSION = 1;
+integer VERSION = 2;
 
 string PASSWORD="*";
 integer doReset;

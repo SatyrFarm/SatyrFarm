@@ -26,7 +26,7 @@ string name;
 
 float CHILDHOOD_RATIO=0.15; // How much of life to spend as child
 
-integer VERSION = 1;
+integer VERSION = 2;
 
 list ADULT_MALE_PRIMS = [];
 list ADULT_FEMALE_PRIMS = []; // link numbers -   Both sexes
