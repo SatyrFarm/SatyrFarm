@@ -16,6 +16,7 @@ integer gi_selectedPrice;
 integer gi_balance = 200;
 list gl_sellprices;
 integer gb_sex;
+string gs_curnc;
 //Item Button List
 list gl_ident;
 list gl_prices;
@@ -131,16 +132,22 @@ loadItemList(string ncname)
     {
         llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.0]);
     }
+    gs_curnc = ncname;
     drawButtons();
 }
 
 string itemsToReplace(string sItems, key kObject)
 {
     list lReplace = [];
-    integer found_add = llListFindList(ADDITIONS, [llKey2Name(kObject)]) + 1;
+    string name = llKey2Name(kObject);
+    integer found_add = llListFindList(ADDITIONS, [name]) + 1;
     if (found_add)
     {
         lReplace += llParseString2List(llList2String(ADDITIONS, found_add), [","], []);
+    }
+    if (gs_curnc == "animalitems")
+    {
+        lReplace += [name];
     }
     lReplace += ["sfp"];
     list lItems = llParseString2List(sItems, [","], []);
