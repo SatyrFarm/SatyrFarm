@@ -24,6 +24,7 @@ list gl_prices;
 string PASSWORD;
 list ADDITIONS = [];
 list ITEMIGNORE = [];
+list ITEMNOAPI = [];
 list myItems;
 //Sell Menu
 integer listener = -1;
@@ -190,6 +191,10 @@ default
         if (llGetInventoryType("itemignore") != INVENTORY_NONE)
         {
             ITEMIGNORE = llParseString2List(osGetNotecard("itemignore"), ["\n"], []);
+        }
+        if (llGetInventoryType("noapi") == INVENTORY_NOTECARD)
+        {
+            ITEMNOAPI = llParseString2List(osGetNotecard("noapi"), ["\n"], []);
         }
         //own items
         myItems = [];
@@ -474,7 +479,14 @@ state rezz
     object_rez(key id)
     {
         llSleep(3.0);
-        osMessageObject(id, "VERSION-CHECK|" + PASSWORD + "|" + (string)llGetKey());
+        if (llListFindList(ITEMNOAPI, [llKey2Name(id)]) == -1)
+        {
+            osMessageObject(id, "VERSION-CHECK|" + PASSWORD + "|" + (string)llGetKey());
+        }
+        else
+        {
+            llRemoteLoadScriptPin(id, "mover", 12345, TRUE, 0);
+        }
         llSetTimerEvent(20.0);
     }
 
@@ -529,7 +541,7 @@ state rezz
                 }
             }
             llSay(0, "Prepared: \n    " + llList2String(cmd,4));
-            osMessageObject(kobject, "INIT|" + PASSWORD + "|" + gb_sex);
+            osMessageObject(kobject, "INIT|" + (string)PASSWORD + "|" + (string)gb_sex);
             state ready;
         }
     }

@@ -117,6 +117,7 @@ default
         else if (m == "Stop Follow")
         {
             llSleep(.2);
+            llSetRemoteScriptAccessPin(0);
             llSetPos( llGetPos()- <0,0, uHeight-.2> );
         }
         else if (m == "↑")
