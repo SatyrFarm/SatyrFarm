@@ -486,6 +486,7 @@ state rezz
         else
         {
             llRemoteLoadScriptPin(id, "mover", 12345, TRUE, 0);
+            state ready;
         }
         llSetTimerEvent(20.0);
     }
