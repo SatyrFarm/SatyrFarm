@@ -117,7 +117,6 @@ default
         else if (m == "Stop Follow")
         {
             llSleep(.2);
-            llSetRemoteScriptAccessPin(0);
             llSetPos( llGetPos()- <0,0, uHeight-.2> );
         }
         else if (m == "↑")
@@ -161,6 +160,7 @@ default
         }
         else if (m == "DONE")
         {
+            llSetRemoteScriptAccessPin(0);
             llSetText("", ZERO_VECTOR, 0.0);
             string me = llGetScriptName();
             integer len = llGetInventoryNumber(INVENTORY_SCRIPT);
