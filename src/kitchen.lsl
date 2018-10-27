@@ -4,7 +4,7 @@ Common script used by all food processing machines, e.g. juice maker, oven etc.
 Configuration goes in 'config' notecard. Example notecard with all the supported options:
 
 # REZ_POS: Default rez position relative to root. Can be overridden in the RECIPES notecard with the RezPos:<x,y,z> optional parameter
-REZ_POS=<1,1,1>     
+REZ_POSITION=<1,1,1>     
 # SENSOR_DISTANCE: How far to search (radius) when searching for ingredients to add
 SENSOR_DISTANCE=10
 # MUST_SIT: If the Avatar is required to sit on the object to produce items (like on the Oil Press)
