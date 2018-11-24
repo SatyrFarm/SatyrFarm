@@ -23,7 +23,7 @@ If applicable, add screenshots to help explain your problem.
 **Enviroment (please complete the following information):**
 - OpenSimVersion : (Look under the Convenent Tab)
 - Viewer and Version
-- SatyrFarm Release Version
+- Satyr Farm Version
 
 **Additional context**
 Add any other context about the problem here.
