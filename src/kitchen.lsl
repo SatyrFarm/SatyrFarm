@@ -73,6 +73,22 @@ checkListen(integer force)
 
 
 
+integer ingredientsListFindString(list hay, string needle)
+{
+    integer found_pro = llGetListLength(hay) / 3;
+    //just a fancy way of llListFindList that isn't case sensitive
+    while (found_pro--) 
+    {
+        if (llToUpper(llList2String(hay, found_pro * 3 + 1)) == needle)
+        {
+            return found_pro * 3;
+        }
+    }
+    return -1;
+}
+
+
+
 loadConfig()
 {
     if (llGetInventoryType("config") != INVENTORY_NOTECARD) return;
@@ -628,10 +644,8 @@ default
         else
         {
             //Add Ingredient
-            integer found_pro = llGetListLength(ingredients) / 3;
-            //just a fancy way of llListFindList that isn't case sensitive
-            while (found_pro-- && llToUpper(llList2String(ingredients, found_pro*3 + 1)) != cmd);
-            integer i = llList2Integer(ingredients, found_pro*3);
+            integer found_pro = ingredientsListFindString(ingredients, cmd);
+            integer i = llList2Integer(ingredients, found_pro);
             haveIngredients= haveIngredients | (0x01 << i);
             refresh();
         }
