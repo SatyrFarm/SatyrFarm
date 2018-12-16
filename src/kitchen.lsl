@@ -39,6 +39,7 @@ integer default_sensorRadius = 5;
 integer default_timeToCook = 60;
 vector default_rezzPosition = <1,0,0>;
 //temp
+integer saveNC = 0;
 string lookingFor;
 integer lookingForPercent;
 integer ingLength;
@@ -637,6 +638,7 @@ default
                 if (item == me) delSelf = TRUE;
                 else if (llGetInventoryType(item) != INVENTORY_NONE)
                 {
+                    ++saveNC;
                     llRemoveInventory(item);
                 }
             }
@@ -770,11 +772,18 @@ default
     {
         if (change & CHANGED_INVENTORY)
         {
-            getRecipeNames();
-            loadConfig();
-            customOptions = [];
-            customText = [];
-            llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
+            if (saveNC)
+            {
+                --saveNC;
+            }
+            else
+            {
+                getRecipeNames();
+                loadConfig();
+                customOptions = [];
+                customText = [];
+                llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
+            }
         }
         
         if (status == "Cooking" && (llGetObjectPrimCount(llGetKey()) != llGetNumberOfPrims()))
