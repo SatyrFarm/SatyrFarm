@@ -70,8 +70,7 @@ loadConfig()
 { 
     if (ourURL == "" && llGetInventoryType("networknc") == INVENTORY_NOTECARD)
     {
-        list nc = llParseString2List(osGetNotecard("networknc"), ["\n"], []);
-        network = llList2List(nc, 1, -1);
+        network = llParseString2List(osGetNotecard("networknc"), ["\n"], []);
         lastPing = [];
         integer len = llGetListLength(network);
         integer curtime = llGetUnixTime();
@@ -162,6 +161,11 @@ default
             connectStage = 0;
             ourURL = "";
             llSay(0, "Storage Rack is no longer connected.");
+            //if just connected to one, tell him to disconnect and keep levels
+            if (llGetListLength(network) == 1)
+            {
+                llHTTPRequest(llList2String(network, 0) + "?disconnect", [HTTP_METHOD, "GET"], "");
+            }
             network = [];
             lastPing = [];
             if (llGetInventoryType("networknc") == INVENTORY_NOTECARD)
@@ -293,15 +297,24 @@ default
         }
         else if (cmd == "GOTLEVEL")
         {
-            sendBoradcast(llGetKey(), "setlevel," + llList2String(tok, 1) + "," + llList2String(tok, 2));
+            string product = llList2String(tok, 1);
+            string level = llList2String(tok, 2);
+            log += ["This rack set level from " + product + " to " + level];
+            sendBoradcast(llGetKey(), "setlevel," + product + "," + level);
         }
         else if (cmd == "REZZEDPRODUCT")
         {
-            sendBoradcast(llList2Key(tok, 1), "add," + llList2String(tok, 2) + ",-1");
+            key agent = llList2Key(tok, 1);
+            string product = llList2String(tok, 2);
+            log += [llKey2Name(agent) + " took one " + product + " from this storage."];
+            sendBoradcast(agent, "add," + product + ",-1");
         }
         else if (cmd == "GOTPRODUCT")
         {
-            sendBoradcast(llList2Key(tok, 1), "add," + llList2String(tok, 2) + ",1");
+            key agent = llList2Key(tok, 1);
+            string product = llList2String(tok, 2);
+            log += [llKey2Name(agent) + " added one " + product + " into this storage."];
+            sendBoradcast(agent, "add," + product + ",1");
         }
     }
     
@@ -410,6 +423,17 @@ default
                     responseStatus = 200;
                 }
             }
+            else if (get == "disconnect")
+            {
+                if (llGetListLength(network) == 1)
+                {
+                    llReleaseURL(ourURL);
+                    ourURL = "";
+                    connectStage = 0;
+                    network = [];
+                    saveConfig();
+                }
+            }
             else if (!llSubStringIndex(get, "add"))
             {
                 list args = llParseString2List(llUnescapeURL(get), [","], []);
@@ -451,7 +475,6 @@ default
 
     http_response(key id, integer httpStatus, list metaData, string body)
     {
-        string requrl = llGetHTTPHeader(id, "x-script-url");
         //llOwnerSay("Got response " + (string)httpStatus + " : " + body + "\n" + llDumpList2String(metaData, ",") + "\n" + requrl);
         if (!llSubStringIndex(body, "http"))
         {
@@ -575,6 +598,17 @@ state connect
             }
             else if (connectStage == 3)
             {
+                if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
+                {
+                    if (llGetInventoryType("storagenc-bc") == INVENTORY_NOTECARD)
+                    {
+                        llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+                        llRemoveInventory("storagenc-bc");
+                    }
+                    llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+                    string nc = osGetNotecard("storagenc");
+                    osMakeNotecard("storagenc-bc", nc);
+                }
                 llMessageLinked(LINK_SET, 84, "SETSTATUS|" + llDumpList2String(llParseString2List(body, [";"], []), "|"), NULL_KEY);
                 llSay(0, "Got Products and Levels from network");
                 llSay(0, "Done :)\nThis storage is now connected. It might need about one minute till other storages in the network realize it.");
