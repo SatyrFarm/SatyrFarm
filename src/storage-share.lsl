@@ -15,6 +15,7 @@ integer pingTs;
 integer listener;
 //for connecting/sharing storage
 string ourURL = "";
+integer isFirst;
 list network = [];
 string statusstring = "";
 //tmp
@@ -63,6 +64,45 @@ checkPings()
             saveConfig();
         }
         sendBoradcast(llGetKey(), "ping");
+    }
+}
+
+disconnectNetwork()
+{
+    network = [];
+    lastPing = [];
+    llReleaseURL(ourURL);
+    connectStage = 0;
+    ourURL = "";
+    if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD && (!isFirst || llGetListLength(network) > 1))
+    {
+        llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+        llRemoveInventory("storagenc");
+    }
+    if (!isFirst)
+    {
+        if (llGetInventoryType("storagenc-bc") == INVENTORY_NOTECARD && !isFirst)
+        {
+            string nc = osGetNotecard("storagenc-bc");
+            llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+            osMakeNotecard("storagenc", nc);
+        }
+    }
+    if (llGetInventoryType("config-bc") == INVENTORY_NOTECARD)
+    {
+        if (llGetInventoryType("config") == INVENTORY_NOTECARD)
+        {
+            llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+            llRemoveInventory("config");
+        }
+        string nc = osGetNotecard("config-bc");
+        llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+        osMakeNotecard("config", nc);
+    }
+    if (llGetInventoryType("networknc") == INVENTORY_NOTECARD)
+    {
+        //deliberately no IGNORE_CHANGED
+        llRemoveInventory("networknc");
     }
 }
 
@@ -157,49 +197,13 @@ default
         }
         else if (m == "Disconnect")
         {
-            llReleaseURL(ourURL);
-            connectStage = 0;
-            ourURL = "";
             llSay(0, "Storage Rack is no longer connected.");
-            //if just connected to one, tell him to disconnect and keep levels
+            //if just one, tell the other to disconnect too
             if (llGetListLength(network) == 1)
             {
                 llHTTPRequest(llList2String(network, 0) + "?disconnect", [HTTP_METHOD, "GET"], "");
             }
-            network = [];
-            lastPing = [];
-            if (llGetInventoryType("networknc") == INVENTORY_NOTECARD)
-            {
-                llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
-                llRemoveInventory("networknc");
-            }
-            if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
-            {
-                llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
-                llRemoveInventory("storagenc");
-            }
-            if (llGetInventoryType("storagenc-bc") == INVENTORY_NOTECARD)
-            {
-                string nc = osGetNotecard("storagenc-bc");
-                llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
-                osMakeNotecard("storagenc", nc);
-            }
-            if (llGetInventoryType("config-bc") == INVENTORY_NOTECARD)
-            {
-                if (llGetInventoryType("config") == INVENTORY_NOTECARD)
-                {
-                    llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
-                    llRemoveInventory("config");
-                }
-                string nc = osGetNotecard("config-bc");
-                llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
-                osMakeNotecard("config", nc);
-            }
-            if (llGetInventoryType("storage") == INVENTORY_SCRIPT)
-            {
-                llResetOtherScript("storage");
-            }
-            saveConfig();
+            disconnectNetwork();
         }
         else if (m == "Connect to")
         {
@@ -412,6 +416,7 @@ default
                     if (!connectStage)
                     {
                         connectStage = 3;
+                        isFirst = TRUE;
                     }
                     network += [uri];
                     lastPing += [llGetUnixTime()];
@@ -425,14 +430,7 @@ default
             }
             else if (get == "disconnect")
             {
-                if (llGetListLength(network) == 1)
-                {
-                    llReleaseURL(ourURL);
-                    ourURL = "";
-                    connectStage = 0;
-                    network = [];
-                    saveConfig();
-                }
+                disconnectNetwork();
             }
             else if (!llSubStringIndex(get, "add"))
             {
@@ -612,6 +610,7 @@ state connect
                 llMessageLinked(LINK_SET, 84, "SETSTATUS|" + llDumpList2String(llParseString2List(body, [";"], []), "|"), NULL_KEY);
                 llSay(0, "Got Products and Levels from network");
                 llSay(0, "Done :)\nThis storage is now connected. It might need about one minute till other storages in the network realize it.");
+                isFirst = FALSE;
                 log += ["Connected to network..."];
                 sendBoradcast(llGetOwner(), "connect");
                 saveConfig();
