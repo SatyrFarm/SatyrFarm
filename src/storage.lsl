@@ -121,6 +121,7 @@ loadConfig(integer checkForReset)
         if (doReset == 1)
         {
             llSay(0, "Reset");
+            llMessageLinked(LINK_SET, 99, "HARDRESET", NULL_KEY);
             saveNC = 2;
             if (llGetInventoryType("storagenc-old") == INVENTORY_NOTECARD)
             {
@@ -129,8 +130,6 @@ loadConfig(integer checkForReset)
             }
             osMakeNotecard("storagenc-old", "null;" + llDumpList2String(llList2List(storageNC, 1, -1), ";"));
             llRemoveInventory("storagenc");
-            //TODO
-            //llMessageLinked(LINK_SET, 99, "HARDRESET", NULL_KEY);
             products = [];
             levels = [];
         }

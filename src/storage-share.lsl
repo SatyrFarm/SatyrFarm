@@ -252,8 +252,6 @@ default
 
     state_entry()
     {
-        //give it some time to load inventory items
-        llSleep(3.0);
         //on state_entry all listeners are cleared
         listener = -1;
         llMessageLinked(LINK_SET, 83, "ADD_MENU_OPTION|Share", NULL_KEY);
@@ -531,7 +529,13 @@ state connect
 {
     state_entry()
     {
-        llSetTimerEvent(0.);
+        //give it some time
+        //let it be able to do HARDRESET
+        llSetTimerEvent(5.);
+    }
+
+    timer()
+    {
         if (ourURL != "" )
         {
             llReleaseURL(ourURL);
@@ -540,6 +544,19 @@ state connect
         connectStage = 0;
         llSay(0, "Connecting to network....");
         llRequestURL();
+    }
+
+    link_message(integer sender, integer val, string m, key id)
+    {
+        if (m == "HARDRESET")
+        {
+            network = [];
+            llReleaseURL(ourURL);
+            llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+            llRemoveInventory("networknc");
+            llResetScript();
+            return;
+        }
     }
 
     http_request(key id, string methode, string body)
@@ -599,12 +616,16 @@ state connect
                 if (body != "empty")
                 {
                     list nc = llParseString2List(body, ["\n"], []);
-                    network += llList2List(nc, 1, -1);
                     integer len = llGetListLength(nc);
                     integer curtime = llGetUnixTime();
                     while (len--)
                     {
-                        lastPing += [curtime];
+                        string conurl = llList2String(nc, len);
+                        if (llListFindList(network, conurl) == -1 && conurl != ourURL)
+                        {
+                            network += [conurl];
+                            lastPing += [curtime];
+                        }
                     }
                 }
                 llSay(0, "Network has " + (string)llGetListLength(network) + " connected SatyrFarm storages.");
