@@ -593,6 +593,10 @@ default
         {
             customText += [llList2String(tok,1)];
         }
+        else if (cmd == "RELOAD")
+        {
+            llResetScript();
+        }
         else if (cmd == "REM_TEXT")
         {
             integer findTxt = llListFindList(customText, [llList2String(tok,1)]);

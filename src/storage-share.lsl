@@ -8,7 +8,7 @@ integer chan(key u)
 //Log
 list log = [];
 //pings
-integer pingTime = 60;
+integer pingTime = 900;
 list lastPing  = [];
 integer pingTs;
 //listens and menus
@@ -44,6 +44,10 @@ checkListen(integer force)
 
 checkPings()
 {
+    if (network == [] || !connectStage)
+    {
+        return;
+    }
     integer curtime = llGetUnixTime();
     if (curtime > pingTs + pingTime)
     {
@@ -63,7 +67,7 @@ checkPings()
         {
             saveConfig();
         }
-        sendBoradcast(llGetKey(), "ping");
+        sendBroadcast(llGetKey(), "ping");
     }
 }
 
@@ -81,7 +85,7 @@ disconnectNetwork()
     }
     if (!isFirst)
     {
-        if (llGetInventoryType("storagenc-bc") == INVENTORY_NOTECARD && !isFirst)
+        if (llGetInventoryType("storagenc-bc") == INVENTORY_NOTECARD)
         {
             string nc = osGetNotecard("storagenc-bc");
             llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
@@ -101,9 +105,9 @@ disconnectNetwork()
     }
     if (llGetInventoryType("networknc") == INVENTORY_NOTECARD)
     {
-        //deliberately no IGNORE_CHANGED
         llRemoveInventory("networknc");
     }
+    llMessageLinked(LINK_SET, 84, "RELOAD", NULL_KEY);
 }
 
 loadConfig()
@@ -132,18 +136,19 @@ saveConfig()
     osMakeNotecard("networknc", llDumpList2String(network, "\n"));
 }
 
-sendBoradcast(key agent, string command)
+sendBroadcast(key agent, string command)
 {
     //TODO make this a connection queue that is handled via timer
+    //llSay(0, "Send Broadcast " + command + " with name " + name);
+    string name = llKey2Name(agent);
     command = "?" + llEscapeURL(command);
-    list options = [HTTP_METHOD, "GET", HTTP_CUSTOM_HEADER, "x-satyrfarm-agent", llKey2Name(agent), HTTP_CUSTOM_HEADER, "x-satyrfarm-uri", ourURL];
-    string body = "";
+    list options = [HTTP_METHOD, "POST"];
+    string body = "URL=" + ourURL + "\nAGENT=" + name;
     string url;
     integer length = llGetListLength(network);
     while (length--)
     {
         url = llList2String(network, length);
-        //llSay(0, "Send command " + command + " to url " + url);
         if (url != "")
         {
             llHTTPRequest(url + command, options, body);
@@ -201,7 +206,7 @@ default
             //if just one, tell the other to disconnect too
             if (llGetListLength(network) == 1)
             {
-                llHTTPRequest(llList2String(network, 0) + "?disconnect", [HTTP_METHOD, "GET"], "");
+                sendBroadcast(id, "disconnect");
             }
             disconnectNetwork();
         }
@@ -232,7 +237,7 @@ default
         else if (status == "say")
         {
             status = "";
-            sendBoradcast(id, "say," + m);
+            sendBroadcast(id, "say," + m);
             log += [llKey2Name(id) + " said from this storage:\n" + m];
         }
         checkListen(TRUE);
@@ -259,6 +264,11 @@ default
         }
         llSetTimerEvent(1);
     } 
+
+    on_rez(integer num)
+    {
+        llResetScript();
+    }
 
     link_message(integer sender, integer val, string m, key id)
     {
@@ -298,27 +308,32 @@ default
         if (cmd == "STORESTATUS")
         {
             statusstring = llDumpList2String(llList2List(tok, 2, -1), ";");
+            return;
         }
-        else if (cmd == "GOTLEVEL")
+        if (!connectStage || network == [])
+        {
+            return;
+        }
+        if (cmd == "GOTLEVEL")
         {
             string product = llList2String(tok, 1);
             string level = llList2String(tok, 2);
             log += ["This rack set level from " + product + " to " + level];
-            sendBoradcast(llGetKey(), "setlevel," + product + "," + level);
+            sendBroadcast(llGetKey(), "setlevel," + product + "," + level);
         }
         else if (cmd == "REZZEDPRODUCT")
         {
             key agent = llList2Key(tok, 1);
             string product = llList2String(tok, 2);
             log += [llKey2Name(agent) + " took one " + product + " from this storage."];
-            sendBoradcast(agent, "add," + product + ",-1");
+            sendBroadcast(agent, "add," + product + ",-1");
         }
         else if (cmd == "GOTPRODUCT")
         {
             key agent = llList2Key(tok, 1);
             string product = llList2String(tok, 2);
             log += [llKey2Name(agent) + " added one " + product + " into this storage."];
-            sendBoradcast(agent, "add," + product + ",1");
+            sendBroadcast(agent, "add," + product + ",1");
         }
     }
     
@@ -347,125 +362,150 @@ default
             responseStatus = 200;
             responseBody = "ACK";
         }
-        else if (methode == "GET")
+        else
         {
             string get = llGetHTTPHeader(id,"x-query-string");
-            string region = llGetHTTPHeader(id,"x-secondlife-region");
-            string agent = llGetHTTPHeader(id, "x-satyrfarm-agent");
+            //workaround for opensim 0.8 Bug
+            if (llGetSubString(get, 0, 0) == "=") get = llGetSubString(get, 1, -1);
+
             string requrl = llGetHTTPHeader(id, "x-script-url");
-            //llOwnerSay("DEBUG: get= " + get + " from owner " + agent + " in region " + region);
             if (requrl != ourURL)
             {
                 llReleaseURL(requrl);
                 responseStatus = 404;
                 responseBody = "Not Found";
             }
-            if (get == "ping")
+            else if (methode == "POST")
             {
-                responseStatus = 200;
-                responseBody = ourURL;
-            }
-            else if (get == "network")
-            {
-                responseStatus = 200;
-                responseBody = llDumpList2String(network, "\n");
-                if (responseBody == "")
+                string uri;
+                string agent;
+                string region = llGetHTTPHeader(id,"x-secondlife-region");
+                //parse parameters from body
+                list bodyl = llParseString2List(body, ["\n"], []);
+                integer len = llGetListLength(bodyl);
+                while (len--)
                 {
-                    responseBody = "empty";
+                    string param = llList2String(bodyl, len);
+                    integer index = llSubStringIndex(param, "=");
+                    if (index != -1)
+                    {
+                        string skey = llGetSubString(param, 0, index - 1);
+                        string svalue = llGetSubString(param, index + 1, -1);
+                        if (skey == "URL") uri = svalue;
+                        else if (skey == "AGENT") agent = svalue;
+                        else if (skey == "REGION") region = svalue;
+                    }
+                }
+
+                if (get == "connect")
+                {
+                    if (llListFindList(network, [uri]) != -1)
+                    {
+                        responseBody = "Already added";
+                        responseStatus = 200;
+                    }
+                    else
+                    {
+                        if (!connectStage)
+                        {
+                            connectStage = 3;
+                            isFirst = TRUE;
+                        }
+                        network += [uri];
+                        lastPing += [llGetUnixTime()];
+                        saveConfig();
+                        string message = "New storage rack from region " + region + " connected";
+                        llSay(0, message);
+                        log += [message];
+                        responseBody = "Added you.";
+                        responseStatus = 200;
+                    }
+                }
+                else if (get == "disconnect")
+                {
+                    disconnectNetwork();
+                }
+                else if (!llSubStringIndex(get, "add"))
+                {
+                    list args = llParseString2List(llUnescapeURL(get), [","], []);
+                    string product = llList2String(args, 1);
+                    integer amount = llList2Integer(args, 2);
+                    string message = agent;
+                    if (amount == 1) message += " added one ";
+                    else if (amount == -1) message += " removed one ";
+                    else message += " added " + (string)amount + " ";
+                    message += product + " from storage in Region " + region;
+                    llSay(0, message);
+                    log += [message];
+                    llMessageLinked(LINK_SET, 84, "ADDPRODUCTNUM|" + product + "|" + (string)amount, NULL_KEY);
+                    responseBody = "OK";
+                    responseStatus = 200;
+                }
+                else if (!llSubStringIndex(get, "setlevel"))
+                {
+                    list args = llParseString2List(llUnescapeURL(get), [","], []);
+                    string product = llList2String(args, 1);
+                    integer amount = llList2Integer(args, 2);
+                    string message = agent + " in region " + region + " set level of " + product + " to " + (string)amount;
+                    llSay(0, message);
+                    log += [message];
+                    llMessageLinked(LINK_SET, 84, "SETLEVEL|" + product + "|" + (string)amount, NULL_KEY);
+                    responseBody = "OK";
+                    responseStatus = 200;
+                }
+                else if (!llSubStringIndex(get, "say"))
+                {
+                    list args = llParseString2List(llUnescapeURL(get), [","], []);
+                    string message = agent + " in region " + region + " said:\n" + llList2String(args, 1);
+                    llSay(0, message);
+                    log += [message];
                 }
             }
-            else if (get == "config")
+            else if (methode == "GET")
             {
-                if (llGetInventoryType("config") == INVENTORY_NOTECARD)
+                if (get == "ping")
                 {
-                    responseBody = osGetNotecard("config");
+                    responseStatus = 200;
+                    responseBody = ourURL;
+                }
+                else if (get == "network")
+                {
+                    responseStatus = 200;
+                    responseBody = llDumpList2String(network, "\n");
                     if (responseBody == "")
                     {
                         responseBody = "empty";
                     }
-                    responseStatus = 200;
                 }
-                else
+                else if (get == "config")
                 {
-                    responseBody = "";
-                    responseStatus = 200;
-                }
-            }
-            else if (get == "levels")
-            {
-                responseBody = statusstring;
-                if (statusstring != "")
-                {
-                    responseStatus = 200;
-                }
-                else
-                {
-                    responseStatus = 522;
-                }
-            }
-            else if (get == "connect")
-            {
-                string uri = llGetHTTPHeader(id, "x-satyrfarm-uri");
-                if (llListFindList(network, [uri]) != -1)
-                {
-                    responseBody = "Already added";
-                    responseStatus = 200;
-                }
-                else
-                {
-                    if (!connectStage)
+                    if (llGetInventoryType("config") == INVENTORY_NOTECARD)
                     {
-                        connectStage = 3;
-                        isFirst = TRUE;
+                        responseBody = osGetNotecard("config");
+                        if (responseBody == "")
+                        {
+                            responseBody = "empty";
+                        }
+                        responseStatus = 200;
                     }
-                    network += [uri];
-                    lastPing += [llGetUnixTime()];
-                    saveConfig();
-                    string message = "New storage rack from region " + region + " connected";
-                    llSay(0, message);
-                    log += [message];
-                    responseBody = "Added you.";
-                    responseStatus = 200;
+                    else
+                    {
+                        responseBody = "";
+                        responseStatus = 200;
+                    }
                 }
-            }
-            else if (get == "disconnect")
-            {
-                disconnectNetwork();
-            }
-            else if (!llSubStringIndex(get, "add"))
-            {
-                list args = llParseString2List(llUnescapeURL(get), [","], []);
-                string product = llList2String(args, 1);
-                integer amount = llList2Integer(args, 2);
-                string message = agent;
-                if (amount == 1) message += " added one ";
-                else if (amount == -1) message += " removed one ";
-                else message += " added " + (string)amount + " ";
-                message += product + " from storage in Region " + region;
-                llSay(0, message);
-                log += [message];
-                llMessageLinked(LINK_SET, 84, "ADDPRODUCTNUM|" + product + "|" + (string)amount, NULL_KEY);
-                responseBody = "OK";
-                responseStatus = 200;
-            }
-            else if (!llSubStringIndex(get, "setlevel"))
-            {
-                list args = llParseString2List(llUnescapeURL(get), [","], []);
-                string product = llList2String(args, 1);
-                integer amount = llList2Integer(args, 2);
-                string message = agent + " in region " + region + " set level of " + product + " to " + (string)amount;
-                llSay(0, message);
-                log += [message];
-                llMessageLinked(LINK_SET, 84, "SETLEVEL|" + product + "|" + (string)amount, NULL_KEY);
-                responseBody = "OK";
-                responseStatus = 200;
-            }
-            else if (!llSubStringIndex(get, "say"))
-            {
-                list args = llParseString2List(llUnescapeURL(get), [","], []);
-                string message = agent + " in region " + region + " said:\n" + llList2String(args, 1);
-                llSay(0, message);
-                log += [message];
+                else if (get == "levels")
+                {
+                    responseBody = statusstring;
+                    if (statusstring != "")
+                    {
+                        responseStatus = 200;
+                    }
+                    else
+                    {
+                        responseStatus = 522;
+                    }
+                }
             }
         }
         llHTTPResponse(id, responseStatus, responseBody);
@@ -535,7 +575,7 @@ state connect
         //llOwnerSay("Got response " + (string)httpStatus + " : " + body + "\n" + llDumpList2String(metaData, ","));
         if (httpStatus >= 400 || body == "")
         {
-            llSay(0, "Couldn't connect to " + llList2String(network, 0));
+            llSay(0, "Couldn't connect to " + llList2String(network, 0) + " with status: " + (string)httpStatus + "\n" + body);
             network = llDeleteSubList(network, 0, 0);
             lastPing = llDeleteSubList(lastPing, 0, 0);
             connectStage = 0;
@@ -596,13 +636,13 @@ state connect
             }
             else if (connectStage == 3)
             {
+                if (llGetInventoryType("storagenc-bc") == INVENTORY_NOTECARD)
+                {
+                    llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
+                    llRemoveInventory("storagenc-bc");
+                }
                 if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD)
                 {
-                    if (llGetInventoryType("storagenc-bc") == INVENTORY_NOTECARD)
-                    {
-                        llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
-                        llRemoveInventory("storagenc-bc");
-                    }
                     llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
                     string nc = osGetNotecard("storagenc");
                     osMakeNotecard("storagenc-bc", nc);
@@ -612,7 +652,7 @@ state connect
                 llSay(0, "Done :)\nThis storage is now connected. It might need about one minute till other storages in the network realize it.");
                 isFirst = FALSE;
                 log += ["Connected to network..."];
-                sendBoradcast(llGetOwner(), "connect");
+                sendBroadcast(llGetOwner(), "connect");
                 saveConfig();
                 state default;
             }
