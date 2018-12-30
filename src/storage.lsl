@@ -65,6 +65,7 @@ checkListen(integer force)
     {
         llListenRemove(listener);
         listener = -1;
+        status = "";
         selitems = [];
     }
 }
@@ -271,19 +272,36 @@ rezzItem(string m, key agent)
     else llSay(0, "Sorry, there is not enough "+m);
 }
 
-getItem(key agent, string m)
+getItem(string m)
 {
-    tmpkey = agent;
     integer idx = llListFindList(products, [m]);
     if (idx >=0 && llList2Integer(levels,idx) >=100)
     {
         llSay(0, "I am full of "+m);
+        if (status == "Sell")
+        {
+            llSensor("", "", SCRIPTED, 10, PI);
+        }
     }
     else
     {
         lookingFor = "SF " +m;
         llSensor(lookingFor, "",SCRIPTED,  SENSOR_DISTANCE, PI);
     }
+}
+
+list getAvailProducts()
+{
+    list availProducts = [];
+    integer len = llGetListLength(products);
+    while (len--)
+    {
+        if (llList2Integer(levels, len) >= singleLevel)
+        {
+            availProducts += [llList2String(products, len)];
+        }
+    }
+    return availProducts;
 }
 
 
@@ -304,16 +322,19 @@ default
         }
         else if (m == "Add Product")
         {
+            tmpkey = id;
+            status = "Sell";
             if (product != "")
             {
-                getItem(id, product);
+                getItem(product);
                 list opts = ["CLOSE", "Add Product", "Get Product"] + customOptions;
                 llDialog(id, "Select", opts, chan(ownkey));
             }
             else
             {
-                status = "Sell";
-                multiPageMenu(id, "Select product to store", products);
+                startOffset = 0;
+                lookingFor = "all";
+                llSensor("", "", SCRIPTED, 10, PI);
             }
             return;
         }
@@ -327,21 +348,14 @@ default
                 return;
             }
             status = "Get";
-            list availProducts = [];
-            integer len = llGetListLength(products);
-            while (len--)
-            {
-                if (llList2Integer(levels, len) >= singleLevel)
-                {
-                    availProducts += [llList2String(products, len)];
-                }
-            }
+            list availProducts = getAvailProducts();
             if (availProducts == [])
             {
                 llSay(0, "No products available.");
             }
             else
             {
+                startOffset = 0;
                 multiPageMenu(id, "Select product to get", availProducts);
                 return;
             }
@@ -361,8 +375,7 @@ default
             if (m == ">>")
                 startOffset += 10;
             else
-                getItem(id, m);
-            multiPageMenu(id, "Select product to store", products);
+                getItem(m);
             return;
         }
         else if (status  == "Get")
@@ -371,8 +384,12 @@ default
                 startOffset += 10;
             else
                 rezzItem(m, id);
-            multiPageMenu(id, "Select product to get", products);
-            return;
+            list availProducts = getAvailProducts();
+            if (availProducts != [])
+            {
+                multiPageMenu(id, "Select product to get", availProducts);
+                return;
+            }
         }
         else
         {
@@ -530,6 +547,31 @@ default
     
     sensor(integer n)
     {
+        if (lookingFor == "all")
+        {
+            list buttons = [];
+            while (n--)
+            {
+                string name = llGetSubString(llKey2Name(llDetectedKey(n)), 3, -1);
+                if (llListFindList(products, [name]) != -1 && llListFindList(buttons, [name]) == -1)
+                {
+                    buttons += [name];
+                }
+            }
+            if (buttons == [])
+            {
+                if (selitems == [])
+                {
+                    llSay(0, "No items found nearby");
+                }
+                checkListen(TRUE);
+            }
+            else
+            {
+                multiPageMenu(tmpkey, "Select product to store", buttons);
+            }
+            return;
+        }
         //get first product that isn't already selected and has enough percentage
         integer c;
         key ready_obj = NULL_KEY;
@@ -553,12 +595,25 @@ default
         selitems += [ready_obj];
         llSay(0, "Found "+lookingFor+", emptying...");
         osMessageObject(ready_obj, "DIE|"+(string)ownkey);
+        if (status == "Sell")
+        {
+            lookingFor = "all";
+            llSensor("", "", SCRIPTED, 10, PI);
+        }
     }
     
 
     no_sensor()
     {
-        llSay(0, "Error! "+lookingFor+" not found nearby. You must bring it near me!");
+        if (lookingFor == "all" && selitems == [])
+        {
+            llSay(0, "No items found nearby");
+        }
+        else
+        {
+            llSay(0, "Error! "+lookingFor+" not found nearby. You must bring it near me!");
+        }
+        checkListen(TRUE);
     }
  
  
@@ -632,7 +687,9 @@ default
         }
         else if (cmd == "ADDPRODUCT")
         {
-            getItem(id, llList2String(tok,1));
+            tmpkey = id;
+            checkListen(TRUE);
+            getItem(llList2String(tok,1));
         }
         else if (cmd == "ADDPRODUCTNUM")
         {

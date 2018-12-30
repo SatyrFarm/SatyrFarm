@@ -78,7 +78,7 @@ disconnectNetwork()
     llReleaseURL(ourURL);
     connectStage = 0;
     ourURL = "";
-    if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD && (!isFirst || llGetListLength(network) > 1))
+    if (llGetInventoryType("storagenc") == INVENTORY_NOTECARD && (!isFirst || llGetListLength(network) != 1))
     {
         llMessageLinked(LINK_SET, 84, "IGNORE_CHANGED", NULL_KEY);
         llRemoveInventory("storagenc");
@@ -238,7 +238,9 @@ default
         {
             status = "";
             sendBroadcast(id, "say," + m);
-            log += [llKey2Name(id) + " said from this storage:\n" + m];
+            string message = llKey2Name(id) + " said from this storage:\n" + m;
+            llSay(0, message);
+            log += [message];
         }
         checkListen(TRUE);
     }
@@ -621,7 +623,7 @@ state connect
                     while (len--)
                     {
                         string conurl = llList2String(nc, len);
-                        if (llListFindList(network, conurl) == -1 && conurl != ourURL)
+                        if (llListFindList(network, [conurl]) == -1 && conurl != ourURL)
                         {
                             network += [conurl];
                             lastPing += [curtime];
