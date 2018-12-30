@@ -337,7 +337,14 @@ default
                         availProducts += [llList2String(products, len)];
                     }
                 }
-                multiPageMenu(id, "Select product to get", availProducts);
+                if (availProducts == [])
+                {
+                    llSay(0, "No products available.");
+                }
+                else
+                {
+                    multiPageMenu(id, "Select product to get", availProducts);
+                }
             }
             return;
         }
