@@ -30,9 +30,10 @@ WOOD_TIMES=1
 
 For scripting plugins, check the code below for the emitted link_messages
 **/
-integer VERSION=1;
+integer VERSION=2;
 
 string PASSWORD="*";
+integer doReset = 1;
 integer INTERVAL = 300;
 string PRODUCT_NAME;
 
@@ -42,7 +43,6 @@ float LIFETIME = 172800;
 float WATER_TIMES = 2.;
 integer AUTOREPLANT=0;
 float WOOD_TIMES = 4.;
-integer doReset = 1;
 list PLANTS = []; 
 list PRODUCTS = [];
 //for AddOns
@@ -87,10 +87,12 @@ checkListen(integer force)
 }
 
 
-loadConfig()
+loadConfig(integer checkForReset)
 {
     //sfp notecard
-    PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+    PASSWORD = osGetNotecardLine("sfp", 0);
+    if (osGetNumberOfNotecardLines("sfp") >= 2)
+        doReset = (integer)osGetNotecardLine("sfp", 1);
     //config notecard
     if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
@@ -113,7 +115,6 @@ loadConfig()
                     else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
                     else if (cmd == "AUTOREPLANT") AUTOREPLANT = (integer)val;
                     else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;
-                    else if (cmd == "RESET_ON_REZ") doReset = (integer)val;
                     else if (cmd == "PLANTLIST")
                     {
                         PLANTS = llParseString2List(val, [","], []);
@@ -136,9 +137,16 @@ loadConfig()
     list desc = llParseStringKeepNulls(llGetObjectDesc(), [";"], []);
     if (llList2String(desc, 0) == "T")
     {
-        if ((llList2String(desc, 7) != (string)chan(llGetKey())) && doReset)
+        if ((llList2String(desc, 7) != (string)chan(llGetKey())) && doReset && checkForReset)
         {
-            llSetObjectDesc("");
+            if (doReset == 1)
+            {
+                llSetObjectDesc("");
+            }
+            else
+            {
+                doReset = -1;
+            }
         }
         else
         {
@@ -356,10 +364,9 @@ default
             llSleep(0.5);
             return;
         }
-        llSetRemoteScriptAccessPin(0);
         //
         status = "Empty";
-        loadConfig();
+        loadConfig(TRUE);
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
         llSetTimerEvent(1);
     }
@@ -367,28 +374,35 @@ default
 
     touch_start(integer n)
     {
-        if (llSameGroup(llDetectedKey(0)) || osIsNpc(llDetectedKey(0)))
+        if (!llSameGroup(llDetectedKey(0)) && !osIsNpc(llDetectedKey(0)))
         {
-           list opts = [];
-           if (status == "Ripe")  opts += "Harvest";
-           else if (status == "Dead" || (status == "New" && AUTOREPLANT))  opts += "Cleanup";
-           else if (status == "Empty")  opts += "Plant";
-        
-           if (water < 90) opts += "Water";
-    
-           if (autoWater) opts += "AutoWater Off";
-           else opts += "AutoWater On";
-           
-           if (HAS_WOOD && wood>=100.) opts += "Get Wood";
-           
-           if (status == "Growing")
-               opts += "Add Manure";
-                         
-           opts += customOptions;              
-           opts += "CLOSE";
-           startListen();
-           llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
+            return;
         }
+        if (doReset == -1)
+        {
+            llSay(0, "I am locked, did you try to copy me? No cheating plz!\nYou can still unlock me, without losing any progress, just ask some trustworthy farm people :)");
+            return;
+        }
+
+        list opts = [];
+        if (status == "Ripe")  opts += "Harvest";
+        else if (status == "Dead" || (status == "New" && AUTOREPLANT))  opts += "Cleanup";
+        else if (status == "Empty")  opts += "Plant";
+    
+        if (water < 90) opts += "Water";
+
+        if (autoWater) opts += "AutoWater Off";
+        else opts += "AutoWater On";
+       
+        if (HAS_WOOD && wood>=100.) opts += "Get Wood";
+       
+        if (status == "Growing")
+            opts += "Add Manure";
+                     
+        opts += customOptions;              
+        opts += "CLOSE";
+        startListen();
+        llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
     }
     
     listen(integer c, string n ,key id , string m)
@@ -469,7 +483,14 @@ default
         }
         string command = llList2String(cmd, 0);
 
-        if (command == "WATER")
+        if (command == "INIT")
+        {
+            doReset = 2;
+            loadConfig(FALSE);
+            llSetRemoteScriptAccessPin(0);
+            refresh();
+        }
+        else if (command == "WATER")
         {
             water=100.;
             refresh();
@@ -551,9 +572,11 @@ default
     
     timer()
     {
+        llSetTimerEvent(INTERVAL);
+        if (doReset == -1)
+          return;
         refresh();
         checkListen(FALSE);
-        llSetTimerEvent(INTERVAL);
     }
     
     sensor(integer n)

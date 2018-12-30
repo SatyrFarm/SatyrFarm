@@ -1,9 +1,7 @@
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 
 
 
-integer totalSold;
 string oswUser;
 string oswToken;
 key farmHTTP;
@@ -38,16 +36,8 @@ checkListen()
     }
 }
 
-float wine;
-float water;
-float beer;
-
 list items = [];
-list objectPrice= [];
-list levels = [];
 
-
-integer lastTs;
 string status;
 string lookingFor;
 
@@ -102,7 +92,7 @@ refresh()
     string str;
     if (oswUser != "")
     {
-        str = "OSW User: "+oswUser+"\nTotal Points: "+points+"\nClick to sell your stuff\n";
+        str = "OSW User: "+(string)oswUser+"\nTotal Points: "+(string)points+"\nClick to sell your stuff\n";
     }
     else
         str = "Seller not activated. Click to activate";
@@ -193,8 +183,7 @@ default
         else if (status == "Sell")
         {
             {
-                string what = llGetSubString(m, 4,-1);
-                integer idx = llListFindList(items, m);
+                integer idx = llListFindList(items, [m]);
                 if (idx>=0)
                 {
                     userToPay = id;
@@ -204,9 +193,6 @@ default
                 status = "WaitItem";
             }
 
-        }
-        else if (status == "WaitItem")
-        {
         }
     }
 
@@ -239,7 +225,7 @@ default
     {
         itemFound=1;
         llSay(0, "Found "+llDetectedName(0)+", emptying...");
-        osMessageObject(llDetectedKey(0), "DIE|"+llGetKey());
+        osMessageObject(llDetectedKey(0), "DIE|"+(string)llGetKey());
     }
     
     no_sensor()
@@ -249,7 +235,7 @@ default
  
     state_entry()
     {
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
         refresh();
         llSetText("Seller is not active. Click to Activate", <1,1,1>, 1.0);
     }
@@ -262,7 +248,7 @@ default
     
     
     
-    http_response(key request_id, integer status, list metadata, string body)
+    http_response(key request_id, integer statusi, list metadata, string body)
     {
        // llOwnerSay(body);
         if (request_id == farmHTTP)

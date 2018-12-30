@@ -40,7 +40,7 @@ default
         createdTs = lastTs;
         refresh();
         llSetTimerEvent(1);
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
     }
 
    

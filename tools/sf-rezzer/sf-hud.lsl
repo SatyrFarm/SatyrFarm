@@ -1,19 +1,22 @@
 //### sf-hud.lsl
 //HUD for Rezzing Satyr Farm Itemsd
-integer gi_buttonOffset = 8;
 integer gi_frontFace = 4;
-integer gi_linkBack = 6;
-integer gi_linkForward = 7;
-integer gi_linkBuy = 3;
-integer gi_linkSell = 4;
-integer gi_linkTab = 5;
 integer gi_linkDesc = 2;
+integer gi_linkSex = 3;
+integer gi_linkBuy = 4;
+integer gi_linkSell = 5;
+integer gi_linkTab = 6;
+integer gi_linkBack = 7;
+integer gi_linkForward = 8;
+integer gi_buttonOffset = 9;
 integer gi_itemCount;
 integer gi_curPage;
 string gs_selectedItem;
 integer gi_selectedPrice;
 integer gi_balance = 200;
 list gl_sellprices;
+integer gb_sex;
+string gs_curnc;
 //Item Button List
 list gl_ident;
 list gl_prices;
@@ -21,6 +24,7 @@ list gl_prices;
 string PASSWORD;
 list ADDITIONS = [];
 list ITEMIGNORE = [];
+list ITEMNOAPI = [];
 list myItems;
 //Sell Menu
 integer listener = -1;
@@ -120,16 +124,31 @@ loadItemList(string ncname)
     gl_ident = llList2ListStrided(items, 0, -1, 2);
     gl_prices = llList2ListStrided(llDeleteSubList(items,0,0), 0, -1, 2);
     gi_itemCount = llGetListLength(gl_ident);
+    if (ncname == "animalitems")
+    {
+        gb_sex = 0;
+        llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.080, 0.0>, <0.125, -0.300, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 0.8]);
+    }
+    else
+    {
+        llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.0]);
+    }
+    gs_curnc = ncname;
     drawButtons();
 }
 
 string itemsToReplace(string sItems, key kObject)
 {
     list lReplace = [];
-    integer found_add = llListFindList(ADDITIONS, [llKey2Name(kObject)]) + 1;
+    string name = llKey2Name(kObject);
+    integer found_add = llListFindList(ADDITIONS, [name]) + 1;
     if (found_add)
     {
         lReplace += llParseString2List(llList2String(ADDITIONS, found_add), [","], []);
+    }
+    if (gs_curnc == "animalitems")
+    {
+        lReplace += [name];
     }
     lReplace += ["sfp"];
     list lItems = llParseString2List(sItems, [","], []);
@@ -143,6 +162,7 @@ string itemsToReplace(string sItems, key kObject)
             lReplace += [item];
         }
     }
+    lReplace += ["mover"];
     return llDumpList2String(lReplace, ",");
 }
 
@@ -154,9 +174,9 @@ default
         //config notecards
         if (llGetInventoryType("sfp") == INVENTORY_NONE || llGetInventoryType("sellprices") == INVENTORY_NONE)
         {
-            llSay(0, "No verion or password or sellprices notecard in inventory! Can't work like that.");
+            llSay(0, "No version or password or sellprices notecard in inventory! Can't work like that.");
         }
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = osGetNotecardLine("sfp", 0);
         gl_sellprices = llParseString2List(osGetNotecard("sellprices"), ["\n", "="], [""]);
         if (llGetInventoryType("additions") != INVENTORY_NONE)
         {
@@ -171,6 +191,10 @@ default
         if (llGetInventoryType("itemignore") != INVENTORY_NONE)
         {
             ITEMIGNORE = llParseString2List(osGetNotecard("itemignore"), ["\n"], []);
+        }
+        if (llGetInventoryType("noapi") == INVENTORY_NOTECARD)
+        {
+            ITEMNOAPI = llParseString2List(osGetNotecard("noapi"), ["\n"], []);
         }
         //own items
         myItems = [];
@@ -223,8 +247,7 @@ state ready
         llSetLinkPrimitiveParamsFast(gi_linkSell, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.125, 0.0>, <0.125, -0.4375, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 0.0, 0.0>, 1.0]);
         llSetLinkPrimitiveParamsFast(gi_linkTab, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.500, 0.25, 0.0>, <0.250, 0.00, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
         llSetLinkPrimitiveParamsFast(gi_linkDesc, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.5, 1.0, 0.0>, <-0.25, 0.0, 0.0>, 0.0, PRIM_COLOR, gi_frontFace, <1.0, 1.0, 1.0>, 1.0]);
-        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5]);
-        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_TEXT, "", ZERO_VECTOR, 0.0]);
+        llSetLinkPrimitiveParamsFast(gi_linkBuy, [PRIM_COLOR, gi_frontFace, <0.0, 0.0, 0.0>, 0.5, PRIM_TEXT, "", ZERO_VECTOR, 0.0]);
     }
 
     listen(integer c, string nm, key id, string m)
@@ -284,6 +307,7 @@ state ready
             if (llListFindList(gl_selitems, [obj]) == -1 && (have_percent == 100 || have_percent == 0))
             {
                 ready_obj = llDetectedKey(c);
+                gl_selitems += [obj];
             }
         }
         //--
@@ -334,6 +358,11 @@ state ready
 
     touch_start(integer num)
     {
+        if (!llSameGroup(llDetectedKey(0)) && !osIsNpc(llDetectedKey(0)))
+        {
+            llSay(0, "We are not in the same group");
+            return;
+        }
         integer link = llDetectedLinkNumber(0);
         if (link == gi_linkBack)
         {
@@ -344,6 +373,18 @@ state ready
         {
             ++gi_curPage;
             drawButtons();
+        }
+        else if (link == gi_linkSex)
+        {
+          gb_sex = !gb_sex;
+          if (gb_sex)
+          {
+              llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.080, 0.0>, <0.375, -0.300, 0.0>, 0.0]);
+          }
+          else
+          {
+              llSetLinkPrimitiveParamsFast(gi_linkSex, [PRIM_TEXTURE, gi_frontFace, "sf-hud-buttons", <0.250, 0.080, 0.0>, <0.125, -0.300, 0.0>, 0.0]);
+          }
         }
         else if (link == gi_linkTab)
         {
@@ -438,7 +479,15 @@ state rezz
     object_rez(key id)
     {
         llSleep(3.0);
-        osMessageObject(id, "VERSION-CHECK|" + PASSWORD + "|" + (string)llGetKey());
+        if (llListFindList(ITEMNOAPI, [llKey2Name(id)]) == -1)
+        {
+            osMessageObject(id, "VERSION-CHECK|" + PASSWORD + "|" + (string)llGetKey());
+        }
+        else
+        {
+            llRemoteLoadScriptPin(id, "mover", 12345, TRUE, 0);
+            state ready;
+        }
         llSetTimerEvent(20.0);
     }
 
@@ -493,6 +542,7 @@ state rezz
                 }
             }
             llSay(0, "Prepared: \n    " + llList2String(cmd,4));
+            osMessageObject(kobject, "INIT|" + (string)PASSWORD + "|" + (string)gb_sex);
             state ready;
         }
     }

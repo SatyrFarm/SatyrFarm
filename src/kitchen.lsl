@@ -11,9 +11,10 @@ SENSOR_DISTANCE=10
 MUST_SIT=1
 
 **/
-integer VERSION = 1;
+integer VERSION = 2;
 
 string PASSWORD="*";
+integer doReset = 1;
 //for listener and menus
 integer listener=-1;
 integer listenTs;
@@ -38,6 +39,7 @@ integer default_sensorRadius = 5;
 integer default_timeToCook = 60;
 vector default_rezzPosition = <1,0,0>;
 //temp
+integer saveNC = 0;
 string lookingFor;
 integer lookingForPercent;
 integer ingLength;
@@ -72,6 +74,21 @@ checkListen(integer force)
 
 
 
+integer ingredientsListFindString(list hay, string needle)
+{
+    integer found_pro = llGetListLength(hay) / 3;
+    //just a fancy way of llListFindList that isn't case sensitive
+    while (found_pro--) 
+    {
+        if (llToUpper(llList2String(hay, found_pro * 3 + 1)) == needle)
+        {
+            return found_pro * 3;
+        }
+    }
+    return -1;
+}
+
+
 
 integer ingredientsListFindString(list hay, string needle)
 {
@@ -91,23 +108,28 @@ integer ingredientsListFindString(list hay, string needle)
 
 loadConfig()
 {
-    if (llGetInventoryType("config") != INVENTORY_NOTECARD) return;
-
-    list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
-    integer i;
-    for (i=0; i < llGetListLength(lines); i++)
+    if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {
-        string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
-        if (llGetSubString(line, 0, 0) != "#")
+        list lines = llParseString2List(osGetNotecard("config"), ["\n"], []);
+        integer i;
+        for (i=0; i < llGetListLength(lines); i++)
         {
-            list tok = llParseStringKeepNulls(line, ["="], []);
-            string tkey = llList2String(tok, 0);
-            string tval = llList2String(tok, 1);
-            if (tkey == "SENSOR_DISTANCE") default_sensorRadius = (integer)tval;
-            else if (tkey == "REZ_POSITION") default_rezzPosition = (vector)tval;
-            else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
-            else if (tkey == "MUST_SIT") mustSit = (integer)tval;
+            string line = llStringTrim(llList2String(lines, i), STRING_TRIM);
+            if (llGetSubString(line, 0, 0) != "#")
+            {
+                list tok = llParseStringKeepNulls(line, ["="], []);
+                string tkey = llList2String(tok, 0);
+                string tval = llList2String(tok, 1);
+                if (tkey == "SENSOR_DISTANCE") default_sensorRadius = (integer)tval;
+                else if (tkey == "REZ_POSITION") default_rezzPosition = (vector)tval;
+                else if (tkey == "DEFAULT_DURATION") default_timeToCook = (integer)tval;
+                else if (tkey == "MUST_SIT") mustSit = (integer)tval;
+            }
         }
+    }
+    if ((integer)llGetObjectDesc() != chan(llGetKey()) && doReset == 2)
+    {
+        doReset = -1;
     }
 }
 
@@ -586,8 +608,13 @@ default
             return;
         } 
         string cmd = llList2Key(tk,0);
+        if (cmd == "INIT")
+        {
+            llSetObjectDesc((string)chan(llGetKey()));
+            doReset = 2;
+        }
         //for updates
-        if (cmd == "VERSION-CHECK")
+        else if (cmd == "VERSION-CHECK")
         {
             string answer = "VERSION-REPLY|" + PASSWORD + "|";
             answer += (string)llGetKey() + "|" + (string)VERSION + "|";
@@ -627,6 +654,7 @@ default
                 if (item == me) delSelf = TRUE;
                 else if (llGetInventoryType(item) != INVENTORY_NONE)
                 {
+                    ++saveNC;
                     llRemoveInventory(item);
                 }
             }
@@ -663,6 +691,11 @@ default
         if (!(llSameGroup(llDetectedKey(0))  || osIsNpc(llDetectedKey(0))) )
         {
             llSay(0, "We are not in the same group!");
+            return;
+        }
+        if (doReset == -1)
+        {
+            llSay(0, "I am locked, did you try to copy me? No cheating plz!\nYou can still unlock me, without losing any progress, just ask some trustworthy farm people :)");
             return;
         }
         
@@ -744,9 +777,11 @@ default
         llSetRemoteScriptAccessPin(0);
         //
         refresh();
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-        getRecipeNames();
+        PASSWORD = osGetNotecardLine("sfp", 0);
+        if (osGetNumberOfNotecardLines("sfp") >= 2)
+            doReset = (integer)osGetNotecardLine("sfp", 1);
         loadConfig();
+        getRecipeNames();
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
     } 
 
@@ -754,11 +789,18 @@ default
     {
         if (change & CHANGED_INVENTORY)
         {
-            getRecipeNames();
-            loadConfig();
-            customOptions = [];
-            customText = [];
-            llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
+            if (saveNC)
+            {
+                --saveNC;
+            }
+            else
+            {
+                getRecipeNames();
+                loadConfig();
+                customOptions = [];
+                customText = [];
+                llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);
+            }
         }
         
         if (status == "Cooking" && (llGetObjectPrimCount(llGetKey()) != llGetNumberOfPrims()))

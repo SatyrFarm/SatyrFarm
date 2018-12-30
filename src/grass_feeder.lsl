@@ -1,21 +1,17 @@
 /// UTD
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 
 integer createdTs =0;
 integer lastTs=0;
 
 
-integer statusLeft;
-integer statusDur;
 string status="Empty";
 
 float drinkWater=0.;
 float grassWater=0.;
 float grassLevel = 70.;
 
-string mode = "";
 integer autoWater =0;
 string sense= "";
 
@@ -49,7 +45,7 @@ checkListen()
 
 
 
-psys(key k)
+psys()
 {
  
      llParticleSystem(
@@ -93,7 +89,7 @@ psys(key k)
 
 
 
-refresh(integer ts)
+refresh()
 {
  
     grassWater -=  (float)(llGetUnixTime() - lastTs)/(86400.)*100.;
@@ -144,7 +140,7 @@ refresh(integer ts)
 
 
     llSetObjectDesc("F;Water;"+(string)llRound(drinkWater)+";"+(string)llRound(grassLevel) + ";" + (string)llRound(grassWater));
-    string str = progress  + "\nDrinkable Water: " + (integer)(drinkWater)+ "%\nGrass Level: "+(integer)grassLevel + "%\nGrass watered: "+(integer)grassWater+"%\n";
+    string str = progress  + "\nDrinkable Water: " + (string)((integer)(drinkWater))+ "%\nGrass Level: "+(string)((integer)grassLevel) + "%\nGrass watered: "+(string)((integer)grassWater)+"%\n";
     if (progress != "")
         llSetText(str, <1,.1,.1>, 1.0);
     else
@@ -158,7 +154,7 @@ refresh(integer ts)
     
     llSetLinkPrimitiveParamsFast(2, [PRIM_TEXTURE, ALL_SIDES, "Grass", <9, .5, 0>, <0,  .20  - (grassLevel/100.)*0.45 ,  0>, PI/2]);
         
-    psys(NULL_KEY);
+    psys();
     
     
     vector v ;
@@ -189,7 +185,7 @@ default
         createdTs = lastTs;
         status = "Empty";
         llSetTimerEvent(1);
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
     }
 
 
@@ -272,7 +268,7 @@ default
                     grassLevel -= f;
                     if (grassLevel<0) grassLevel=0;
                     osMessageObject(u,  "FOOD|"+PASSWORD);
-                    psys(u);
+                    psys();
                 llSetTimerEvent(2);
                 }
             }
@@ -285,7 +281,7 @@ default
                     drinkWater -= f;
                     if (drinkWater<0) drinkWater=0;
                     osMessageObject(u,  "WATER|"+PASSWORD);;
-                    psys(u);
+                    psys();
                     llSetTimerEvent(2);
                 }
             }
@@ -297,7 +293,7 @@ default
         integer ts = llGetUnixTime();
         if (ts - lastTs> 0)
         {
-            refresh(ts);
+            refresh();
             llSetTimerEvent(300);
             lastTs = ts;
         }

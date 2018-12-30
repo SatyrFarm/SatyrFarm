@@ -130,7 +130,7 @@ default
  
     state_entry()
     {
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
         llListen(channel, "", "", "");
         lastTs =  llGetUnixTime();
         refresh();

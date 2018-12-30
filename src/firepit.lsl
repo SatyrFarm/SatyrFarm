@@ -2,7 +2,6 @@
  ** An example  of a custom object that uses SF items 
  **/
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer lastTs;
 
@@ -86,7 +85,7 @@ refresh()
     water -= 100.*(float)(ts - lastTs) / (7200.);
     if (water<0) water=0;
     if (water < 100)
-        llSetText("Wood: "+(integer)water+"%\n" , <1,1,1>, 1.0);
+        llSetText("Wood: "+(string)((integer)water)+"%\n" , <1,1,1>, 1.0);
     else
         llSetText("" , <1,1,1>, 1.0);
     
@@ -167,7 +166,7 @@ default
         if ( status == "WaitWater")
         {
             llSay(0, "Found wood, emptying...");
-            osMessageObject(id, "DIE|"+llGetKey());
+            osMessageObject(id, "DIE|"+(string)llGetKey());
             //osMessageObject(llDetectedKey(0), "DIE|"+llGetKey());
            
         }
@@ -182,7 +181,7 @@ default
  
     state_entry()
     {
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
         lastTs = llGetUnixTime();
         llSetTimerEvent(1);
     }   

@@ -105,7 +105,7 @@ default
     state_entry()
     {
         //llSetLinkTextureAnim(2, PING_PONG|ROTATE| SMOOTH |LOOP, ALL_SIDES, 0, 0, 0, .05, .011);
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);        
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);        
         lastTs = llGetUnixTime();
 
         llSetText("Wireless Charging station\nCharge your car here\n", <1,1,1>, 1.0);
