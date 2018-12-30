@@ -395,7 +395,12 @@ default
                     }
                 }
 
-                if (get == "connect")
+                if (get == "ping")
+                {
+                    responseStatus = 200;
+                    responseBody = ourURL;
+                }
+                else if (get == "connect")
                 {
                     if (llListFindList(network, [uri]) != -1)
                     {
@@ -461,12 +466,7 @@ default
             }
             else if (methode == "GET")
             {
-                if (get == "ping")
-                {
-                    responseStatus = 200;
-                    responseBody = ourURL;
-                }
-                else if (get == "network")
+                if (get == "network")
                 {
                     responseStatus = 200;
                     responseBody = llDumpList2String(network, "\n");
