@@ -324,6 +324,7 @@ default
                 rezzItem(product, id);
                 list opts = ["CLOSE", "Add Product", "Get Product"] + customOptions;
                 llDialog(id, "Select", opts, chan(ownkey));
+                return;
             }
             else
             {
@@ -344,9 +345,9 @@ default
                 else
                 {
                     multiPageMenu(id, "Select product to get", availProducts);
+                    return;
                 }
             }
-            return;
         }
         else if (m == "Check")
         {
