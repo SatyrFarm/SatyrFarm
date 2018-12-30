@@ -305,7 +305,13 @@ default
             {
                 buttons += ["Disconnect", "Log", "Say"];
             }
-            llDialog(id, "Share your storage with others.", buttons, chan(llGetKey()));
+            string message = "Share your storage with others.";
+            integer num = llGetListLength(network);
+            if (num > 0)
+            {
+                message += "Currently " + (string)num + " storages connected";
+            }
+            llDialog(id, message, buttons, chan(llGetKey()));
             return;
         }
         list tok = llParseString2List(m, ["|"], []);
