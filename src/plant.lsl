@@ -39,7 +39,7 @@ string PRODUCT_NAME;
 
 //variables that get set in config notecard
 integer HAS_WOOD=0;
-float LIFETIME = 172800;
+float LIFETIME = 172800.;
 float WATER_TIMES = 2.;
 integer AUTOREPLANT=0;
 float WOOD_TIMES = 4.;
@@ -111,7 +111,7 @@ loadConfig(integer checkForReset)
                     //llOwnerSay(cmd+"="+val);
                     
                     if (cmd == "HAS_WOOD")     HAS_WOOD= (integer)val;  // Trees dont need replanting after harvest
-                    else if (cmd == "LIFEDAYS")    LIFETIME= 86400*(float)val;
+                    else if (cmd == "LIFEDAYS")    LIFETIME= 86400.*(float)val;
                     else if (cmd == "WATER_TIMES") WATER_TIMES = (float)val;
                     else if (cmd == "AUTOREPLANT") AUTOREPLANT = (integer)val;
                     else if (cmd == "WOOD_TIMES")  WOOD_TIMES  = (float)val;

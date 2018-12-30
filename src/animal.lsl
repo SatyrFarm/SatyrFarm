@@ -34,7 +34,7 @@ list ADULT_RANDOM_PRIMS = []; //  show randomly
 list CHILD_PRIMS = [];        //children only
 list colorable = []; 
 list petResponses;
-float happy = 100;
+float happy = 100.;
 
 string PASSWORD="*";
 integer deathFlags=0;
