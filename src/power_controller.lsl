@@ -4,20 +4,12 @@
 **/
 
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
-integer chan(key u)
-{
-    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
-}
-
 
 float energy=20.;
 integer lastTs;
 
 integer channel = -321321;
-
-string status;
 
 
 
@@ -65,7 +57,7 @@ psys(key k)
 
 refresh()
 {
-    llSetText("Energy Controller\nNetwork capacity: "+llRound(energy)+" kWh\n" , <1,1,1>, 1.0);
+    llSetText("Energy Controller\nNetwork capacity: "+(string)llRound(energy)+" kWh\n" , <1,1,1>, 1.0);
     energy -= energy* (llGetUnixTime()  - lastTs)/86400.;
     if (energy<0) energy=0;
     lastTs = llGetUnixTime();
@@ -113,21 +105,6 @@ default
         refresh();
     }
 
-    sensor(integer n)
-    {
-        if ( status == "WaitWater")
-        {
-            llSay(0, "Found water bucket, emptying...");
-            osMessageObject(llDetectedKey(0), "DIE "+llGetKey());
-        }
-    }
-    
-    no_sensor()
-    {
-        if (status == "WaitWater")
-            llSay(0, "Error! Water bucket not found nearby! You must bring a water bucket near me!");
-    }
- 
     state_entry()
     {
         PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);

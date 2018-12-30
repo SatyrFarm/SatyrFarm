@@ -4,13 +4,12 @@ SF Mine script
 
 
 integer energy_channel = -321321;
-float LIFETIME = 86400*2.;
+float LIFETIME = 172800.;
 float WATER_TIMES = 2.;
 list PLANTS = []; 
 float WOOD_TIMES = 4.;
 integer IS_TREE = 0;
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 string PRODUCT_NAME;
 
@@ -82,7 +81,7 @@ loadConfig()
 }
 
 
-psys(key k)
+psys()
 {
  
      llParticleSystem(
@@ -202,7 +201,7 @@ refresh(integer ts)
     else
     {
        float p= 1- ((float)(statusLeft)/(float)statusDur);
-       progress += "Status: "+status+" ("+(integer)(p*100.)+"%)\n";
+       progress += "Status: "+status+" ("+(string)((integer)(p*100.))+"%)\n";
     }
         
     float sw = water;
@@ -217,7 +216,7 @@ refresh(integer ts)
     else
     {
 
-        llSetText("Mining "+plant+"\nWater: " + (integer)(sw)+ "%\nEnergy: "+(string)(llFloor(energy))+"%\n"+progress, <1,.9,.6>, 1.0);
+        llSetText("Mining "+plant+"\nWater: " + (string)((integer)(sw))+ "%\nEnergy: "+(string)(llFloor(energy))+"%\n"+progress, <1,.9,.6>, 1.0);
 
 /*        //llSetLinkColor(2, <1,1,1>, ALL_SIDES);
         if (IS_TREE)
@@ -231,7 +230,7 @@ refresh(integer ts)
     else         llSetLinkColor(1, <1,1,1>, ALL_SIDES);
 
         
-    psys(NULL_KEY);
+    psys();
 
     llStopSound();
     if (!isWilted && (status == "Mining" || status == "Preparing"))
@@ -253,13 +252,12 @@ doHarvest()
          //llRegionSay(FARM_CHANNEL, "REZ|SF Rice|"+(string)(llGetPos() + <0,0,2>*llGetRot()) + "|" );
          llSay(0, "Congratulations! Your " +PRODUCT_NAME +" is ready!");
          //if (IS_TREE)
-         if (TRUE)
-         {
+         //{
             statusDur = statusLeft = (integer)(LIFETIME/5.);
             status = "Preparing";
-         }
-         else
-            status = "Empty";
+         //}
+         //else
+         //   status = "Empty";
              
          refresh(llGetUnixTime());
          llTriggerSound("lap", 1.0);

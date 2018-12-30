@@ -32,39 +32,10 @@ vector WHEEL_ROTATION=<0,0,PI/2>; // Optional rotation in case the wheels do not
 float power=10.;
 integer lastTs;
 
-integer chan(key u)
-{
-    return -1 - (integer)("0x" + llGetSubString( (string) u, -6, -1) )-393;
-}
-
-
-integer listener=-1;
-integer listenTs;
-
-startListen()
-{
-    if (listener<0) 
-    {
-        listener = llListen(chan(llGetKey()), "", "", "");
-        listenTs = llGetUnixTime();
-    }
-}
-
-checkListen()
-{
-    if (listener > 0 && llGetUnixTime() - listenTs > 300)
-    {
-        llListenRemove(listener);
-        listener = -1;
-    }
-}
-
 string driveAnim;
 float turning_ratio = .5; // Less is sharper
 
 float linear;
-integer toggle;
-
 
 integer seated = 0;
 float turn =0;
@@ -150,9 +121,6 @@ init()
             llSetVehicleRotationParam( VEHICLE_REFERENCE_FRAME, ZERO_ROTATION );
     
 }
-
-string curanim;
-
 
 refresh()
 {
@@ -392,15 +360,14 @@ default
     
     touch_start(integer n)
     {
-            if (power<90);
-            llSensor("SF KWh", "",SCRIPTED,  5, PI);   
+            if (power<90) llSensor("SF KWh", "",SCRIPTED,  5, PI);   
     }
     
     sensor(integer n)
     {
         key id = llDetectedKey(0);
         llSay(0, "Found KWh , charging...");
-        osMessageObject(id, "DIE|"+llGetKey());
+        osMessageObject(id, "DIE|"+(string)llGetKey());
     }
     
     no_sensor()

@@ -5,12 +5,8 @@ string PASSWORD="*";
 
 integer createdTs =0;
 integer lastTs=0;
-integer WATERTIME = 300;
 float fill=0.;
-integer listener=-1;
-integer channel;
 float rate;
-integer totTime=1;
 integer energy_channel = -321321;
 
 refresh()

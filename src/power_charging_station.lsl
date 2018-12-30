@@ -1,7 +1,6 @@
 /* Charging station takes power from power controller to charge the nearest SF vehicle
 */ 
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 key vehicle;
 integer chan(key u)
@@ -33,12 +32,8 @@ checkListen()
 
 integer energy_channel = -321321;
 
-float LIFETIME = 86400; //86400*2.;
-
 
 integer lastTs=0;
-
-float energy = 0.;
 
 string lookingFor;
 
@@ -82,7 +77,7 @@ water(key u)
  
 
 
-refresh(integer ts)
+refresh()
 {
  
     llParticleSystem([]);
@@ -109,9 +104,8 @@ default
         lastTs = llGetUnixTime();
 
         llSetText("Wireless Charging station\nCharge your car here\n", <1,1,1>, 1.0);
-        //refresh(lastTs);
         llStopSound();
-        refresh(llGetUnixTime());
+        refresh();
 
     }
 
@@ -129,7 +123,7 @@ default
            startListen();
            llDialog(llDetectedKey(0), "Select", opts, chan(llGetKey()));
            llSetTimerEvent(100);
-           refresh(llGetUnixTime());
+           refresh();
         }
     }
     
@@ -156,7 +150,7 @@ default
                 llSleep(1);
                 water(vehicle);
                 llSay(0,"Charging "+llKey2Name(vehicle)+"...");
-                osMessageObject(vehicle, "KWH|"+PASSWORD+"|"+llGetKey());
+                osMessageObject(vehicle, "KWH|"+PASSWORD+"|"+(string)llGetKey());
             }
             else if (llList2String(cmd,0) == "NOENERGY" && llList2String(cmd,1) == PASSWORD )
             {
