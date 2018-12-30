@@ -56,7 +56,7 @@ checkPings()
         integer change = FALSE;
         while (leng--)
         {
-            if (llList2Integer(lastPing, leng) < curtime - 3 * pingTime)
+            if (llList2Integer(lastPing, leng) < curtime - 4 * pingTime)
             {
                 change = TRUE;
                 lastPing = llDeleteSubList(lastPing, leng, leng);
@@ -290,6 +290,10 @@ default
         }
         else if (m == "MENU_OPTION|Share")
         {
+            if (id != llGetOwner())
+            {
+                return;
+            }
             startListen();
             list buttons = ["HELP", " ", "CLOSE", "Get URI"];
             if (!connectStage)
@@ -468,7 +472,12 @@ default
             }
             else if (methode == "GET")
             {
-                if (get == "network")
+                if (get == "ping")
+                {
+                    responseStatus = 200;
+                    responseBody = "ping";
+                }
+                else if (get == "network")
                 {
                     responseStatus = 200;
                     responseBody = llDumpList2String(network, "\n");
@@ -521,6 +530,11 @@ default
             if (found != -1)
             {
                 lastPing = llListReplaceList(lastPing, [llGetUnixTime()], found, found);
+            }
+            else
+            {
+                network += [body];
+                lastPing += [llGetUnixTime()];
             }
         }
     }
