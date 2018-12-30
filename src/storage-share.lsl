@@ -292,6 +292,7 @@ default
         {
             if (id != llGetOwner())
             {
+                llSay(0, "Just the Owner of this rack can use those functions.");
                 return;
             }
             startListen();
