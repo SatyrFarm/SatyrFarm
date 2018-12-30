@@ -49,16 +49,17 @@ checkPings()
         return;
     }
     integer curtime = llGetUnixTime();
-    if (curtime > pingTs + pingTime)
+    if (curtime > (pingTs + pingTime))
     {
         pingTs = curtime;
         integer leng = llGetListLength(lastPing);
         integer change = FALSE;
         while (leng--)
         {
-            if (llList2Integer(lastPing, leng) < curtime - 4 * pingTime)
+            if (llList2Integer(lastPing, leng) < (curtime - (4 * pingTime)))
             {
                 change = TRUE;
+                log += ["Lost connection to " + llList2String(network, leng)];
                 lastPing = llDeleteSubList(lastPing, leng, leng);
                 network = llDeleteSubList(network, leng, leng);
             }
@@ -559,6 +560,7 @@ state connect
 
     timer()
     {
+        llSetTimerEvent(0.);
         if (ourURL != "" )
         {
             llReleaseURL(ourURL);
