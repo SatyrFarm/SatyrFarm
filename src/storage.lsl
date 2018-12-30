@@ -326,27 +326,24 @@ default
                 llDialog(id, "Select", opts, chan(ownkey));
                 return;
             }
+            status = "Get";
+            list availProducts = [];
+            integer len = llGetListLength(products);
+            while (len--)
+            {
+                if (llList2Integer(levels, len) >= singleLevel)
+                {
+                    availProducts += [llList2String(products, len)];
+                }
+            }
+            if (availProducts == [])
+            {
+                llSay(0, "No products available.");
+            }
             else
             {
-                status = "Get";
-                list availProducts = [];
-                integer len = llGetListLength(products);
-                while (len--)
-                {
-                    if (llList2Integer(levels, len) >= singleLevel)
-                    {
-                        availProducts += [llList2String(products, len)];
-                    }
-                }
-                if (availProducts == [])
-                {
-                    llSay(0, "No products available.");
-                }
-                else
-                {
-                    multiPageMenu(id, "Select product to get", availProducts);
-                    return;
-                }
+                multiPageMenu(id, "Select product to get", availProducts);
+                return;
             }
         }
         else if (m == "Check")
