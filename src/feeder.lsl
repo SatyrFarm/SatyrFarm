@@ -7,7 +7,6 @@ float waterMaxZ;
 float foodMinZ;
 float foodMaxZ;
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 
 
@@ -128,7 +127,7 @@ integer getLinkNum(string name)
 refresh()
 {
 
-    llSetText(TITLE+"\nFood: "+(integer)food+"%\nWater: "+(integer)water+"%\n" , <1,1,1>, 1.0);
+    llSetText(TITLE+"\nFood: "+(string)((integer)food)+"%\nWater: "+(string)((integer)water)+"%\n" , <1,1,1>, 1.0);
     llSetObjectDesc("F;"+AUTOFOODITEM+";"+(string)llRound(water)+";"+(string)llRound(food));
     if (water <=5 && autoWater)
     {
@@ -328,14 +327,14 @@ default
         else if ( status == "WaitWater")
         {
             llSay(0, "Found water bucket, emptying...");
-            osMessageObject(id, "DIE|"+llGetKey());
+            osMessageObject(id, "DIE|"+(string)llGetKey());
             //osMessageObject(llDetectedKey(0), "DIE|"+llGetKey());
            
         }
         else if ( status == "WaitSack")
         {
             llSay(0, "Found "+lookFor+", emptying...");
-            osMessageObject(id,  "DIE|"+llGetKey());
+            osMessageObject(id,  "DIE|"+(string)llGetKey());
             //osMessageObject(llDetectedKey(0), "DIE|"+ llGetKey());
         }
 
@@ -351,7 +350,7 @@ default
  
     state_entry()
     {
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
         loadConfig();
         refresh();
         

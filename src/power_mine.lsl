@@ -287,7 +287,7 @@ default
         createdTs = lastTs;
         refresh(lastTs);
         
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
         
         if (IS_TREE)
         {

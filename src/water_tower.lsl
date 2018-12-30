@@ -2,7 +2,6 @@
    This code is released under the CC-BY-NC-SA license
    */
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 integer chan(key u)
 {
@@ -33,7 +32,6 @@ checkListen()
 
 
 
-float food=0.;
 float water=100.;
 integer lastFood=0;
 integer lastWater=0;
@@ -88,7 +86,7 @@ refresh()
 {
    
         
-    llSetText("Water Level: "+llRound(water)+"%\n" , <1,1,1>, 1.0);
+    llSetText("Water Level: "+(string)(llRound(water))+"%\n" , <1,1,1>, 1.0);
 
 
     vector v ;
@@ -167,7 +165,7 @@ default
                         psys(llList2Key(cmd, 2));
                     }
                 }
-                else llOwnerSay("Not in same group " +(llList2Key(cmd, 2)) );
+                else llOwnerSay("Not in same group " +(llList2String(cmd, 2)) );
                 
             }
             refresh();
@@ -201,7 +199,7 @@ default
             key id = llDetectedKey(0);
             llSay(0, "Found water bucket, emptying...");
             //llRegionSayTo(id,chan(id), "DIE");
-            osMessageObject(id, "DIE|"+llGetKey());
+            osMessageObject(id, "DIE|"+(string)llGetKey());
         }
     }
     
@@ -215,7 +213,7 @@ default
     state_entry()
     {
         
-         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+         PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
 
         lastTs = lastWater = lastFood = llGetUnixTime();
         refresh();

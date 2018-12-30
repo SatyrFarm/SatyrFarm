@@ -33,7 +33,7 @@ For scripting plugins, check the code below for the emitted link_messages
 integer VERSION=2;
 
 string PASSWORD="*";
-integer doReset;
+integer doReset = 1;
 integer INTERVAL = 300;
 string PRODUCT_NAME;
 
@@ -91,7 +91,8 @@ loadConfig(integer checkForReset)
 {
     //sfp notecard
     PASSWORD = osGetNotecardLine("sfp", 0);
-    doReset = (integer)osGetNotecardLine("sfp", 1);
+    if (osGetNumberOfNotecardLines("sfp") >= 2)
+        doReset = (integer)osGetNotecardLine("sfp", 1);
     //config notecard
     if (llGetInventoryType("config") == INVENTORY_NOTECARD)
     {

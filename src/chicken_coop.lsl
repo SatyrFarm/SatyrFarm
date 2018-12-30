@@ -1,5 +1,4 @@
 
-integer FARM_CHANNEL = -911201;
 string PASSWORD="*";
 
 integer chan(key u)
@@ -33,11 +32,10 @@ checkListen()
 string FOODITEM = "Corn";
 string FOODTOWER = "SF Storage Rack";
 
-float EGGSTIME = 86400*1.;
-float MEATTIME = 86400*3.;
+float EGGSTIME = 86400.;
+float MEATTIME = 259200.;
 
 float WATER_TIMES = .3; // Per day
-float FEED_TIMES = .3;
 
 integer createdTs =0;
 
@@ -63,7 +61,7 @@ float meat=0;
 
 
 
-psys(key k)
+psys()
 {
  
      llParticleSystem(
@@ -109,7 +107,7 @@ psys(key k)
 
 
 
-refresh(integer ts)
+refresh()
 {
  
     water -=  (float)(llGetUnixTime() - lastTs)/(86400/WATER_TIMES)*100.;
@@ -164,7 +162,7 @@ refresh(integer ts)
         progress += "Status: "+status+"\n";
     else
     {
-       progress += "Eggs: "+llRound(eggs)+"%\nChicken meat: "+llRound(meat)+"%\n";
+       progress += "Eggs: "+(string)llRound(eggs)+"%\nChicken meat: "+(string)llRound(meat)+"%\n";
     }
 
     vector col = <1,1,1>;
@@ -174,17 +172,19 @@ refresh(integer ts)
         llSay(0, "Help!");
     }
     
-    llSetText("Food: "+(integer)food + "% \nWater: " + (integer)(water)+ "%\n"+progress, col, 1.0);
+    llSetText("Food: "+(string)((integer)food) + "% \nWater: " + (string)((integer)(water))+ "%\n"+progress, col, 1.0);
     
+    /*
     if (status == "Empty")
     {
-        //llSetLinkTexture(2, TEXTURE_TRANSPARENT, ALL_SIDES);
+        llSetLinkTexture(2, TEXTURE_TRANSPARENT, ALL_SIDES);
     }
     else
     {
-        //llSetLinkColor(2, <1,1,1>, ALL_SIDES);
-        //llSetLinkTexture(2, status, ALL_SIDES);
+        llSetLinkColor(2, <1,1,1>, ALL_SIDES);
+        llSetLinkTexture(2, status, ALL_SIDES);
     }
+    */
     
     
       
@@ -197,7 +197,7 @@ refresh(integer ts)
     v.z = 0.34* water/100.;
     llSetLinkPrimitiveParamsFast(3, [PRIM_SIZE, v]);
       
-    psys(NULL_KEY);
+    psys();
 }
 
 default
@@ -221,9 +221,9 @@ default
         createdTs = lastTs;
         statusTs = lastTs;
         status = "OK";
-        refresh(lastTs);
+        refresh();
         llSetTimerEvent(1);
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
     }
 
 
@@ -321,7 +321,7 @@ default
         {
             llWhisper(0,"Auto-water completed");
             water = 100;
-            psys(NULL_KEY);
+            psys();
             sense = "";
             llSetTimerEvent(1);
         }
@@ -329,19 +329,19 @@ default
         {
             llWhisper(0,"Auto-food completed");
             food =100;
-            psys(NULL_KEY);
+            psys();
             sense = "";
             llSetTimerEvent(1);
         }
         else if (cmd == "WATER" )
         {
              water=100.;
-            refresh(llGetUnixTime());
+            refresh();
         }
         else if (cmd == "CORN" )
         {
             food=100.;
-            refresh(llGetUnixTime());
+            refresh();
         }
 
     }
@@ -353,7 +353,7 @@ default
         if (ts - lastTs> 0)
         {
           
-            refresh(ts);           
+            refresh();
             lastTs = ts;
         }
         llSetTimerEvent(200);
@@ -375,7 +375,7 @@ default
         else
         {
             llSay(0,"Emptying...");
-            osMessageObject(id, "DIE|"+llGetKey());
+            osMessageObject(id, "DIE|"+(string)llGetKey());
         }
     }
     

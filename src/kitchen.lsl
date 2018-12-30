@@ -14,7 +14,7 @@ MUST_SIT=1
 integer VERSION = 2;
 
 string PASSWORD="*";
-integer doReset;
+integer doReset = 1;
 //for listener and menus
 integer listener=-1;
 integer listenTs;
@@ -762,7 +762,8 @@ default
         //
         refresh();
         PASSWORD = osGetNotecardLine("sfp", 0);
-        doReset = (integer)osGetNotecardLine("sfp", 1);
+        if (osGetNumberOfNotecardLines("sfp") >= 2)
+            doReset = (integer)osGetNotecardLine("sfp", 1);
         loadConfig();
         getRecipeNames();
         llMessageLinked( LINK_SET, 99, "RESET", NULL_KEY);

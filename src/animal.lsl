@@ -35,7 +35,7 @@ list CHILD_PRIMS = [];        //children only
 list colorable = []; 
 
 string PASSWORD="*";
-integer doReset;
+integer doReset = 1;
 integer deathFlags=0;
 
 integer chan(key u)
@@ -526,7 +526,8 @@ default
         walkr = getNC("walkr");
         link_scales = getNC("scales");
         PASSWORD = osGetNotecardLine("sfp", 0);
-        doReset = (integer)osGetNotecardLine("sfp", 1);
+        if (osGetNumberOfNotecardLines("sfp") >= 2)
+            doReset = (integer)osGetNotecardLine("sfp", 1);
         
         loadConfig();
         name = AN_NAME;
