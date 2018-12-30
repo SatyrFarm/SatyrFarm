@@ -328,7 +328,16 @@ default
             else
             {
                 status = "Get";
-                multiPageMenu(id, "Select product to get", products);
+                list availProducts = [];
+                integer len = llGetListLength(products);
+                while (len--)
+                {
+                    if (llList2Integer(levels, len) >= singleLevel)
+                    {
+                        availProducts += [llList2String(products, len)];
+                    }
+                }
+                multiPageMenu(id, "Select product to get", availProducts);
             }
             return;
         }
