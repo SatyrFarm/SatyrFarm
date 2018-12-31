@@ -434,7 +434,7 @@ default
                     {
                         string message = "New storage rack from region " + region + " connected through ping.";
                         llSay(0, message);
-                        network += [body];
+                        network += [uri];
                         lastPing += [llGetUnixTime()];
                     }
                 }
@@ -507,7 +507,7 @@ default
                 if (get == "ping")
                 {
                     responseStatus = 200;
-                    responseBody = "ping";
+                    responseBody = "pong";
                 }
                 else if (get == "network")
                 {
