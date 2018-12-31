@@ -11,6 +11,7 @@ list log = [];
 integer pingTime = 900;
 list lastPing  = [];
 integer pingTs;
+integer ownPing;
 //listens and menus
 integer listener;
 //for connecting/sharing storage
@@ -52,6 +53,14 @@ checkPings()
     if (curtime > (pingTs + pingTime))
     {
         pingTs = curtime;
+        //check own storage and reset if not available
+        if (ownPing < (curtime - (3 * pingTime)))
+        {
+            llReleaseURL(ourURL);
+            llResetScript();
+        }
+        llHTTPRequest(ourURL + "?ping", [HTTP_METHOD, "POST"], "");
+        //check all other connected storages if still online
         integer leng = llGetListLength(lastPing);
         integer change = FALSE;
         while (leng--)
@@ -266,6 +275,14 @@ default
         llSetTimerEvent(1);
     } 
 
+    changed(integer change)
+    {
+        if(change & CHANGED_REGION_RESTART)
+        {
+            llResetScript();
+        }
+    }
+
     on_rez(integer num)
     {
         llResetScript();
@@ -413,6 +430,13 @@ default
                 {
                     responseStatus = 200;
                     responseBody = ourURL;
+                    if (llSubStringIndex(uri, "http") == 0 && uri != ourURL)
+                    {
+                        string message = "New storage rack from region " + region + " connected through ping.";
+                        llSay(0, message);
+                        network += [body];
+                        lastPing += [llGetUnixTime()];
+                    }
                 }
                 else if (get == "connect")
                 {
@@ -539,10 +563,9 @@ default
             {
                 lastPing = llListReplaceList(lastPing, [llGetUnixTime()], found, found);
             }
-            else
+            else if (body == ourURL)
             {
-                network += [body];
-                lastPing += [llGetUnixTime()];
+                ownPing = llGetUnixTime();
             }
         }
     }
@@ -652,6 +675,8 @@ state connect
                             lastPing += [curtime];
                         }
                     }
+                    pingTs = curtime;
+                    ownPing = curtime;
                 }
                 llSay(0, "Network has " + (string)llGetListLength(network) + " connected SatyrFarm storages.");
                 tmpkey = llHTTPRequest(llList2String(network, 0) + "?config", [HTTP_METHOD, "GET"], "");
