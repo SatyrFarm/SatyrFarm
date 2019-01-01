@@ -217,19 +217,25 @@ default
         }
         else if (m == "Disconnect")
         {
-            llSay(0, "Storage Rack is no longer connected.");
-            //if just one, tell the other to disconnect too
-            if (llGetListLength(network) == 1)
+            if (id == llGetOwner())
             {
-                sendBroadcast(id, "disconnect");
+                llSay(0, "Storage Rack is no longer connected.");
+                //if just one, tell the other to disconnect too
+                if (llGetListLength(network) == 1)
+                {
+                    sendBroadcast(id, "disconnect");
+                }
+                disconnectNetwork();
             }
-            disconnectNetwork();
         }
         else if (m == "Connect to")
         {
-            status = "connect";
-            llTextBox(id, "Enter URI of another storage to connect to.\nATTENTION: Connecting this storage to other storages will make you lose whats currently inside.", chan(llGetKey()));
-            return;
+            if (id == llGetOwner())
+            {
+                status = "connect";
+                llTextBox(id, "Enter URI of another storage to connect to.\nATTENTION: Connecting this storage to other storages will make you lose whats currently inside.", chan(llGetKey()));
+                return;
+            }
         }
         else if (status == "connect")
         {
