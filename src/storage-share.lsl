@@ -449,7 +449,7 @@ default
                 {
                     responseStatus = 200;
                     responseBody = ourURL;
-                    if (llSubStringIndex(uri, "http") == 0 && uri != ourURL)
+                    if (llSubStringIndex(uri, "http") == 0 && uri != ourURL && llListFindList(network, [uri]) == -1)
                     {
                         string message = "New storage rack from region " + region + " connected through ping.";
                         log += [message];
