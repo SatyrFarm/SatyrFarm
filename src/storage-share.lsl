@@ -45,39 +45,44 @@ checkListen(integer force)
 
 checkPings()
 {
-    if (network == [] || !connectStage)
-    {
-        return;
-    }
     integer curtime = llGetUnixTime();
     if (curtime > (pingTs + pingTime))
     {
         pingTs = curtime;
-        //check own storage and reset if not available
-        if (ownPing < (curtime - (3 * pingTime)))
+        if (ourURL != "")
         {
-            llReleaseURL(ourURL);
-            llResetScript();
-        }
-        llHTTPRequest(ourURL + "?ping", [HTTP_METHOD, "POST"], "");
-        //check all other connected storages if still online
-        integer leng = llGetListLength(lastPing);
-        integer change = FALSE;
-        while (leng--)
-        {
-            if (llList2Integer(lastPing, leng) < (curtime - (4 * pingTime)))
+            //check own storage and reset if not available
+            if (ownPing < (curtime - (3 * pingTime)))
             {
-                change = TRUE;
-                log += ["Lost connection to " + llList2String(network, leng)];
-                lastPing = llDeleteSubList(lastPing, leng, leng);
-                network = llDeleteSubList(network, leng, leng);
+                string message = "Lost own URL (maybe cause of region restart), connecting again.";
+                llSay(0, message);
+                log += [message];
+                llReleaseURL(ourURL);
+                llResetScript();
             }
+            llHTTPRequest(ourURL + "?ping", [HTTP_METHOD, "POST"], "");
         }
-        if (change)
+        if (network != [] && connectStage)
         {
-            saveConfig();
+            //check all other connected storages if still online
+            integer leng = llGetListLength(lastPing);
+            integer change = FALSE;
+            while (leng--)
+            {
+                if (llList2Integer(lastPing, leng) < (curtime - (4 * pingTime)))
+                {
+                    change = TRUE;
+                    log += ["Lost connection to " + llList2String(network, leng)];
+                    lastPing = llDeleteSubList(lastPing, leng, leng);
+                    network = llDeleteSubList(network, leng, leng);
+                }
+            }
+            if (change)
+            {
+                saveConfig();
+            }
+            sendBroadcast(llGetKey(), "ping");
         }
-        sendBroadcast(llGetKey(), "ping");
     }
 }
 
@@ -308,21 +313,28 @@ default
         }
         else if (m == "MENU_OPTION|Share")
         {
-            if (id != llGetOwner())
-            {
-                llSay(0, "Just the Owner of this rack can use those functions.");
-                return;
-            }
-            startListen();
-            list buttons = ["HELP", " ", "CLOSE", "Get URI"];
+            list buttons = ["HELP", " ", "CLOSE"];
             if (!connectStage)
             {
-                buttons += ["Connect to"];
+                if (id == llGetOwner())
+                {
+                    buttons += ["Connect to", "Get URI"];
+                }
+                else
+                {
+                    llSay(0, "Just the Owner of this rack can connect it to other racks");
+                    return;
+                }
             }
             else
             {
-                buttons += ["Disconnect", "Log", "Say"];
+                buttons += ["Log", "Say"];
+                if (id == llGetOwner())
+                {
+                    buttons += ["Disconnect", "Get URI"];
+                }
             }
+            startListen();
             string message = "Share your storage with others.";
             integer num = llGetListLength(network);
             if (num > 0)
@@ -380,6 +392,7 @@ default
             else
             {
                 ourURL = body;
+                ownPing = llGetUnixTime();
                 llSay(0, "Got url: " + body + "\nCopy and Paste it into another SatyrFarm Storage to connect them.");
             }
             responseStatus = 200;
@@ -433,6 +446,7 @@ default
                     if (llSubStringIndex(uri, "http") == 0 && uri != ourURL)
                     {
                         string message = "New storage rack from region " + region + " connected through ping.";
+                        log += [message];
                         llSay(0, message);
                         network += [uri];
                         lastPing += [llGetUnixTime()];
@@ -619,6 +633,7 @@ state connect
                 return;
             }
             ourURL = body;
+            ownPing = llGetUnixTime();
             llHTTPResponse(id, 200, "success");
             connectStage = 0;
             tmpkey = llHTTPRequest(llList2String(network, 0) + "?network", [HTTP_METHOD, "GET"], "");
@@ -661,11 +676,11 @@ state connect
             ++connectStage;
             if (connectStage == 1)
             {
+                integer curtime = llGetUnixTime();
                 if (body != "empty")
                 {
                     list nc = llParseString2List(body, ["\n"], []);
                     integer len = llGetListLength(nc);
-                    integer curtime = llGetUnixTime();
                     while (len--)
                     {
                         string conurl = llList2String(nc, len);
@@ -675,9 +690,8 @@ state connect
                             lastPing += [curtime];
                         }
                     }
-                    pingTs = curtime;
-                    ownPing = curtime;
                 }
+                pingTs = curtime;
                 llSay(0, "Network has " + (string)llGetListLength(network) + " connected SatyrFarm storages.");
                 tmpkey = llHTTPRequest(llList2String(network, 0) + "?config", [HTTP_METHOD, "GET"], "");
             }
