@@ -1,4 +1,9 @@
 //### storage-share.lsl
+/*
+This script makes it possible to link storages together and share the levels, it is an add-on to storage.lsl
+It uses HTTP server and requests, so it also works on two totally different sims of grids that do not even need hypergrid.
+(also chatting is possible)
+*/
 
 integer chan(key u)
 {
