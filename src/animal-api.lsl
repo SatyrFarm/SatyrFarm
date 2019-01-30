@@ -33,6 +33,8 @@ list ADULT_FEMALE_PRIMS = []; // link numbers -   Both sexes
 list ADULT_RANDOM_PRIMS = []; //  show randomly
 list CHILD_PRIMS = [];        //children only
 list colorable = []; 
+list petResponses = [];
+float happy = 100;
 
 string PASSWORD="*";
 integer doReset = 1;
@@ -158,6 +160,7 @@ setConfig(string str)
             else if (cmd == "SKIN_OBJECT") SKIN_OBJECT = val;
             else if (cmd == "MEAT_OBJECT") MEAT_OBJECT = val;
             else if (cmd == "MILK_OBJECT") MILK_OBJECT = val;
+            else if (cmd == "PET_SAY") petResponses += [val];
             else if (cmd == "LIFEDAYS") LIFETIME = (integer)(86400*(float)val);
             else if (cmd == "TOTAL_BABYSOUNDS") TOTAL_BABYSOUNDS = (integer)val;
             else if (cmd == "TOTAL_ADULTSOUNDS") TOTAL_ADULTSOUNDS = (integer)val;
@@ -170,8 +173,16 @@ loadConfig()
     list lines = llParseString2List(osGetNotecard("an_config"), ["\n"], []);
     integer i;
     for (i=0; i < llGetListLength(lines); i++)
+    {
         if (llGetSubString(llList2String(lines,i), 0, 0) !="#")
+        {
             setConfig(llList2String(lines,i));
+        }
+    }
+    if (llGetListLength(petResponses) == 0)
+    {
+        petResponses = ["I love you too, %NAME%!", "Good good, master %NAME%", "I'm happy now", "Back at ya %NAME%"];
+    }
 }
 
 loadStateByDesc(integer checkForReset)
@@ -224,7 +235,7 @@ setGenes()
     for (i=0; i < llGetListLength(colorable); i++)
     {
         integer lnk = llList2Integer(colorable, i);
-        llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXTURE, 0, tex, <1,1,1>, <0,llFrand(1), 0> , 0]);
+        llSetLinkPrimitiveParamsFast(lnk, [PRIM_TEXTURE, ALL_SIDES, tex, <1,1,1>, <0, 0, 0> , 0]);
     }
 }
 
@@ -420,7 +431,9 @@ refresh()
         else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
         else if (water < 0) say( 0, AN_BAAH+", I'm thirsty!");
 
-        string str = name+" "+uc+"\n"+""+(string)((integer)days)+" days old ";
+        string str = "";
+        if (happy > 0) str += "Happy!\n";
+        str += name+" "+uc+"\n"+""+(string)((integer)days)+" days old ";
         if (days  > (lifeTime*CHILDHOOD_RATIO/86400.))
         {
             //Adult
@@ -480,6 +493,7 @@ refresh()
         {
             str += "HUNGRY!\n";
             color = <1,0,0>;
+            happy = 0;
         }
         else if (food<50)
             str += "Food: "+(string)((integer)food)+"%\n";
@@ -488,6 +502,7 @@ refresh()
         {
             str += "THIRSTY!\n";
             color = <1,0,0>;
+            happy = 0;
         }
         else if (water <50)
             str += "Water: "+(string)((integer)water)+"%\n";
@@ -549,7 +564,7 @@ default
         llSetTimerEvent(2);
         integer i;
         for(i = 2; i <= llGetNumberOfPrims(); ++i)
-            llSetLinkPrimitiveParamsFast(i, [PRIM_PHYSICS_SHAPE_TYPE, PRIM_PHYSICS_SHAPE_NONE]); // Apparently this slightly reduces physics lag
+            llSetLinkPrimitiveParamsFast(i, [PRIM_PHYSICS_SHAPE_TYPE, PRIM_PHYSICS_SHAPE_NONE]);
     }
     
     on_rez(integer n)
@@ -704,6 +719,7 @@ default
             {
                 llSetTimerEvent(.5);
             }
+            happy = 100;
         }
         else if (m =="Options")
         {
@@ -772,6 +788,12 @@ default
         }
         else if (m == "Milk" || m == "Get Eggs")
         {
+            if (happy < 0)
+            {
+                say(0, "No, I'm not happy");
+                return;
+            }
+
             if (sex && AN_HASMILK)
             {
                 say(0, "Here is your "+MILK_OBJECT);
@@ -793,6 +815,15 @@ default
                 say(0, "Finally! I thought you'd never give me a haircut.");
                 llRezObject("SF Wool", llGetPos() +<0,0,1> , ZERO_VECTOR, ZERO_ROTATION, 1 );
                 woolTs = llGetUnixTime();
+                happy = 100;
+        }
+        else if (m == "Pet")
+        {
+            string str = llList2String(petResponses, (integer)llFrand(llGetListLength(petResponses)));
+            str = osReplaceString(str, "%NAME%", llKey2Name(id), -1, 0 );
+            str = osReplaceString(str, "%OWNER%", llKey2Name(llGetOwner()), -1, 0);
+            say(0, str);
+            happy = 100;
         }
         else if (status == "WaitRadius")
         {
@@ -975,6 +1006,7 @@ default
                 llSleep(8);
                 llParticleSystem([]);
                 osMessageObject(partner, "BABY|"+PASSWORD+"|"+(string)llGetKey() +"|"+ (string)geneA + "|"+ (string)geneB+ "|" +name);  
+                happy = 100;
         }
         else if (cmd  == "BABY") //Female part
         {
@@ -992,6 +1024,7 @@ default
                     pregnantTs = llGetUnixTime();
                 llSleep(2);
                 refresh();
+                happy = 100;
             }
         }
         else if (cmd == "INITG")
@@ -1098,10 +1131,7 @@ default
         }
      
         list opts = [];
-        opts += "Follow Me";
-        opts += "Stop";
-        opts += "CLOSE";
-        opts +=  "Options";
+        opts += ["CLOSE", "Follow Me", "Stop", "Pet", "Options"];
        
         integer ts = llGetUnixTime();
         if (sex && epoch == 2)
