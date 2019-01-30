@@ -33,7 +33,6 @@ checkListen()
 
 
 float water=100.;
-integer lastFood=0;
 integer lastWater=0;
 integer lastTs;
 
@@ -215,7 +214,7 @@ default
         
          PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
 
-        lastTs = lastWater = lastFood = llGetUnixTime();
+        lastTs = lastWater = llGetUnixTime();
         refresh();
     }   
     
