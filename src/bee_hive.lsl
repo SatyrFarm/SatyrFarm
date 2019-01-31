@@ -185,6 +185,10 @@ default
                 llSay(0, "You linked me to another object.\nThe script in the root prim should control me now.");
                 llRemoveInventory(llGetScriptName());
             }
+            else
+            {
+                llResetScript();
+            }
         }
     }
 }
