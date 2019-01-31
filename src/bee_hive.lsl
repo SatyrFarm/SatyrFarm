@@ -162,9 +162,6 @@ default
     {
         llWhisper(0, "Watch out, bees!");
         integer link_num = llDetectedLinkNumber(0);
-        //workaround MANTIS 0006702 - llDetectedLinkNumber returns 0 in linkset
-        if (link_num == 0 && llGetObjectPrimCount(llGetKey()) > 0) link_num = 1;
-        //--
         bees(getLinkRoot(link_num), 30,  .02, llDetectedKey(0));
         llSetTimerEvent(30);
         llTriggerSound("bees", 1.0);
