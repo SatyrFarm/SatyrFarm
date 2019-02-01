@@ -412,7 +412,7 @@ refresh()
     if (food < 5 || water < 5)
     {  
         status ="WaitFood";
-        llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
+        llSensor(AN_FEEDER, "", SCRIPTED, RADIUS, PI);
     }
 
     float days = (age/86400.);
@@ -705,7 +705,7 @@ default
         if (m == "Mate" && sex == "Female")
         {
             status = "WaitMate";
-            llSensor(llGetObjectName(), "", SCRIPTED, 5, PI);            
+            llSensor(llGetObjectName(), "", SCRIPTED, RADIUS, PI);  
         }
         else if (m == "Follow Me")
         {

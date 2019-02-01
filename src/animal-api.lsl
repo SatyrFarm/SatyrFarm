@@ -425,7 +425,7 @@ refresh()
         if (food < 5 || water < 5)
         {  
             status ="WaitFood";
-            llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
+            llSensor(AN_FEEDER, "", SCRIPTED, RADIUS, PI);
         }
         if (food < 0 && water <0) say(0, AN_BAAH+", I'm hungry and thirsty!");
         else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
@@ -710,7 +710,7 @@ default
         if (m == "Mate" && sex)
         {
             status = "WaitMate";
-            llSensor(llGetObjectName(), "", SCRIPTED, 5, PI);            
+            llSensor(llGetObjectName(), "", SCRIPTED, RADIUS, PI);  
         }
         else if (m == "Follow Me")
         {
@@ -719,7 +719,6 @@ default
             {
                 llSetTimerEvent(.5);
             }
-            happy = 100;
         }
         else if (m =="Options")
         {
