@@ -1029,32 +1029,36 @@ default
         else //feeder
         {
             string desc;
-            if ( food < 5)
+            integer level;
+            list enough_food = [];
+            list enough_water = [];
+            while (n--)
             {
-                integer level = 0;
-                integer i;
-                for (i = 0; level < FEEDAMOUNT && i < n; i++)
+                desc = llList2String(llGetObjectDetails(llDetectedKey(n), [OBJECT_DESC]), 0);
+                level = llList2Integer(llParseString2List(desc, [";"], []), 2);
+                if (level < WATERAMOUNT)
                 {
-                    desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
-                    level = llList2Integer(llParseString2List(desc, [";"], []), 3);
+                    enough_water += [llDetectedKey(n)];
                 }
-                --i;
-                if (i == n) i = 0;
-                osMessageObject(llDetectedKey(i),   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
+                level = llList2Integer(llParseString2List(desc, [";"], []), 3);
+                if (level < FEEDAMOUNT)
+                {
+                    enough_food += [llDetectedKey(n)];
+                }
             }
 
-            if ( water < 5)
+            integer length = llGetListLength(enough_food);
+            if (food < 5 && length)
             {
-                integer level = 0;
-                integer i;
-                for (i = 0; level < WATERAMOUNT && i < n; i++)
-                {
-                    desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
-                    level = llList2Integer(llParseString2List(desc, [";"], []), 2);
-                }
-                --i;
-                if (i == n) i = 0;
-                osMessageObject(llDetectedKey(i), "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
+                key rand_feeder = llList2Key(enough_food, llFloor(llFrand(length)));
+                osMessageObject(rand_feeder, "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
+            }
+
+            length = llGetListLength(enough_water);
+            if (water < 5 && length)
+            {
+                key rand_feeder = llList2Key(enough_water, llFloor(llFrand(length)));
+                osMessageObject(rand_feeder, "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
             }
         }
     }
