@@ -575,7 +575,7 @@ default
         //get first product that isn't already selected and has enough percentage
         integer c;
         key ready_obj = NULL_KEY;
-        for (c = 0; ready_obj == NULL_KEY && c < n; c++)
+        for (c = 0; c < n; c++)
         {
             key obj = llDetectedKey(c);
             list stats = llParseString2List(llList2String(llGetObjectDetails(obj,[OBJECT_DESC]),0), [";"], []);
@@ -584,17 +584,20 @@ default
             if (llListFindList(selitems, [obj]) == -1 && (have_percent == 100 || have_percent == 0))
             {
                 ready_obj = llDetectedKey(c);
+                c = n;
             }
         }
         //--
         if (ready_obj == NULL_KEY)
         {
             llSay(0, "Error! Full "+lookingFor+" not found nearby. You must bring it near me!");
-            return;
         }
-        selitems += [ready_obj];
-        llSay(0, "Found "+lookingFor+", emptying...");
-        osMessageObject(ready_obj, "DIE|"+(string)ownkey);
+        else
+        {
+            selitems += [ready_obj];
+            llSay(0, "Found "+lookingFor+", emptying...");
+            osMessageObject(ready_obj, "DIE|"+(string)ownkey);
+        }
         if (status == "Sell")
         {
             lookingFor = "all";
