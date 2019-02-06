@@ -27,21 +27,22 @@ startListen()
     }
 }
 
-checkListen()
+checkListen(integer force)
 {
-    if (listener > 0 && llGetUnixTime() - listenTs > 300)
+    if ((listener > 0 && llGetUnixTime() - listenTs > 300) || force)
     {
         llListenRemove(listener);
         listener = -1;
+        selitems = [];
     }
 }
 
+list items_osw = [];
 list items = [];
+list selitems = [];
 
 string status;
 string lookingFor;
-
-integer itemFound;
 
 integer startOffset=0;
 key userToPay;
@@ -140,7 +141,6 @@ default
                     return;
                 }
             }
-            itemFound=0;
     }
     
     listen(integer c, string nm, key id, string m)
@@ -149,6 +149,7 @@ default
         if (m == "CLOSE") 
         {
             refresh();
+            checkListen(TRUE);
             return;
         }
         else if (m == ">>")
@@ -201,7 +202,7 @@ default
     {
         refresh();
         llSetTimerEvent(600);
-        checkListen();
+        checkListen(FALSE);
     }
 
     touch_start(integer n)
@@ -221,18 +222,6 @@ default
         llSetTimerEvent(300);
     }
     
-    sensor(integer n)
-    {
-        itemFound=1;
-        llSay(0, "Found "+llDetectedName(0)+", emptying...");
-        osMessageObject(llDetectedKey(0), "DIE|"+(string)llGetKey());
-    }
-    
-    no_sensor()
-    {
-        llSay(0, "Error! "+lookingFor+" not found nearby! You must bring it near me!");
-    }
- 
     state_entry()
     {
         PASSWORD = llStringTrim(osGetNotecardLine("sfp", 0), STRING_TRIM);
@@ -245,7 +234,69 @@ default
     {
         llResetScript();
     }
-    
+
+
+    sensor(integer n)
+    {
+        //sensor all products for menu
+        if (status == "Sell")
+        {
+            items = [];
+            while (n--)
+            {
+                string name = llGetSubString(llKey2Name(llDetectedKey(n)), 3, -1);
+                if (llListFindList(items_osw, [name]) != -1 && llListFindList(items, [name]) == -1)
+                {
+                    items += [name];
+                }
+            }
+            if (items == [])
+            {
+                if (selitems == [])
+                {
+                    llSay(0, "No sellable items found nearby");
+                }
+                checkListen(TRUE);
+                return;
+            }
+            dlgSell(dlgUser);
+            return;
+        }
+        //sensor item selected
+        key ready_obj = NULL_KEY;
+        integer c;
+        for (c = 0; c < n; c++)
+        {
+            key obj = llDetectedKey(n);
+            if (llListFindList(selitems, [obj]) == -1)
+            {
+                ready_obj = obj;
+                c = n;
+            }
+        }
+        if (ready_obj == NULL_KEY)
+        {
+            llSay(0, "Error! " + lookingFor+" not found nearby. You must bring it near me!");
+        }
+        else
+        {
+            selitems += [ready_obj];
+            llSay(0, "Found "+lookingFor+", emptying...");
+            osMessageObject(ready_obj, "DIE|"+(string)llGetKey());
+        }
+        status = "Sell";
+        llSensor("", "", SCRIPTED, 10, PI);
+    }
+
+
+    no_sensor()
+    {
+        if (status == "Sell")
+            llSay(0, "No items found nearby.");
+        else
+            llSay(0, lookingFor + " not found nearby.");
+        checkListen(TRUE);
+    }
     
     
     http_response(key request_id, integer statusi, list metadata, string body)
@@ -263,8 +314,8 @@ default
             else if (cmd == "MENU")
             {
                 items = [];
-                items = llParseStringKeepNulls(llList2String(tok,1), [","], []);
-                dlgSell(dlgUser);
+                items_osw = llParseStringKeepNulls(llList2String(tok,1), [","], []);
+                llSensor("", "", SCRIPTED, 10, PI);
             }
             else if (cmd == "ACTIVE")
             {
