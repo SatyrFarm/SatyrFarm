@@ -42,7 +42,7 @@ refresh()
                 fill += 10;
                 llSetLinkPrimitiveParamsFast(num, [PRIM_DESC, (string)fill + "," + (string)lastTs]);
             }
-            bees(num, 0 , .5, llGetKey());
+            bees(num, 0 , .5, llGetLinkKey(num));
             if (fill >= 100) color = <0.180, 0.800, 0.251>;
             else color = <1, 1, 1>;
             llSetLinkPrimitiveParamsFast(num, [PRIM_TEXT, "Honey level " + (string)fill+ "%\n", color, 1.0]);
