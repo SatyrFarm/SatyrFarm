@@ -21,7 +21,7 @@ integer getLinkRoot(integer link_num)
 refresh()
 {
     integer do_fill = FALSE;
-    if (llGetUnixTime()-lastTs >  FILLTIME)
+    if (llGetUnixTime() - lastTs >  FILLTIME)
     {
         do_fill = TRUE;
         lastTs = llGetUnixTime();
@@ -36,11 +36,11 @@ refresh()
     {
         if (llList2String(llGetLinkPrimitiveParams(num, [PRIM_NAME]), 0) == name)
         {
-            fill = llList2Integer(llGetLinkPrimitiveParams(num, [PRIM_DESC]), 0);
+            fill = llList2Integer(llParseString2List(llList2String(llGetLinkPrimitiveParams(num, [PRIM_DESC]), 0), [","], []), 0);
             if (do_fill && fill < 100)
             {
                 fill += 10;
-                llSetLinkPrimitiveParamsFast(num, [PRIM_DESC, (string)fill]);
+                llSetLinkPrimitiveParamsFast(num, [PRIM_DESC, (string)fill + "," + (string)lastTs]);
             }
             bees(num, 0 , .5, llGetKey());
             if (fill >= 100) color = <0.180, 0.800, 0.251>;
@@ -130,7 +130,7 @@ default
             }
         } while (--num > 0);
         PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
-        lastTs = llGetUnixTime();
+        lastTs = llList2Integer(llParseString2List(llList2String(llGetLinkPrimitiveParams(LINK_THIS, [PRIM_DESC]), 0), [","], []), 1);
         llSetTimerEvent(1);
     }
 
