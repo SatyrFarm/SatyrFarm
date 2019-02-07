@@ -109,7 +109,6 @@ dlgSell(key id)
     list its = llList2List(items, startOffset, startOffset+9);
     startListen();
     llDialog(id, "Sell menu", ["CLOSE"]+its+ [">>"], chan(llGetKey()));
-    status = "Sell";
 }
 
 default 
@@ -160,8 +159,9 @@ default
         }
         else if (m == "Sell" )
         {   
-             farmHTTP = llHTTPRequest(BASEURL+"?act=getmenu",  [HTTP_METHOD, "GET"], "");
-             dlgUser = id;
+            status = "Sell";
+            farmHTTP = llHTTPRequest(BASEURL+"?act=getmenu",  [HTTP_METHOD, "GET"], "");
+            dlgUser = id;
         }
         else if (m == "Profile")
         {
@@ -267,7 +267,7 @@ default
         integer c;
         for (c = 0; c < n; c++)
         {
-            key obj = llDetectedKey(n);
+            key obj = llDetectedKey(c);
             if (llListFindList(selitems, [obj]) == -1)
             {
                 ready_obj = obj;
