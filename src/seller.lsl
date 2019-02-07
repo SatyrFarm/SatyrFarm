@@ -106,9 +106,18 @@ refresh()
 
 dlgSell(key id)
 {
-    list its = llList2List(items, startOffset, startOffset+9);
+    list its = ["CLOSE"];
+    if (llGetListLength(items) > 11)
+    {
+        its += llList2List(items, startOffset, startOffset+9);
+        its += [">>"];
+    }
+    else
+    {
+        its += items;
+    }
     startListen();
-    llDialog(id, "Sell menu", ["CLOSE"]+its+ [">>"], chan(llGetKey()));
+    llDialog(id, "Sell menu", its, chan(llGetKey()));
 }
 
 default 
