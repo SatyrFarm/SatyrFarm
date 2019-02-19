@@ -72,24 +72,6 @@ checkListen(integer force)
     }
 }
 
-
-
-integer ingredientsListFindString(list hay, string needle)
-{
-    integer found_pro = llGetListLength(hay) / 3;
-    //just a fancy way of llListFindList that isn't case sensitive
-    while (found_pro--) 
-    {
-        if (llToUpper(llList2String(hay, found_pro * 3 + 1)) == needle)
-        {
-            return found_pro * 3;
-        }
-    }
-    return -1;
-}
-
-
-
 integer ingredientsListFindString(list hay, string needle)
 {
     integer found_pro = llGetListLength(hay) / 3;
