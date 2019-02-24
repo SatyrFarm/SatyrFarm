@@ -67,7 +67,9 @@ checkListen()
     }
 }
 
-integer RADIUS=5;
+integer IMMOBILE = 0;
+integer RADIUS = 5;
+integer STAY_GROUND = FALSE; //stay on ground while walking, move up hills and down slopes
 
 integer LIFETIME = 2592000; 
 
@@ -91,7 +93,6 @@ float WATERAMOUNT=1.;
 
 integer TOTAL_ADULTSOUNDS = 4;
 integer TOTAL_BABYSOUNDS = 2;
-integer IMMOBILE=0;
 
 list rest;
 list walkl;
@@ -639,6 +640,10 @@ default
             {
                 vector cp = llGetPos();
                 vector v = cp + <STEP_SIZE, 0, 0>*(llGetRot()*llEuler2Rot(<0,0,moveAngle>));
+                if ( STAY_GROUND )
+                {
+                    cp.z = llGround(ZERO_VECTOR);
+                }
                 v.z = cp.z;
                 if ( llVecDist(v, initpos)< RADIUS)
                 {
@@ -722,9 +727,11 @@ default
         }
         else if (m =="Options")
         {
-            list opts = ["CLOSE"];
-            opts += "Set Name";
+            list opts = ["CLOSE", "Set Name"];
     
+            if (STAY_GROUND) opts += "Ignore Ground";
+            else opts += "Stay on Ground";
+
             if (IMMOBILE>0)  opts += "Walking On";
             else opts += "Walking Off";
 
@@ -774,6 +781,11 @@ default
             say(0, "Goodbye, cruel world... ");
             death(0);
             return;
+        }
+        else if (m == "Stay on Ground" || m == "Ignore Ground")
+        {
+            STAY_GROUND = (m == "Stay on Ground");
+            llSay(0, "Stay on Ground="+(string)(STAY_GROUND));
         }
         else if (m == "Walking On" || m == "Walking Off")    
         {
