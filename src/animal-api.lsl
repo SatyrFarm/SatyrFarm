@@ -196,6 +196,7 @@ loadStateByDesc(integer checkForReset)
         {
             if (doReset == 1)
             {
+                llSay(0, "Resetting animal..");
                 llSetObjectDesc("");
                 llSleep(1.0);
             }

@@ -189,9 +189,9 @@ loadStateByDesc()
     {
         if ((llList2String(desc, 5) != (string)chan(llGetKey())) ) //Also resets eggs!
         {
+            llSay(0, "Resetting animal..");
             llSetObjectDesc("");
             llSleep(1.0);
-            //llResetScript();
         }
         else
         {
@@ -540,7 +540,7 @@ default
         walkl = getNC("walkl");
         walkr = getNC("walkr");
         link_scales = getNC("scales");
-        PASSWORD = llStringTrim(osGetNotecard("sfp"), STRING_TRIM);
+        PASSWORD = osGetNotecardLine("sfp", 0);
         
         loadConfig();
         name = AN_NAME;
