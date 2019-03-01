@@ -1,4 +1,5 @@
-/*### animal.lsl
+//### animal-animesh.lsl
+/*
  Part of the  SatyrFarm scripts
  This code is provided under a CC-BY-NC license
 */
@@ -13,10 +14,7 @@ integer AN_HASMANURE = 0;
 integer LAYS_EGG = 0;     //Reproduces with egg
 integer EGG_TIME = 86400; //Time until hatching
 integer MATE_INTERVAL= 86400; //how often to be mateable
-float CHILD_SCALE = 0.5; // Initial scale as child 
-float CHILD_MAX_SCALE = 1.0; // Dont let the child grow beyond this scale
-float MALE_SCALE = 1.05;
-float STEP_SIZE = 0.4;
+float SPEED = 0.5; //walk speed in m/s
 string MEAT_OBJECT="SF Meat";
 string SKIN_OBJECT = "SF Skin";
 string MILK_OBJECT="SF Milk";
@@ -67,10 +65,6 @@ checkListen()
     }
 }
 
-integer IMMOBILE = 0;
-integer RADIUS = 5;
-integer STAY_GROUND = FALSE; //stay on ground while walking, move up hills and down slopes
-
 integer LIFETIME = 2592000; 
 
 float WATERTIME = 5000. ;
@@ -94,14 +88,6 @@ float WATERAMOUNT=1.;
 integer TOTAL_ADULTSOUNDS = 4;
 integer TOTAL_BABYSOUNDS = 2;
 
-list rest;
-list walkl;
-list walkr;
-list eat;
-list down;
-list link_scales;
-vector initpos;
-
 integer lastTs;
 integer createdTs;
 integer milkTs;
@@ -116,12 +102,18 @@ string status = "OK";
 
 integer sex;
 integer epoch = -1;
-integer left;
-key followUser=NULL_KEY;
 integer pregnantTs;
 integer givenBirth =0;
 string fatherName;
 integer age;
+
+//for movement (random and follow)
+integer RADIUS=5;
+integer IMMOBILE=0;
+vector initpos;
+key followUser=NULL_KEY;
+vector moveTO_target = ZERO_VECTOR;
+vector last_userpos = ZERO_VECTOR;
 
 setConfig(string str)
 {
@@ -152,12 +144,9 @@ setConfig(string str)
             else if (cmd == "FEEDAMOUNT") FEEDAMOUNT= (float)val;
             else if (cmd == "WATERAMOUNT") WATERAMOUNT= (float)val;
             else if (cmd == "WATERTIME") WATERTIME= (float)val;
-            else if (cmd == "STEP_SIZE") STEP_SIZE= (float)val;
+            else if (cmd == "SPEED") SPEED= (float)val;
             else if (cmd == "FEEDTIME") FEEDTIME= (float)val;
             else if (cmd == "CHILDHOOD_RATIO") CHILDHOOD_RATIO = (float)val;
-            else if (cmd == "CHILD_SCALE") CHILD_SCALE= (float)val;
-            else if (cmd == "CHILD_MAX_SCALE") CHILD_MAX_SCALE= (float)val;
-            else if (cmd == "MALE_SCALE") MALE_SCALE= (float)val;                
             else if (cmd == "SKIN_OBJECT") SKIN_OBJECT = val;
             else if (cmd == "MEAT_OBJECT") MEAT_OBJECT = val;
             else if (cmd == "MILK_OBJECT") MILK_OBJECT = val;
@@ -196,7 +185,6 @@ loadStateByDesc(integer checkForReset)
         {
             if (doReset == 1)
             {
-                llSay(0, "Resetting animal..");
                 llSetObjectDesc("");
                 llSleep(1.0);
             }
@@ -361,43 +349,134 @@ showAlphaSet(integer newEpoch)
     }
 }
 
-setPose(list pose)
-{
-    integer i;
-    float scale;
-    if (epoch == 1 ) 
-    {
-        scale = CHILD_SCALE + (1-CHILD_SCALE) * ((float)(age)/(float)(CHILDHOOD_RATIO*lifeTime));
-        if (scale>CHILD_MAX_SCALE) scale = CHILD_MAX_SCALE; 
-        if (scale>1) scale = 1.;
-    }
-    else if (!sex) scale= MALE_SCALE;
-    else scale = 1.;
-    for (i=2; i <= llGetObjectPrimCount(llGetKey()); i++)
-    {
-        llSetLinkPrimitiveParamsFast(i, [PRIM_POS_LOCAL, llList2Vector(pose, (i-1)*2-2)*scale, PRIM_ROT_LOCAL, llList2Rot(pose, (i-1)*2-1), PRIM_SIZE, llList2Vector(link_scales, i-2)*scale]);
-    }
-}
-
-
-float moveAngle =0;
-integer isMoving=0;
-move()
+doSomething()
 {
     if (epoch ==0) return;
-    integer rnd = (integer)llFrand(5);
-    if (rnd==0)    setPose(rest); 
-    else if (rnd==1)    setPose(down); 
-    else if (rnd==2)    setPose(eat); 
-    else if (IMMOBILE<=0)
+    if (llFrand(1.) < 0.5) baah();
+    //just walk somewhere
+    if (llFrand(1.) < 0.4)
     {
-        isMoving=7;
-        moveAngle = .3-llFrand(.6);
-        llSetTimerEvent(.5);
+        vector random_dir = <llFrand(RADIUS), 0, 0> * llEuler2Rot(<0, 0, llFrand(2 * PI)>);
+        moveTo(initpos + random_dir);
+        return;
     }
-    if (llFrand(1.)< 0.5) baah();
+    //get list of weighted animations
+    list weighted_anims = [];
+    integer cnt_anims = llGetInventoryNumber(INVENTORY_ANIMATION);
+    integer total_weight = 0;
+    while (cnt_anims--)
+    {
+        string anim_name = llGetInventoryName(INVENTORY_ANIMATION, cnt_anims);
+        list anim_conf = llParseString2List(anim_name, ["-"], []);
+        if (llGetListLength(anim_conf) >= 3)
+        {
+            //name-(float)hoverheight-(integer)weight-(float)duration
+            integer weight = llList2Integer(anim_conf, 2);
+            weighted_anims += [anim_name, llList2Float(anim_conf, 1), weight, llList2Float(anim_conf, 3)];
+            total_weight += weight;
+        }
+    }
+    //choose animation based on weight
+    total_weight = (integer)llFrand(total_weight);
+    cnt_anims = llGetListLength(weighted_anims) /  4;
+    string selected_anim = "";
+    float selected_duration = 0.0;
+    while (cnt_anims--)
+    {
+        total_weight -= llList2Integer(weighted_anims, cnt_anims * 4 + 2);
+        if (total_weight < 0)
+        {
+            selected_anim = llList2String(weighted_anims, cnt_anims * 4);
+            selected_duration = llList2Float(weighted_anims, cnt_anims * 4 + 3);
+            if (selected_duration == 0.0)
+            {
+                selected_duration = 25+ (integer)llFrand(20);
+            }
+            cnt_anims = 0;
+        }
+    }
+    setAnimation(selected_anim);
+    llSetTimerEvent(selected_duration);
 }
 
+moveTo(vector target)
+{
+    vector current_position = llGetPos();
+    rotation current_rotation = llGetRot();
+    moveTO_target = target;
+    target -= current_position;
+    //target offset needs to be the same as the walking-animation offset
+    target.z += setAnimation("walk");
+    rotation target_rot = llRotBetween(<1.,0.,0.>, target);
+    float angle_diff = llAngleBetween(current_rotation, target_rot);
+    if(angle_diff > 0.6)
+    {
+        llSetKeyframedMotion([target_rot/current_rotation, 1.0], [KFM_DATA, KFM_ROTATION]);
+        llSleep(1.0);
+    }
+    else if (angle_diff > 0.1)
+    {
+        llSetKeyframedMotion([], []);
+        llSetPrimitiveParams([PRIM_ROTATION, target_rot]);
+    }
+    llSetKeyframedMotion([target, llRotBetween(<1.,0.,0.> * current_rotation, target), llVecMag(target) / SPEED], []);
+    llSetTimerEvent(1.0);
+}
+
+//returns new hoverheight/offset
+float setAnimation(string animname)
+{
+    llSay(0, animname);
+    //Animation names in the inventory can be in the form name-(float)hoverheight-(integer)weight-(float)duration
+    string curr_anim = llList2String(llGetObjectAnimationNames(), 0);
+    if (curr_anim == animname)
+    {
+        llSay(0, "skip");
+        return;
+    }
+    llStopObjectAnimation(curr_anim);
+    //if not the full name is given, search for animation in inventory 
+    //TODO this might not be neccessary if we parse a list of animations at the beggining
+    //and it gets auto-weighted to 0
+    if (llSubStringIndex(animname, "-") == -1)
+    {
+        string search_string = animname + "-";
+        integer cnt_anims = llGetInventoryNumber(INVENTORY_ANIMATION);
+        while (cnt_anims--)
+        {
+            string cnt_name = llGetInventoryName(INVENTORY_ANIMATION, cnt_anims);
+            if (llSubStringIndex(cnt_name, search_string) == 0)
+            {
+                animname = cnt_name;
+                cnt_anims = 0;
+            }
+        }
+    }
+    //just offsets (next-offset - current-offset)
+    list an_conf = llParseString2List(animname, ["-"], []);
+    float offset = 0.0;
+    float abs_offset = 0.0;
+    if (llGetListLength(an_conf) >= 2)
+    {
+        abs_offset = llList2Float(an_conf, 1);
+    }
+    an_conf = llParseString2List(curr_anim, ["-"], []);
+    if (llGetListLength(an_conf) >= 2)
+    {
+        offset = abs_offset - llList2Float(an_conf, 1);
+    }
+    if (offset != 0.0)
+    {
+        llSetPrimitiveParams([PRIM_POSITION, llGetPos() + <0.0, 0.0, offset>]);
+    }
+    //start wanted animaton
+    if (llGetInventoryType(animname) == INVENTORY_ANIMATION)
+    {
+        llSay(0, "start anim " + animname);
+        llStartObjectAnimation(animname);
+    }
+    return abs_offset;
+}
 
 refresh()
 {
@@ -427,7 +506,7 @@ refresh()
         if (food < 5 || water < 5)
         {  
             status ="WaitFood";
-            llSensor(AN_FEEDER, "", SCRIPTED, RADIUS, PI);
+            llSensor(AN_FEEDER, "", SCRIPTED, 20, PI);
         }
         if (food < 0 && water <0) say(0, AN_BAAH+", I'm hungry and thirsty!");
         else if (food < 0) say( 0,AN_BAAH+", I'm hungry!");
@@ -519,12 +598,6 @@ refresh()
     llSetObjectDesc("A;"+(string)sex+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
 }
 
-list getNC(string ncname)
-{
-    list lst = llParseString2List(osGetNotecard(ncname), ["|"], []);
-    return lst; 
-}
-
 
 default
 {
@@ -536,12 +609,6 @@ default
             llSetScriptState(llGetScriptName(), FALSE); // Dont run in the rezzer
             return;
         }
-        rest =  getNC("rest");
-        down = getNC("down");
-        eat = getNC("eat");
-        walkl = getNC("walkl");
-        walkr = getNC("walkr");
-        link_scales = getNC("scales");
         PASSWORD = osGetNotecardLine("sfp", 0);
         if (osGetNumberOfNotecardLines("sfp") >= 2)
             doReset = (integer)osGetNotecardLine("sfp", 1);
@@ -549,7 +616,16 @@ default
         loadConfig();
         name = AN_NAME;
         llSetObjectName("SF "+AN_NAME);
-         
+        
+        //Stop All running Animations
+        list curr_anims = llGetObjectAnimationNames();
+        integer length = llGetListLength(curr_anims);
+        while (length--)
+        {
+            string anim = llList2String(curr_anims, length);
+            llStopObjectAnimation(anim);
+        }
+
         //Set Defaults
         llSetRot(ZERO_ROTATION);
         llSetLinkColor(LINK_ALL_OTHERS, <1, 1,1>, ALL_SIDES);
@@ -629,84 +705,61 @@ default
             lastTs = ts;
         }
         
-
-        if (isMoving>0)
+        if (followUser != NULL_KEY)
         {
-            if (isMoving==1)
-            {
-                setPose(rest);
-                llSetTimerEvent(11);
-            }
-            else
-            {
-                vector cp = llGetPos();
-                vector v = cp + <STEP_SIZE, 0, 0>*(llGetRot()*llEuler2Rot(<0,0,moveAngle>));
-                if ( STAY_GROUND )
-                {
-                    cp.z = llGround(ZERO_VECTOR);
-                }
-                v.z = cp.z;
-                if ( llVecDist(v, initpos)< RADIUS)
-                {
-                    if (isMoving%2==0) setPose(walkl);
-                    else setPose(walkr);
-                    llSetPrimitiveParams([PRIM_POSITION, v, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,moveAngle>) ]);
-                }
-                else
-                    llSetPrimitiveParams([PRIM_POSITION, cp, PRIM_ROTATION, llGetRot()*llEuler2Rot(<0,0,PI/2>) ]);
-            }
-            isMoving--;
-            return;
-        }
-        
-        
-        if (followUser!= NULL_KEY)
-        {
-            list userData=llGetObjectDetails((key)followUser, [OBJECT_NAME,OBJECT_POS, OBJECT_ROT]);
+            list userData=llGetObjectDetails((key)followUser, [OBJECT_NAME, OBJECT_POS, OBJECT_ROT]);
             if (llGetListLength(userData)==0)
             {
                 followUser = NULL_KEY;
                 llSetTimerEvent(1);
-                return;            
             }
             else
             {
-                
-                vector size = llGetAgentSize(followUser);
-                vector mypos = llGetPos();
-                vector v = llList2Vector(userData, 1)+<0.3, 1.5, -size.z/2-0.1> * llList2Rot(userData,2);
-                float d = llVecDist(mypos, v);
-                if (d>2)
+                vector userpos = llList2Vector(userData, 1);
+                if (llVecDist(last_userpos, userpos) > 0.2)
                 {
-                    vector vn = llVecNorm(v  - mypos );
-                    vector fpos;
-                    if (d>20) fpos = mypos + 2*vn;
-                    else fpos = mypos + .7*vn;
-                    vn.z =0;
-                    rotation r2 = llRotBetween(<1,0,0>,vn);
-                    left = !left;
-                    llSetPrimitiveParams([PRIM_ROTATION,r2, PRIM_POSITION, fpos]);
-                    if (left)   setPose(walkl);
-                    else    setPose(walkr);
-                    if (llFrand(1.)< 0.1) baah();
-                    initpos = fpos;
+                    last_userpos = userpos;
+                    vector size = llGetAgentSize(followUser);
+                    vector target = userpos + <0.3, 1.5, -size.z/2> * llList2Rot(userData,2);
+                    vector mypos = llGetPos();
+                    float d = llVecDist(mypos, target);
+                    if (d > 2)
+                    {
+                        moveTo(target);
+                        if (llFrand(1.)< 0.1) baah();
+                        initpos = target;
+                    }
                 }
             }
         }
-        
-        if (epoch == 0)  llSetTimerEvent(300);
+
+        if (moveTO_target != ZERO_VECTOR)
+        {
+            if(llVecDist(llGetPos(), moveTO_target) < 0.5)
+            {
+                moveTO_target = ZERO_VECTOR;
+                setAnimation("rest");
+                llSetTimerEvent(2.0);
+            }
+            return;
+        }
+
+        if (followUser != NULL_KEY)
+        {
+            return;
+        }
+
+        if (epoch == 0)
+        {
+            llSetTimerEvent(300);
+        }
+        else if (status == "DEAD") 
+        {
+            llSetTimerEvent(0);
+        }
         else
         {
-            if (status == "DEAD") 
-            {
-                llSetTimerEvent(0);
-                return;
-            }
-            else if (followUser == NULL_KEY)
-            {
-                llSetTimerEvent(25+ (integer)llFrand(20));
-                move();
-            }
+            doSomething();
         }
         checkListen(); 
     }
@@ -716,23 +769,21 @@ default
         if (m == "Mate" && sex)
         {
             status = "WaitMate";
-            llSensor(llGetObjectName(), "", SCRIPTED, RADIUS, PI);  
+            llSensor(llGetObjectName(), "", SCRIPTED, 5, PI);            
         }
         else if (m == "Follow Me")
         {
             followUser = id;
             if (followUser != NULL_KEY)
             {
-                llSetTimerEvent(.5);
+                llSetTimerEvent(1.0);
             }
         }
         else if (m =="Options")
         {
-            list opts = ["CLOSE", "Set Name"];
+            list opts = ["CLOSE"];
+            opts += "Set Name";
     
-            if (STAY_GROUND) opts += "Ignore Ground";
-            else opts += "Stay on Ground";
-
             if (IMMOBILE>0)  opts += "Walking On";
             else opts += "Walking Off";
 
@@ -772,7 +823,7 @@ default
         {
             followUser =NULL_KEY;
             llStopSound();
-            setPose(down);
+            setAnimation("rest");
             initpos = llGetPos();
             llSetTimerEvent(5);
             say(0, "OK I'll stick around");
@@ -782,11 +833,6 @@ default
             say(0, "Goodbye, cruel world... ");
             death(0);
             return;
-        }
-        else if (m == "Stay on Ground" || m == "Ignore Ground")
-        {
-            STAY_GROUND = (m == "Stay on Ground");
-            llSay(0, "Stay on Ground="+(string)(STAY_GROUND));
         }
         else if (m == "Walking On" || m == "Walking Off")    
         {
@@ -800,7 +846,7 @@ default
         }
         else if (m == "Milk" || m == "Get Eggs")
         {
-            if (happy < 0)
+            if (happy <= 0)
             {
                 say(0, "No, I'm not happy");
                 return;
@@ -1084,36 +1130,32 @@ default
         else //feeder
         {
             string desc;
-            integer level;
-            list enough_food = [];
-            list enough_water = [];
-            while (n--)
+            if ( food < 5)
             {
-                desc = llList2String(llGetObjectDetails(llDetectedKey(n), [OBJECT_DESC]), 0);
-                level = llList2Integer(llParseString2List(desc, [";"], []), 2);
-                if (level >= WATERAMOUNT)
+                integer level = 0;
+                integer i;
+                for (i = 0; level < (FEEDAMOUNT * epoch) && i < n; i++)
                 {
-                    enough_water += [llDetectedKey(n)];
+                    desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
+                    level = llList2Integer(llParseString2List(desc, [";"], []), 3);
                 }
-                level = llList2Integer(llParseString2List(desc, [";"], []), 3);
-                if (level >= FEEDAMOUNT)
-                {
-                    enough_food += [llDetectedKey(n)];
-                }
+                --i;
+                if (i == n) i = 0;
+                osMessageObject(llDetectedKey(i),   "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)(FEEDAMOUNT * epoch));
             }
 
-            integer length = llGetListLength(enough_food);
-            if (food < 5 && length)
+            if ( water < 5)
             {
-                key rand_feeder = llList2Key(enough_food, llFloor(llFrand(length)));
-                osMessageObject(rand_feeder, "FEEDME|"+PASSWORD+"|"+ (string)llGetKey() + "|" + (string)FEEDAMOUNT);
-            }
-
-            length = llGetListLength(enough_water);
-            if (water < 5 && length)
-            {
-                key rand_feeder = llList2Key(enough_water, llFloor(llFrand(length)));
-                osMessageObject(rand_feeder, "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
+                integer level = 0;
+                integer i;
+                for (i = 0; level < WATERAMOUNT && i < n; i++)
+                {
+                    desc = llList2String(llGetObjectDetails(llDetectedKey(i), [OBJECT_DESC]), 0);
+                    level = llList2Integer(llParseString2List(desc, [";"], []), 2);
+                }
+                --i;
+                if (i == n) i = 0;
+                osMessageObject(llDetectedKey(i), "WATERME|"+PASSWORD+"|"+ (string)llGetKey() + "|"+ (string)WATERAMOUNT);
             }
         }
     }
