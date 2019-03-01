@@ -67,7 +67,7 @@ checkListen()
 }
 
 integer IMMOBILE = 0;
-integer RADIUS = 5;
+integer RADIUS;
 integer STAY_GROUND = FALSE; //stay on ground while walking, move up hills and down slopes
 
 integer LIFETIME = 2592000; 
@@ -209,8 +209,11 @@ loadStateByDesc()
             fatherGene = llList2Integer(desc, 8);
             pregnantTs = llList2Integer(desc, 9);
             name = llList2String(desc, 10);
+            RADIUS = llList2Integer(desc, 11);
+            STAY_GROUND = llList2Integer(desc, 12);
         }
     }
+    if (RADIUS == 0) RADIUS = 5;
 }
 
 
@@ -512,7 +515,7 @@ refresh()
 
     integer scode=0;
     if (sex == "Female") scode=1;
-    llSetObjectDesc("A;"+(string)scode+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
+    llSetObjectDesc("A;"+(string)sex+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";"+(string)RADIUS+";"+(string)STAY_GROUND+";");
 }
 
 list getNC(string ncname)
@@ -1048,12 +1051,12 @@ default
             {
                 desc = llList2String(llGetObjectDetails(llDetectedKey(n), [OBJECT_DESC]), 0);
                 level = llList2Integer(llParseString2List(desc, [";"], []), 2);
-                if (level < WATERAMOUNT)
+                if (level >= WATERAMOUNT)
                 {
                     enough_water += [llDetectedKey(n)];
                 }
                 level = llList2Integer(llParseString2List(desc, [";"], []), 3);
-                if (level < FEEDAMOUNT)
+                if (level >= FEEDAMOUNT)
                 {
                     enough_food += [llDetectedKey(n)];
                 }

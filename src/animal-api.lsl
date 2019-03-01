@@ -68,7 +68,7 @@ checkListen()
 }
 
 integer IMMOBILE = 0;
-integer RADIUS = 5;
+integer RADIUS;
 integer STAY_GROUND = FALSE; //stay on ground while walking, move up hills and down slopes
 
 integer LIFETIME = 2592000; 
@@ -217,8 +217,11 @@ loadStateByDesc(integer checkForReset)
             fatherGene = llList2Integer(desc, 8);
             pregnantTs = llList2Integer(desc, 9);
             name = llList2String(desc, 10);
+            RADIUS = llList2Integer(desc, 11);
+            STAY_GROUND = llList2Integer(desc, 12);
         }
     }
+    if (RADIUS == 0) RADIUS = 5;
 }
 
 
@@ -516,7 +519,7 @@ refresh()
     }
 
     showAlphaSet(epochcur);
-    llSetObjectDesc("A;"+(string)sex+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";");
+    llSetObjectDesc("A;"+(string)sex+";"+(string)llRound(water)+";"+(string)llRound(food)+";"+(string)createdTs+";"+(string)chan(llGetKey())+";"+(string)geneA+";"+(string)geneB+";"+(string)fatherGene+";"+(string)pregnantTs+";"+name+";"+(string)RADIUS+";"+(string)STAY_GROUND+";");
 }
 
 list getNC(string ncname)
