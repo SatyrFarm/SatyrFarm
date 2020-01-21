@@ -988,7 +988,7 @@ default
                 if (LAYS_EGG)
                 {
                     //Force an egg
-                    PREGNANT_TIME=0;
+                    PREGNANT_TIME=1;
                     pregnantTs = llGetUnixTime()-100;
                 }
                 else
