@@ -424,8 +424,8 @@ refresh()
     string str;
     if (happy>0) str += "Happy!\n";
     str += name;
-    if (sex == "Female") str += " ♀\n";
-    else str += " ♂\n";
+    if (sex == "Female") str += " [F]\n";
+    else str += " [M]\n";
     if (epoch ==1 && days  > (lifeTime*CHILDHOOD_RATIO/86400.))
     {
         epoch = 2; // Child --> adult
